@@ -2999,11 +2999,17 @@
     const picker = document.getElementById('crewEmblemPicker');
     if(!picker) return;
 
+    const isMember = !!state.crewLeaderUserId;
     const leaderName = document.getElementById('crewLeaderName');
-    if(leaderName) leaderName.textContent = state.name || 'You';
+    if(leaderName) leaderName.textContent = isMember ? (state.crewLeaderName || '—') : (state.name || 'You');
 
     if(!state.gang){
-      picker.innerHTML = '<div class="hint">Set a crew name in Settings first — that makes you the crew leader and unlocks emblem selection.</div>';
+      picker.innerHTML = '<div class="hint">Set a crew name above first — that makes you the crew leader and unlocks emblem selection.</div>';
+      return;
+    }
+
+    if(isMember){
+      picker.innerHTML = `<div class="hint">Only ${escapeHtml(state.crewLeaderName || 'the crew leader')} can set the emblem — you joined this crew as a member.</div>`;
       return;
     }
 
@@ -3183,10 +3189,13 @@
       groups[g].netWorth += botNetWorth(b);
     });
 
-    // Your own personal crew (Settings > Crew Name + recruited members) is a
+    // Your own personal crew (Crew page > Crew Name + recruited members) is a
     // separate system from the bots' street-gang affiliations above - add it
-    // in as its own competing entry so it shows up here too.
-    if(state.gang){
+    // in as its own competing entry so it shows up here too. Only do this as
+    // the crew LEADER - a mere member's own crewMembers list is empty, so
+    // this would otherwise overwrite the correctly-aggregated group above
+    // with a wrong 1-person total.
+    if(state.gang && !state.crewLeaderUserId){
       const playerNW = totalNetWorth();
       const mine = {name: state.gang, emblem: state.crewEmblem || '', members: 1, hoes: state.hoes, thugs: state.thugs, cars: state.cadillacs || 0, netWorth: playerNW, isYours: true};
       (state.crewMembers || []).forEach(m => {
@@ -4305,9 +4314,10 @@
               <div style="font-weight:700;">🤝 ${escapeHtml(m.text)}</div>
               ${incoming && !m.status ? `
                 <div style="display:flex; gap:8px; margin-top:8px;">
-                  <button class="cta gold cta-sm" data-dm-accept-invite="${m.fromUserId}">Accept</button>
+                  <button class="cta gold cta-sm" data-dm-accept-invite="${m.fromUserId}" ${state.gang ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>Accept</button>
                   <button class="cta danger cta-sm" data-dm-decline-invite="${m.fromUserId}">Decline</button>
-                </div>` : ''}
+                </div>
+                ${state.gang ? `<div class="hint" style="margin-top:4px;">You're already in a crew — leave it to accept this.</div>` : ''}` : ''}
               ${statusLabel ? `<div style="font-size:0.8rem; color:var(--text-dim); margin-top:6px;">${statusLabel}</div>` : ''}
             </div>
           </div>
@@ -4322,7 +4332,7 @@
     `;
     }).join('');
 
-    history.querySelectorAll('[data-dm-accept-invite]').forEach(btn => {
+    history.querySelectorAll('[data-dm-accept-invite]:not(:disabled)').forEach(btn => {
       btn.addEventListener('click', async () => {
         await acceptCrewInvite(parseInt(btn.dataset.dmAcceptInvite));
         openDMModal(botId);
@@ -4577,8 +4587,24 @@
     const subtitle = document.getElementById('crewSubtitle');
     const pendingPanel = document.getElementById('pendingInvitesPanel');
     const pendingList = document.getElementById('pendingInvitesList');
+    const crewNameInput = document.getElementById('crewNameInput');
+    const saveCrewNameBtn = document.getElementById('saveCrewNameBtn');
 
     if(!members || !available || !subtitle) return;
+
+    const isMember = !!state.crewLeaderUserId;
+    const alreadyAffiliated = !!state.gang;
+
+    // Once you're in a crew (leader or member), creating a brand new one
+    // is blocked - but leaders keep the ability to rename their own.
+    if(crewNameInput && saveCrewNameBtn){
+      const lockCreate = isMember;
+      crewNameInput.disabled = lockCreate;
+      saveCrewNameBtn.disabled = lockCreate;
+      saveCrewNameBtn.style.opacity = lockCreate ? '0.4' : '1';
+      saveCrewNameBtn.style.cursor = lockCreate ? 'not-allowed' : 'pointer';
+      saveCrewNameBtn.title = lockCreate ? "You're a member of a crew — only its leader can rename it" : '';
+    }
 
     const pending = state.pendingCrewInvites || [];
     if(pendingPanel && pendingList){
@@ -4591,14 +4617,15 @@
             <div class="crew-card-info">
               <div class="crew-card-name">${escapeHtml(inv.fromName)}</div>
               <div class="crew-card-gang">wants you to join "${escapeHtml(inv.fromGang)}"</div>
+              ${alreadyAffiliated ? `<div class="hint" style="margin-top:4px;">You're already in a crew — leave it to accept this.</div>` : ''}
             </div>
             <div class="crew-card-action" style="display:flex; gap:8px;">
-              <button class="cta gold" data-accept-invite="${inv.fromUserId}">Accept</button>
+              <button class="cta gold" data-accept-invite="${inv.fromUserId}" ${alreadyAffiliated ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>Accept</button>
               <button class="cta danger" data-decline-invite="${inv.fromUserId}">Decline</button>
             </div>
           </div>
         `).join('');
-        pendingList.querySelectorAll('[data-accept-invite]').forEach(btn => {
+        pendingList.querySelectorAll('[data-accept-invite]:not(:disabled)').forEach(btn => {
           btn.addEventListener('click', () => acceptCrewInvite(parseInt(btn.dataset.acceptInvite)));
         });
         pendingList.querySelectorAll('[data-decline-invite]').forEach(btn => {
@@ -4611,6 +4638,13 @@
       members.innerHTML = '<div class="hint">🚨 You haven\'t created a crew name yet! Set one above to start recruiting.</div>';
       available.innerHTML = '<div class="hint">Create a crew name above to invite members.</div>';
       subtitle.textContent = '0 / 5 members';
+      return;
+    }
+
+    if(isMember){
+      subtitle.textContent = `Member of "${state.gang}"`;
+      members.innerHTML = `<div class="hint">👤 You're a member of "${escapeHtml(state.gang)}", led by <b>${escapeHtml(state.crewLeaderName || '—')}</b>. Only the leader can invite, remove members, or set the emblem.</div>`;
+      available.innerHTML = '';
       return;
     }
 

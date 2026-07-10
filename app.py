@@ -739,7 +739,21 @@ def api_crew_invite_decline():
 @login_required
 def api_crew_remove():
     data = request.get_json() or {}
-    return handle_action(ge.remove_from_crew, data.get('botId'))
+    bot_id = data.get('botId')
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        if bot_id is not None and bot_id >= ge.HUMAN_ID_OFFSET:
+            member_id = bot_id - ge.HUMAN_ID_OFFSET
+            member_state = load_state(member_id)
+            ge.remove_from_crew(state, bot_id, member_state=member_state)
+            save_state(member_id, member_state)
+        else:
+            ge.remove_from_crew(state, bot_id)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world)
 
 
 @app.route('/api/travel', methods=['POST'])

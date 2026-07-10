@@ -337,6 +337,8 @@ def default_state(pimp_name="Big Boss"):
         "crewMembers": [],
         "crewAttackBans": {},
         "crewEmblem": "",
+        "crewLeaderUserId": None,
+        "crewLeaderName": "",
         "pendingCrewInvites": [],
         "thugsInHospital": 0,
         "thugsHospitalReadyAt": 0,
@@ -2030,6 +2032,8 @@ def tick_market(state, now):
 # ---------------------------------------------------------------------------
 
 def save_crew_name(state, name):
+    if state.get("crewLeaderUserId"):
+        raise GameError("You're already a member of a crew — only its leader can rename it")
     name = (name or "").strip()
     if not name:
         raise GameError("Crew name required")
@@ -2042,6 +2046,8 @@ CREW_EMBLEMS = ["🐍", "🦂", "🐺", "💀", "🔥", "👑", "🗡️", "🦅
 
 
 def set_crew_emblem(state, emblem, world):
+    if state.get("crewLeaderUserId"):
+        raise GameError("Only the crew leader can set the emblem")
     if emblem not in CREW_EMBLEMS:
         raise GameError("Invalid emblem")
     taken_by = next((crew for crew, e in world.get("botCrewEmblems", {}).items() if e == emblem), None)
@@ -2056,6 +2062,8 @@ CREW_ATTACK_BAN_MS = 60 * 60 * 1000  # 1 hour
 def invite_to_crew(state, bot_id, world):
     if not state["gang"]:
         raise GameError("Set a crew name first")
+    if state.get("crewLeaderUserId"):
+        raise GameError("Only the crew leader can invite new members")
     if len(state["crewMembers"]) >= 5:
         raise GameError("Crew is full (max 5)")
     if any(m["botId"] == bot_id for m in state["crewMembers"]):
@@ -2074,6 +2082,8 @@ def send_crew_invite_to_human(state, inviter_user_id, defender_state, defender_u
     separate panel on the Crew page)."""
     if not state["gang"]:
         raise GameError("Set a crew name first")
+    if state.get("crewLeaderUserId"):
+        raise GameError("Only the crew leader can invite new members")
     if len(state["crewMembers"]) >= 5:
         raise GameError("Crew is full (max 5)")
     target_id = HUMAN_ID_OFFSET + defender_user_id
@@ -2132,12 +2142,20 @@ def accept_crew_invite(state, my_user_id, inviter_state, from_user_id):
     # Whatever happens below, this invite is spent - never leave a stale one
     # a player can click on again.
     state["pendingCrewInvites"] = [inv for inv in pending if inv["fromUserId"] != from_user_id]
+    if state.get("gang"):
+        raise GameError("You're already in a crew — leave it before joining another")
     if len(inviter_state["crewMembers"]) >= 5:
         raise GameError("That crew is now full")
     my_human_id = HUMAN_ID_OFFSET + my_user_id
     if any(m["botId"] == my_human_id for m in inviter_state["crewMembers"]):
         raise GameError("Already in that crew")
     inviter_state["crewMembers"].append({"botId": my_human_id, "boss": state["name"], "gang": state.get("gang", "")})
+    # Mirror the crew name/leader onto the joining member's own state too -
+    # otherwise their own gang tag, leaderboard row, and Crew page never
+    # reflect that they actually joined anything.
+    state["gang"] = invite["fromGang"]
+    state["crewLeaderUserId"] = from_user_id
+    state["crewLeaderName"] = invite["fromName"]
     add_log(state, f"You joined {invite['fromName']}'s crew \"{invite['fromGang']}\".", "good")
     add_log(inviter_state, f"{state['name']} joined your crew.", "good")
     _resolve_crew_invite_messages(state, "from", HUMAN_ID_OFFSET + from_user_id, "accepted")
@@ -2145,13 +2163,19 @@ def accept_crew_invite(state, my_user_id, inviter_state, from_user_id):
     return {"gang": invite["fromGang"]}
 
 
-def remove_from_crew(state, bot_id):
+def remove_from_crew(state, bot_id, member_state=None):
     member = next((m for m in state["crewMembers"] if m["botId"] == bot_id), None)
     state["crewMembers"] = [m for m in state["crewMembers"] if m["botId"] != bot_id]
     if member:
         # Only the bot who just got dropped is protected from you for an
         # hour - nobody else in their crew is covered by this.
         state.setdefault("crewAttackBans", {})[str(bot_id)] = now_ms() + CREW_ATTACK_BAN_MS
+        # Free the removed member's own state too, or they'd be stuck
+        # permanently unable to create/join any crew ever again.
+        if member_state is not None:
+            member_state["gang"] = ""
+            member_state["crewLeaderUserId"] = None
+            member_state["crewLeaderName"] = ""
 
 
 # ---------------------------------------------------------------------------
