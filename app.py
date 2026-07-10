@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, session, send_from_directory, abort
+from flask_socketio import SocketIO, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import json
@@ -9,10 +10,31 @@ import game_engine as ge
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'game.db')
-ASSET_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.mp3', '.ogg'}
+ASSET_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.mp3', '.ogg', '.js'}
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pimp-empires-secret-key-change-in-production')
+
+# Push layer for instant notifications (DMs, crew invites, attacks) instead
+# of waiting on the client's poll interval. async_mode='threading' avoids
+# eventlet/gevent monkey-patching (which is finicky with sqlite3) - the
+# tradeoff is this only broadcasts correctly within a single worker
+# process, so deployment must run gunicorn with -w 1 (see systemd unit).
+socketio = SocketIO(app, async_mode='threading')
+
+
+@socketio.on('connect')
+def handle_socket_connect():
+    if 'user_id' not in session:
+        return False
+    join_room(str(session['user_id']))
+
+
+def notify_user(user_id, event, payload):
+    """Fire-and-forget push to a specific user's room, if they're connected.
+    Silently does nothing for offline users - they'll pick up the change on
+    their next poll or the next time they log in."""
+    socketio.emit(event, payload, room=str(user_id))
 
 
 # ---------------------------------------------------------------------------
@@ -545,6 +567,7 @@ def api_attack():
             defender_state = load_state(defender_id)
             result = ge.fight_human(state, defender_state, world)
             save_state(defender_id, defender_state)
+            notify_user(defender_id, 'attacked', {'text': f"{state['name']} just hit you for £{result.get('cashWon', 0)}!" if result.get('won') else f"{state['name']} tried to hit you and failed."})
         else:
             result = ge.fight_bot(state, target_id, world)
     except ge.GameError as e:
@@ -569,6 +592,7 @@ def api_bomb():
             defender_state = load_state(defender_id)
             result = ge.bomb_human(state, defender_state, factory_type)
             save_state(defender_id, defender_state)
+            notify_user(defender_id, 'attacked', {'text': f"{state['name']} just bombed your {factory_type} factories!"})
         else:
             result = ge.bomb_bot(state, target_id, factory_type, world)
     except ge.GameError as e:
@@ -635,6 +659,7 @@ def api_crew_invite():
             defender_state = load_state(defender_id)
             result = ge.send_crew_invite_to_human(state, user['id'], defender_state, defender_id)
             save_state(defender_id, defender_state)
+            notify_user(defender_id, 'dm', {'text': f"{state['name']} invited you to join their crew!"})
         else:
             result = ge.invite_to_crew(state, target_id, world)
     except ge.GameError as e:
@@ -654,6 +679,7 @@ def api_crew_invite_accept():
         inviter_state = load_state(from_user_id)
         result = ge.accept_crew_invite(state, user['id'], inviter_state, from_user_id)
         save_state(from_user_id, inviter_state)
+        notify_user(from_user_id, 'dm', {'text': f"{state['name']} joined your crew!"})
     except ge.GameError as e:
         return jsonify({'error': str(e)}), 400
     return action_response(user['id'], state, world, {'result': result})
@@ -744,6 +770,7 @@ def api_dm_send():
             defender_state = load_state(defender_id)
             result = ge.send_dm(state, to_id, text, world, defender_state=defender_state, sender_user_id=user['id'])
             save_state(defender_id, defender_state)
+            notify_user(defender_id, 'dm', {'text': f"New message from {state['name']}"})
         else:
             result = ge.send_dm(state, to_id, text, world)
     except ge.GameError as e:
@@ -763,4 +790,4 @@ if __name__ == '__main__':
     init_db()
     print('Pimp Empires server running on http://localhost:5000')
     print('SQLite database:', DB_PATH)
-    app.run(debug=True, port=5000)
+    socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)

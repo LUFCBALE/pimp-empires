@@ -2109,6 +2109,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="./socket.io.min.js"></script>
 <script>
 (function(){
   const REGEN_AMOUNT = 40;
@@ -2340,6 +2341,7 @@
       authDisplay.style.color = 'var(--teal)';
       authToggleBtn.textContent = '🔑 Sign Out';
       authToggleBtn.onclick = signOut;
+      connectLiveSocket();
     } else {
       // Show homepage, hide game
       if(homepage) homepage.style.display = 'flex';
@@ -2349,7 +2351,23 @@
       authDisplay.style.color = 'var(--gold)';
       authToggleBtn.textContent = '🔑 Sign Up / Login';
       authToggleBtn.onclick = () => showAuthModal(true);
+      disconnectLiveSocket();
     }
+  }
+
+  // Push layer: instant notifications for DMs/crew invites/attacks instead
+  // of waiting up to 20s for the next poll. Falls back gracefully - if the
+  // socket never connects (offline, blocked, etc.) the existing polling in
+  // syncState() still keeps everything eventually consistent.
+  let liveSocket = null;
+  function connectLiveSocket(){
+    if(liveSocket) return;
+    liveSocket = io();
+    liveSocket.on('dm', (data) => { if(data.text) showToast(`✉️ ${data.text}`); syncState(); });
+    liveSocket.on('attacked', (data) => { if(data.text) showToast(`💥 ${data.text}`); syncState(); });
+  }
+  function disconnectLiveSocket(){
+    if(liveSocket){ liveSocket.disconnect(); liveSocket = null; }
   }
 
   function showAuthModal(isSignUp){
