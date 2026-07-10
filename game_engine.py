@@ -2101,7 +2101,7 @@ def remove_from_crew(state, bot_id):
 
 
 # ---------------------------------------------------------------------------
-# DMs (cosmetic - canned bot replies)
+# DMs (canned replies from bots; real delivery for human-to-human)
 # ---------------------------------------------------------------------------
 
 CANNED_BOT_REPLIES = [
@@ -2116,17 +2116,37 @@ CANNED_BOT_REPLIES = [
 ]
 
 
-def send_dm(state, to_id, text, world):
+def send_dm(state, to_id, text, world, defender_state=None, sender_user_id=None):
+    """Sends a DM. Bot targets get an instant canned reply, appended to the
+    sender's own log only (cosmetic, one-sided). A real human target instead
+    gets the message delivered into their own message log (via
+    `defender_state`, loaded/saved by the caller) so they actually receive
+    it and can reply - no auto-reply, since a person answers for themselves."""
     text = (text or "").strip()
     if not text:
         raise GameError("Message can't be empty")
     now = now_ms()
-    state["messages"].append({"from": "player", "to": to_id, "text": text, "timestamp": now})
+    state["messages"].append({"from": "player", "to": to_id, "text": text, "timestamp": now, "read": True})
+
+    if defender_state is not None:
+        sender_id = HUMAN_ID_OFFSET + sender_user_id
+        defender_state.setdefault("messages", []).append({
+            "from": sender_id, "to": "player", "text": text, "timestamp": now, "read": False,
+        })
+        return {"reply": None}
+
     bot = next((b for b in world["bots"] if b["id"] == to_id), None)
+    reply = None
     if bot:
         reply = random.choice(CANNED_BOT_REPLIES)
-        state["messages"].append({"from": to_id, "to": "player", "text": reply, "timestamp": now + 1000})
-    return {"reply": reply if bot else None}
+        state["messages"].append({"from": to_id, "to": "player", "text": reply, "timestamp": now + 1000, "read": False})
+    return {"reply": reply}
+
+
+def mark_dm_read(state, from_id):
+    for m in state.get("messages", []):
+        if m.get("from") == from_id and m.get("to") == "player":
+            m["read"] = True
 
 
 # ---------------------------------------------------------------------------

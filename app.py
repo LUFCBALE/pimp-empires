@@ -723,7 +723,30 @@ def api_dm_send():
     data = request.get_json() or {}
     to_id = data.get('toId')
     text = data.get('text', '')
-    return handle_action(ge.send_dm, to_id, text, needs_world=True)
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        if to_id is not None and to_id >= ge.HUMAN_ID_OFFSET:
+            defender_id = to_id - ge.HUMAN_ID_OFFSET
+            if defender_id == user['id']:
+                raise ge.GameError("You can't message yourself")
+            defender_state = load_state(defender_id)
+            result = ge.send_dm(state, to_id, text, world, defender_state=defender_state, sender_user_id=user['id'])
+            save_state(defender_id, defender_state)
+        else:
+            result = ge.send_dm(state, to_id, text, world)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world, {'result': result})
+
+
+@app.route('/api/dm/read', methods=['POST'])
+@login_required
+def api_dm_read():
+    data = request.get_json() or {}
+    from_id = data.get('fromId')
+    return handle_action(ge.mark_dm_read, from_id)
 
 
 if __name__ == '__main__':

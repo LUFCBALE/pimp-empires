@@ -106,6 +106,12 @@
   }
   .sidebar-link span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .sidebar-link:hover{color:#fff; background:var(--bg-2); border-left-color:var(--panel-line);}
+  .nav-badge{
+    margin-left:auto; background:var(--danger, #ff4d4d); color:#fff;
+    font-size:0.65rem; font-weight:700; line-height:1;
+    min-width:18px; height:18px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center; padding:0 5px; flex-shrink:0;
+  }
   .sidebar-link.active{color:#fff; background:rgba(255,47,120,0.1); border-left-color:var(--hot);}
 
   /* ---- Slim top strip: world time / game countdown / account ---- */
@@ -3612,6 +3618,26 @@
 
     renderHappinessOverlay();
     updateWorkLocationUI();
+    renderNavBadges();
+  }
+
+  function renderNavBadges(){
+    const unreadDMs = (state.messages || []).filter(m => m.to === 'player' && !m.read).length;
+    const pendingInvites = (state.pendingCrewInvites || []).length;
+    const totalUnread = unreadDMs + pendingInvites;
+    const msgBtn = document.querySelector('.sidebar-link[data-page="page-messages"]');
+    if(!msgBtn) return;
+    let badge = msgBtn.querySelector('.nav-badge');
+    if(totalUnread > 0){
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'nav-badge';
+        msgBtn.appendChild(badge);
+      }
+      badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+    } else if(badge){
+      badge.remove();
+    }
   }
 
   function renderStore(){
@@ -4240,6 +4266,14 @@
     setTimeout(() => history.scrollTop = history.scrollHeight, 50);
 
     modal.classList.remove('hidden');
+
+    // Opening a conversation clears its unread badge - only bother the
+    // server if there's actually something unread to clear.
+    if(conversation.some(m => m.from === botId && !m.read)){
+      apiCall('/api/dm/read', {fromId: botId})
+        .then(() => { renderNavBadges(); if(document.getElementById('page-messages').classList.contains('active')) renderMessages(); })
+        .catch(() => {});
+    }
 
     // Setup send handler - server appends the player's message plus a
     // canned bot reply, then returns the updated state.
