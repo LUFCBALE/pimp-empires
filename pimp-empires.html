@@ -376,6 +376,9 @@
   .lb-row.lb-you{background:rgba(255,47,120,0.1); border-radius:8px;}
   .lb-rank{color:var(--text-dim); font-weight:700;}
   .lb-name{color:#fff; font-weight:600;}
+  .lb-presence-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:2px; vertical-align:middle;}
+  .lb-presence-dot.online{background:#2fe08a; box-shadow:0 0 6px rgba(47,224,138,0.8);}
+  .lb-presence-dot.offline{background:var(--text-dim); opacity:0.5;}
   .lb-gang{color:var(--text-dim); font-weight:400;}
   .lb-tab-btn{opacity:0.55; padding:10px;}
   .lb-tab-btn.active{opacity:1;}
@@ -3058,6 +3061,7 @@
       return {
         isYou: false,
         isHuman: !!b.isHuman,
+        isOnline: !!b.isOnline,
         botId: b.id,
         name: b.boss,
         // Recruited bots fly your crew's colors, not their old street gang
@@ -3113,7 +3117,7 @@
       <div class="lb-row ${r.isYou ? 'lb-you' : ''}">
         <div class="lb-rank">#${String(i + 1).padStart(2, '0')} ${r.rankArrow}</div>
         <div class="lb-name">
-          <span>${escapeHtml(r.name)}${r.isHuman ? ' <span style="color:var(--teal); font-size:0.75rem; font-weight:700;" title="Real player">🧑</span>' : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
+          <span>${escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
         </div>
         <div class="lb-gang">${r.gang ? `${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>

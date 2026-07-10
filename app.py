@@ -26,12 +26,39 @@ app.secret_key = os.environ.get('SECRET_KEY', 'pimp-empires-secret-key-change-in
 # needed here anyway - the connect handler only reads session['user_id'].
 socketio = SocketIO(app, async_mode='threading', manage_session=False)
 
+# Presence tracking for the Leaderboard's online indicator. Keyed by engine.io
+# sid so a disconnect (which has no session/cookies available) can still be
+# tied back to a user_id; counted per-user (not just a set) so multiple open
+# tabs don't flip someone offline the moment one of them closes. In-memory
+# only - safe because Socket.IO room broadcasts already require a single
+# worker process (see note above), so there's only ever one copy of this.
+_sid_to_user = {}
+_online_counts = {}
+
 
 @socketio.on('connect')
 def handle_socket_connect():
     if 'user_id' not in session:
         return False
-    join_room(str(session['user_id']))
+    uid = session['user_id']
+    _sid_to_user[request.sid] = uid
+    _online_counts[uid] = _online_counts.get(uid, 0) + 1
+    join_room(str(uid))
+
+
+@socketio.on('disconnect')
+def handle_socket_disconnect():
+    uid = _sid_to_user.pop(request.sid, None)
+    if uid is not None:
+        remaining = _online_counts.get(uid, 1) - 1
+        if remaining <= 0:
+            _online_counts.pop(uid, None)
+        else:
+            _online_counts[uid] = remaining
+
+
+def is_user_online(user_id):
+    return user_id in _online_counts
 
 
 def notify_user(user_id, event, payload):
@@ -210,7 +237,9 @@ def build_human_targets(exclude_user_id):
             s = json.loads(row['state_json'])
         except (TypeError, ValueError):
             continue
-        humans.append(ge.human_as_bot(row['user_id'], row['pimp_name'], s))
+        h = ge.human_as_bot(row['user_id'], row['pimp_name'], s)
+        h['isOnline'] = is_user_online(row['user_id'])
+        humans.append(h)
     return humans
 
 
