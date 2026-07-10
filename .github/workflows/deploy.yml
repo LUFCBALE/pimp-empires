@@ -1,0 +1,24 @@
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 51.195.255.205
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/pimp-empires-app
+            git fetch origin main
+            git reset --hard origin/main
+            ./venv/bin/pip install -q -r requirements.txt
+            sudo systemctl restart pimp-empires
