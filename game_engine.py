@@ -1000,6 +1000,27 @@ def log_attack(world, attacker_name, attacker_gang, attacker_emblem, defender_na
         world["globalAttackLog"] = log[-GLOBAL_ATTACK_LOG_MAX:]
 
 
+# Caps repeat hits on the same target so one player can't farm another
+# (or an alt) over and over in a short window. Keyed per-attacker-per-target
+# inside the attacker's own state, so it never affects anyone else's ability
+# to attack that same target.
+ATTACK_RATE_LIMIT_COUNT = 10
+ATTACK_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
+
+
+def check_attack_rate_limit(state, target_id, target_name=None):
+    now = now_ms()
+    history = state.setdefault("attackHistory", {})
+    key = str(target_id)
+    recent = [t for t in history.get(key, []) if now - t < ATTACK_RATE_LIMIT_WINDOW_MS]
+    if len(recent) >= ATTACK_RATE_LIMIT_COUNT:
+        wait_min = math.ceil((ATTACK_RATE_LIMIT_WINDOW_MS - (now - min(recent))) / 60000)
+        who = target_name or "this target"
+        raise GameError(f"You've hit {who} too many times recently — try again in {wait_min} min")
+    recent.append(now)
+    history[key] = recent
+
+
 def fight_bot(state, bot_id, world):
     if state["location"] == "London":
         raise GameError("You can't attack anyone at home turf")
@@ -1014,6 +1035,8 @@ def fight_bot(state, bot_id, world):
     if now < ban_until:
         mins_left = math.ceil((ban_until - now) / 60000)
         raise GameError(f"You can't attack {bot['boss']} for another {mins_left} min (you just dropped them from your crew)")
+
+    check_attack_rate_limit(state, bot["id"], bot["boss"])
 
     state["turns"] -= 30
     log_attack(
@@ -1148,7 +1171,7 @@ def human_as_bot(user_id, pimp_name, s):
     }
 
 
-def fight_human(state, defender, world):
+def fight_human(state, defender, world, defender_target_id=None):
     """Attack another real player. Mirrors fight_bot exactly, but the
     raidable pot is the defender's liquid `cash` (their `bank` stays
     protected, same as a bot's `cash` staying untouched while `hoeCash`
@@ -1159,6 +1182,9 @@ def fight_human(state, defender, world):
         raise GameError("Not enough turns (need 30)")
     if defender["location"] != state["location"]:
         raise GameError("Target not found in this city")
+
+    if defender_target_id is not None:
+        check_attack_rate_limit(state, defender_target_id, defender["name"])
 
     now = now_ms()
     state["turns"] -= 30

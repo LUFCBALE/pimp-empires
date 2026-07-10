@@ -598,7 +598,7 @@ def api_attack():
             if defender_id == user['id']:
                 raise ge.GameError("You can't attack yourself")
             defender_state = load_state(defender_id)
-            result = ge.fight_human(state, defender_state, world)
+            result = ge.fight_human(state, defender_state, world, defender_target_id=target_id)
             save_state(defender_id, defender_state)
             notify_user(defender_id, 'attacked', {'text': f"{state['name']} just hit you for £{result.get('cashWon', 0)}!" if result.get('won') else f"{state['name']} tried to hit you and failed."})
         else:
