@@ -2042,8 +2042,10 @@ def invite_to_crew(state, bot_id, world):
 
 def send_crew_invite_to_human(state, inviter_user_id, defender_state, defender_user_id):
     """Unlike recruiting a bot (instant, no say in it), a real player has to
-    accept before they actually join - this just drops a pending invite on
-    their side for them to respond to."""
+    accept before they actually join - this drops a pending invite on their
+    side for them to respond to, AND surfaces the same invite as an
+    actionable message in their DM thread with the inviter (not just a
+    separate panel on the Crew page)."""
     if not state["gang"]:
         raise GameError("Set a crew name first")
     if len(state["crewMembers"]) >= 5:
@@ -2062,14 +2064,38 @@ def send_crew_invite_to_human(state, inviter_user_id, defender_state, defender_u
     })
     add_log(state, f"Sent a crew invite to {defender_state['name']}.", "info")
     add_log(defender_state, f"{state['name']} invited you to join \"{state['gang']}\".", "info")
+
+    now = now_ms()
+    inviter_human_id = HUMAN_ID_OFFSET + inviter_user_id
+    defender_state.setdefault("messages", []).append({
+        "from": inviter_human_id, "to": "player",
+        "text": f'Invited you to join "{state["gang"]}"',
+        "timestamp": now, "read": False,
+        "kind": "crewInvite", "fromUserId": inviter_user_id, "gang": state["gang"],
+    })
+    state["messages"].append({
+        "from": "player", "to": target_id,
+        "text": f'Invited {defender_state["name"]} to join "{state["gang"]}"',
+        "timestamp": now, "read": True,
+        "kind": "crewInvite",
+    })
     return {"sentTo": defender_state["name"]}
 
 
-def decline_crew_invite(state, from_user_id):
+def _resolve_crew_invite_messages(state, from_id_field, match_id, status):
+    for m in state.get("messages", []):
+        if m.get("kind") == "crewInvite" and m.get(from_id_field) == match_id and not m.get("status"):
+            m["status"] = status
+            m["read"] = True
+
+
+def decline_crew_invite(state, my_user_id, inviter_state, from_user_id):
     pending = state.get("pendingCrewInvites", [])
     if not any(inv["fromUserId"] == from_user_id for inv in pending):
         raise GameError("No such invite")
     state["pendingCrewInvites"] = [inv for inv in pending if inv["fromUserId"] != from_user_id]
+    _resolve_crew_invite_messages(state, "from", HUMAN_ID_OFFSET + from_user_id, "declined")
+    _resolve_crew_invite_messages(inviter_state, "to", HUMAN_ID_OFFSET + my_user_id, "declined")
 
 
 def accept_crew_invite(state, my_user_id, inviter_state, from_user_id):
@@ -2088,6 +2114,8 @@ def accept_crew_invite(state, my_user_id, inviter_state, from_user_id):
     inviter_state["crewMembers"].append({"botId": my_human_id, "boss": state["name"], "gang": state.get("gang", "")})
     add_log(state, f"You joined {invite['fromName']}'s crew \"{invite['fromGang']}\".", "good")
     add_log(inviter_state, f"{state['name']} joined your crew.", "good")
+    _resolve_crew_invite_messages(state, "from", HUMAN_ID_OFFSET + from_user_id, "accepted")
+    _resolve_crew_invite_messages(inviter_state, "to", my_human_id, "accepted")
     return {"gang": invite["fromGang"]}
 
 

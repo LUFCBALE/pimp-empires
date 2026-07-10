@@ -663,7 +663,17 @@ def api_crew_invite_accept():
 @login_required
 def api_crew_invite_decline():
     data = request.get_json() or {}
-    return handle_action(ge.decline_crew_invite, data.get('fromUserId'))
+    from_user_id = data.get('fromUserId')
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        inviter_state = load_state(from_user_id)
+        result = ge.decline_crew_invite(state, user['id'], inviter_state, from_user_id)
+        save_state(from_user_id, inviter_state)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world, {'result': result})
 
 
 @app.route('/api/crew/remove', methods=['POST'])
