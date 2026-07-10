@@ -151,6 +151,11 @@
   .ts-stat:last-child{border-right:none;}
   .ts-stat .ts-icon{font-size:0.85rem; flex-shrink:0;}
   .ts-stat .ts-main{min-width:0; overflow:hidden;}
+  .ts-stat .ts-label{
+    font-family:'IBM Plex Mono',monospace; font-size:0.58rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--text-dim); line-height:1.1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
   .ts-stat .ts-value{
     font-family:'Anton',sans-serif; font-size:0.95rem; letter-spacing:0.01em; line-height:1.1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -1198,6 +1203,7 @@
         <div class="ts-stat cash">
           <span class="ts-icon">💰</span>
           <div class="ts-main">
+            <div class="ts-label">Cash</div>
             <div class="ts-value" id="statCash">£0</div>
             <div class="ts-sub" id="statBank">banked: £0</div>
           </div>
@@ -1205,6 +1211,7 @@
         <div class="ts-stat hoes">
           <span class="ts-icon">👠</span>
           <div class="ts-main">
+            <div class="ts-label">Hoes</div>
             <div class="ts-value" id="statHoes">0</div>
             <div class="ts-sub" id="statHoesSub">earning per shift</div>
           </div>
@@ -1212,6 +1219,7 @@
         <div class="ts-stat thugs">
           <span class="ts-icon">🔱</span>
           <div class="ts-main">
+            <div class="ts-label">Thugs</div>
             <div class="ts-value" id="statThugs">0</div>
             <div class="ts-sub">keeps the heat off</div>
           </div>
@@ -1219,6 +1227,7 @@
         <div class="ts-stat turns">
           <span class="ts-icon">⏳</span>
           <div class="ts-main">
+            <div class="ts-label">Turns</div>
             <div class="ts-value" id="statTurns">0 / 0</div>
             <div class="ts-sub" id="turnTimer">next in 20:00</div>
           </div>
