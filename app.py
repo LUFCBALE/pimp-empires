@@ -20,7 +20,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'pimp-empires-secret-key-change-in
 # eventlet/gevent monkey-patching (which is finicky with sqlite3) - the
 # tradeoff is this only broadcasts correctly within a single worker
 # process, so deployment must run gunicorn with -w 1 (see systemd unit).
-socketio = SocketIO(app, async_mode='threading')
+# manage_session=False: Flask-SocketIO's own session-copy mechanism (for
+# writing to flask.session from within socket handlers) is broken on
+# Flask 3.1+ (RequestContext.session became a read-only property). Not
+# needed here anyway - the connect handler only reads session['user_id'].
+socketio = SocketIO(app, async_mode='threading', manage_session=False)
 
 
 @socketio.on('connect')
