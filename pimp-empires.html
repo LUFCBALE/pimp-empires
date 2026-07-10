@@ -114,11 +114,17 @@
   }
   .sidebar-link.active{color:#fff; background:rgba(255,47,120,0.1); border-left-color:var(--hot);}
 
-  /* ---- Slim top strip: world time / game countdown / account ---- */
+  /* ---- Slim top strip: world time / game countdown / account (row 1),
+     core stats (row 2) ---- */
   .top-strip{
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    display:flex; flex-direction:column;
     font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-dim);
-    padding:6px 12px; margin-bottom:14px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px;
+    margin-bottom:14px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px;
+    overflow:hidden;
+  }
+  .top-strip-row1{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    padding:6px 12px;
   }
   .top-strip b{color:var(--gold); font-weight:700;}
   .top-strip-info{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
@@ -130,6 +136,39 @@
   }
   .top-strip-account button:hover{border-color:var(--hot); color:#fff;}
   .top-strip-account #buyTurnsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
+
+  .top-strip-stats{
+    display:grid; grid-template-columns:repeat(4,1fr);
+    border-top:1px solid var(--panel-line);
+    background:var(--panel);
+  }
+  .ts-stat{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:6px 8px;
+    border-right:1px solid var(--panel-line);
+    min-width:0;
+  }
+  .ts-stat:last-child{border-right:none;}
+  .ts-stat .ts-icon{font-size:0.85rem; flex-shrink:0;}
+  .ts-stat .ts-main{min-width:0; overflow:hidden;}
+  .ts-stat .ts-value{
+    font-family:'Anton',sans-serif; font-size:0.95rem; letter-spacing:0.01em; line-height:1.1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ts-stat .ts-sub{
+    font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--text-dim); line-height:1.1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ts-stat.cash .ts-value{color:var(--gold);}
+  .ts-stat.hoes .ts-value{color:var(--hot);}
+  .ts-stat.thugs .ts-value{color:#c9adf5;}
+  .ts-stat.turns .ts-value{color:var(--teal);}
+  @media (max-width:640px){
+    .top-strip-stats{grid-template-columns:repeat(2,1fr);}
+    .ts-stat:nth-child(2){border-right:none;}
+    .ts-stat{border-bottom:1px solid var(--panel-line);}
+    .ts-stat:nth-last-child(-n+2){border-bottom:none;}
+  }
 
   /* ---- Top bar: logo + stats + work-the-block widget ---- */
   .topbar{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:20px;}
@@ -188,7 +227,6 @@
   .player-card .nw-item{display:flex; justify-content:space-between; align-items:center;}
   .player-card .nw-label{color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em;}
   .player-card .nw-value{color:var(--gold); font-weight:700; font-size:12px;}
-  .topbar-left .stats{grid-template-columns:repeat(2,1fr); margin-bottom:0;}
   .topbar .work-panel{width:100%; max-width:420px;}
   .work-block-col{display:flex; flex-direction:column; gap:12px; width:100%; max-width:420px;}
 
@@ -267,36 +305,6 @@
     81%{opacity:0.85;}
   }
   .tagline{color:var(--text-dim); font-family:'IBM Plex Mono',monospace; font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; margin-top:6px;}
-
-  /* ---- Stat bar ---- */
-  .stats{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    margin-bottom:20px;
-  }
-  .stat{
-    background:var(--card-bg);
-    border:2px solid var(--card-border);
-    border-radius:10px;
-    padding:12px 14px;
-    position:relative;
-    overflow:hidden;
-  }
-  .stat::before{
-    content:'';
-    position:absolute; top:0; left:0; right:0; height:2px;
-    background:var(--accent, var(--hot));
-  }
-  .stat .label{font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim);}
-  .stat .value{font-family:'Anton',sans-serif; font-size:1.5rem; letter-spacing:0.02em; margin-top:2px;}
-  .stat.cash{--accent:var(--gold);} .stat.cash .value{color:var(--gold);}
-  .stat.hoes{--accent:var(--hot);} .stat.hoes .value{color:var(--hot);}
-  .stat.hoes{cursor:pointer; transition:border-color .15s ease, transform .12s ease;}
-  .stat.hoes:hover{border-color:var(--hot); transform:translateY(-1px);}
-  .stat.thugs{--accent:var(--purple);} .stat.thugs .value{color:#c9adf5;}
-  .stat.turns{--accent:var(--teal);} .stat.turns .value{color:var(--teal);}
-  .stat .sub{font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--text-dim); margin-top:4px;}
 
   /* ---- Quick supplies panel (hoe happiness / thugs morale / bribe) ---- */
   .quick-supplies-panel{
@@ -504,7 +512,7 @@
   /* ---- Main grid ---- */
   .grid{display:grid; grid-template-columns:1.1fr 1fr; gap:18px;}
   .grid.grid-single{grid-template-columns:1fr;}
-  @media (max-width:760px){ .grid{grid-template-columns:1fr;} .stats{grid-template-columns:repeat(2,1fr);} .store-grid{grid-template-columns:1fr !important;} .nav-buttons{grid-template-columns:1fr;} }
+  @media (max-width:760px){ .grid{grid-template-columns:1fr;} .store-grid{grid-template-columns:1fr !important;} .nav-buttons{grid-template-columns:1fr;} }
 
   /* ---- Store ---- */
   .store-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
@@ -1171,30 +1179,56 @@
 
   <div class="wrap">
     <div class="top-strip">
-      <div class="top-strip-info">
-        <span id="worldTime">00:00 GMT</span>
-        <span>·</span>
-        <span>Game ends in <b id="gameCountdown">15d 0h 0m</b></span>
-        <span>·</span>
-        <span>Bonus in <b id="bonusCountdown">23h 45m 30s</b></span>
+      <div class="top-strip-row1">
+        <div class="top-strip-info">
+          <span id="worldTime">00:00 GMT</span>
+          <span>·</span>
+          <span>Game ends in <b id="gameCountdown">15d 0h 0m</b></span>
+          <span>·</span>
+          <span>Bonus in <b id="bonusCountdown">23h 45m 30s</b></span>
+        </div>
+        <div class="top-strip-account">
+          <span id="authDisplay">Not logged in</span>
+          <button id="authToggleBtn">Sign Up / Login</button>
+          <button id="buyTurnsBtn">💳 500 Turns for £4</button>
+          <span id="buyTurnsCountdown"></span>
+        </div>
       </div>
-      <div class="top-strip-account">
-        <span id="authDisplay">Not logged in</span>
-        <button id="authToggleBtn">Sign Up / Login</button>
-        <button id="buyTurnsBtn">💳 500 Turns for £4</button>
-        <span id="buyTurnsCountdown"></span>
+      <div class="top-strip-stats">
+        <div class="ts-stat cash">
+          <span class="ts-icon">💰</span>
+          <div class="ts-main">
+            <div class="ts-value" id="statCash">£0</div>
+            <div class="ts-sub" id="statBank">banked: £0</div>
+          </div>
+        </div>
+        <div class="ts-stat hoes">
+          <span class="ts-icon">👠</span>
+          <div class="ts-main">
+            <div class="ts-value" id="statHoes">0</div>
+            <div class="ts-sub" id="statHoesSub">earning per shift</div>
+          </div>
+        </div>
+        <div class="ts-stat thugs">
+          <span class="ts-icon">🔱</span>
+          <div class="ts-main">
+            <div class="ts-value" id="statThugs">0</div>
+            <div class="ts-sub">keeps the heat off</div>
+          </div>
+        </div>
+        <div class="ts-stat turns">
+          <span class="ts-icon">⏳</span>
+          <div class="ts-main">
+            <div class="ts-value" id="statTurns">0 / 0</div>
+            <div class="ts-sub" id="turnTimer">next in 20:00</div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="topbar">
       <div class="topbar-left">
-        <div class="stats">
-          <div class="stat cash"><div class="label">Cash on hand</div><div class="value" id="statCash">£0</div><div class="sub" id="statBank">banked: £0</div></div>
-          <div class="stat hoes"><div class="label">Hoes on the roster</div><div class="value" id="statHoes">0</div><div class="sub" id="statHoesSub">earning per shift</div></div>
-          <div class="stat thugs"><div class="label">Thugs</div><div class="value" id="statThugs">0</div><div class="sub">keeps the heat off</div></div>
-          <div class="stat turns"><div class="label">Turns</div><div class="value" id="statTurns">0 / 0</div><div class="sub" id="turnTimer">next in 20:00</div></div>
-        </div>
-        <div class="terminal" id="terminal" style="margin-top:12px;">
+        <div class="terminal" id="terminal">
           <div class="title-row"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;street_feed.log</div>
           <div id="logBody"></div>
         </div>
