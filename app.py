@@ -243,6 +243,58 @@ def build_human_targets(exclude_user_id):
     return humans
 
 
+def build_crew_roster(user_id, state, world):
+    """Full crew roster (leader + every member, each with live stats).
+    Only the crew LEADER's own state_json carries a complete crewMembers
+    list - a member's own state only knows the crew's name and who leads
+    it - so if the viewer is a member, this reconstructs the roster by
+    loading the leader's saved state (and, transitively, every other human
+    member's) rather than trusting the viewer's own (empty) copy."""
+    if not state.get('gang'):
+        return {'emblem': '', 'members': []}
+
+    leader_id = state.get('crewLeaderUserId')
+    if leader_id is None:
+        leader_state, leader_user_id = state, user_id
+    else:
+        leader_state, leader_user_id = load_state(leader_id), leader_id
+
+    def human_entry(member_user_id, member_state, is_leader):
+        return {
+            'botId': ge.HUMAN_ID_OFFSET + member_user_id,
+            'name': member_state.get('name', ''),
+            'isYou': member_user_id == user_id,
+            'isLeader': is_leader,
+            'hoes': member_state.get('hoes', 0),
+            'thugs': member_state.get('thugs', 0),
+            'cars': member_state.get('cadillacs', 0),
+            'netWorth': ge.total_net_worth(member_state),
+        }
+
+    members = [human_entry(leader_user_id, leader_state, True)]
+    for m in leader_state.get('crewMembers', []):
+        bot_id = m['botId']
+        if bot_id >= ge.HUMAN_ID_OFFSET:
+            member_user_id = bot_id - ge.HUMAN_ID_OFFSET
+            member_state = state if member_user_id == user_id else (leader_state if member_user_id == leader_user_id else load_state(member_user_id))
+            members.append(human_entry(member_user_id, member_state, False))
+        else:
+            bot = next((b for b in world.get('bots', []) if b['id'] == bot_id), None)
+            if not bot:
+                continue
+            members.append({
+                'botId': bot_id,
+                'name': bot['boss'],
+                'isYou': False,
+                'isLeader': False,
+                'hoes': bot.get('hoes', 0),
+                'thugs': bot.get('thugs', 0),
+                'cars': bot.get('cadillacs', 0),
+                'netWorth': ge.bot_net_worth(bot),
+            })
+    return {'emblem': leader_state.get('crewEmblem', ''), 'members': members}
+
+
 def attach_world_view(state, world, user_id):
     """Mutates `state` in place to carry the shared bots plus every other
     real player for display - call this AFTER state has been saved, since
@@ -250,6 +302,7 @@ def attach_world_view(state, world, user_id):
     state['bots'] = world.get('bots', []) + build_human_targets(user_id)
     state['botCrewEmblems'] = world.get('botCrewEmblems', {})
     state['globalAttackLog'] = world.get('globalAttackLog', [])
+    state['crewRoster'] = build_crew_roster(user_id, state, world)
     return state
 
 

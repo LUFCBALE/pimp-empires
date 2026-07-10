@@ -3078,8 +3078,9 @@
       bots = bots.filter(b => b.city === state.location);
     }
 
+    const crewRosterIds = new Set(((state.crewRoster && state.crewRoster.members) || []).map(m => m.botId));
     const rows = bots.map(b => {
-      const inYourCrew = state.crewMembers && state.crewMembers.find(m => m.botId === b.id);
+      const inYourCrew = crewRosterIds.has(b.id);
       const botNW = botNetWorth(b);
       const isInRange = b.city === state.location && botNW >= minAttackNW && botNW <= maxAttackNW;
       return {
@@ -3090,7 +3091,7 @@
         name: b.boss,
         // Recruited bots fly your crew's colors, not their old street gang
         gang: inYourCrew ? (state.gang || '') : (b.gang || ''),
-        emblem: inYourCrew ? (state.crewEmblem || '') : ((state.botCrewEmblems || {})[b.gang] || ''),
+        emblem: inYourCrew ? ((state.crewRoster && state.crewRoster.emblem) || '') : ((state.botCrewEmblems || {})[b.gang] || ''),
         inYourCrew: !!inYourCrew,
         city: b.city,
         hoes: b.hoes,
@@ -3106,7 +3107,7 @@
       botId: null,
       name: state.name || 'Big Boss',
       gang: state.gang || '',
-      emblem: state.crewEmblem || '',
+      emblem: (state.crewRoster && state.crewRoster.emblem) || '',
       city: state.location,
       hoes: state.hoes,
       thugs: state.thugs,
@@ -3174,8 +3175,10 @@
 
     // A bot can only belong to one crew at a time - once you've recruited
     // them into your own crew, they no longer count toward their old
-    // street gang's totals below.
-    const recruitedIds = new Set((state.crewMembers || []).map(m => m.botId));
+    // street gang's totals below. The full roster (server-computed, since
+    // only the leader's own state tracks it) is what tells us who's taken.
+    const roster = (state.crewRoster && state.crewRoster.members) || [];
+    const recruitedIds = new Set(roster.map(m => m.botId));
 
     const groups = {};
     state.bots.forEach(b => {
@@ -3191,21 +3194,18 @@
 
     // Your own personal crew (Crew page > Crew Name + recruited members) is a
     // separate system from the bots' street-gang affiliations above - add it
-    // in as its own competing entry so it shows up here too. Only do this as
-    // the crew LEADER - a mere member's own crewMembers list is empty, so
-    // this would otherwise overwrite the correctly-aggregated group above
-    // with a wrong 1-person total.
-    if(state.gang && !state.crewLeaderUserId){
-      const playerNW = totalNetWorth();
-      const mine = {name: state.gang, emblem: state.crewEmblem || '', members: 1, hoes: state.hoes, thugs: state.thugs, cars: state.cadillacs || 0, netWorth: playerNW, isYours: true};
-      (state.crewMembers || []).forEach(m => {
-        const bot = state.bots.find(b => b.id === m.botId);
-        if(!bot) return;
+    // in as its own competing entry so it shows up here too, whether you're
+    // the leader or just a member of it.
+    if(state.gang && roster.length){
+      const mine = {name: state.gang, emblem: (state.crewRoster && state.crewRoster.emblem) || '', members: 0, hoes: 0, thugs: 0, cars: 0, netWorth: 0, isYours: true};
+      roster.forEach(m => {
         mine.members += 1;
-        mine.hoes += bot.hoes;
-        mine.thugs += bot.thugs;
-        mine.cars += (bot.cadillacs || 0);
-        mine.netWorth += botNetWorth(bot);
+        // Use live local numbers for your own row so it doesn't lag a
+        // server round-trip behind whatever you just did.
+        mine.hoes += m.isYou ? state.hoes : m.hoes;
+        mine.thugs += m.isYou ? state.thugs : m.thugs;
+        mine.cars += m.isYou ? (state.cadillacs || 0) : m.cars;
+        mine.netWorth += m.isYou ? totalNetWorth() : m.netWorth;
       });
       groups[state.gang] = mine;
     }
@@ -3599,12 +3599,10 @@
     const playerNW = totalNetWorth();
     document.getElementById('playerNWValue').textContent = fmtMoney(playerNW);
 
-    if(state.gang && state.crewMembers && state.crewMembers.length > 0){
-      let crewTotal = playerNW;
-      state.crewMembers.forEach(m => {
-        const bot = state.bots.find(b => b.id === m.botId);
-        if(bot) crewTotal += botNetWorth(bot);
-      });
+    const dashRoster = (state.crewRoster && state.crewRoster.members) || [];
+    if(state.gang && dashRoster.length > 0){
+      let crewTotal = 0;
+      dashRoster.forEach(m => { crewTotal += m.isYou ? playerNW : m.netWorth; });
       document.getElementById('crewNWValue').textContent = fmtMoney(crewTotal);
       document.getElementById('crewNWContainer').style.display = 'flex';
     } else {
@@ -4522,55 +4520,46 @@
   }
 
   function renderCrewLeaderboard(){
-    if(!state.gang){
-      const name = document.getElementById('crewLBName');
-      const members = document.getElementById('crewLBMembers');
-      const nw = document.getElementById('crewLBNetworth');
-      const list = document.getElementById('crewLBList');
+    const roster = (state.crewRoster && state.crewRoster.members) || [];
+    const name = document.getElementById('crewLBName');
+    const membersEl = document.getElementById('crewLBMembers');
+    const nw = document.getElementById('crewLBNetworth');
+    const list = document.getElementById('crewLBList');
+
+    if(!state.gang || roster.length === 0){
       if(name) name.textContent = 'No crew yet';
-      if(members) members.textContent = '0';
+      if(membersEl) membersEl.textContent = '0';
       if(nw) nw.textContent = '£0';
       if(list) list.innerHTML = '<div class="hint">Create a crew name and invite members to see their combined power!</div>';
       return;
     }
 
-    const playerNW = totalNetWorth();
-    let crewTotal = playerNW;
-    const crewMembers = [{
-      name: state.name || 'Big Boss',
-      nw: playerNW,
-      isYou: true,
-    }];
-
-    state.crewMembers.forEach(m => {
-      const bot = state.bots.find(b => b.id === m.botId);
-      if(bot){
-        const botNW = botNetWorth(bot);
-        crewTotal += botNW;
-        crewMembers.push({
-          name: bot.boss,
-          nw: botNW,
-          isYou: false,
-          bombs: bot.bombs || 0,
-          cars: bot.cadillacs || 0,
-          guns: bot.gunsOwned || 0,
-        });
-      }
+    let crewTotal = 0;
+    const crewMembers = roster.map(m => {
+      // Use live local numbers for your own row so it doesn't lag a
+      // server round-trip behind whatever you just did.
+      const memberNw = m.isYou ? totalNetWorth() : m.netWorth;
+      crewTotal += memberNw;
+      return {
+        name: m.name,
+        nw: memberNw,
+        isYou: !!m.isYou,
+        cars: m.isYou ? (state.cadillacs || 0) : m.cars,
+      };
     });
 
-    document.getElementById('crewLBName').textContent = state.gang;
-    document.getElementById('crewLBMembers').textContent = crewMembers.length;
-    document.getElementById('crewLBNetworth').textContent = fmtMoney(crewTotal);
+    name.textContent = state.gang;
+    membersEl.textContent = crewMembers.length;
+    nw.textContent = fmtMoney(crewTotal);
 
     // Sort by networth highest first
     crewMembers.sort((a, b) => b.nw - a.nw);
 
-    const list = document.getElementById('crewLBList');
     list.innerHTML = crewMembers.map(m => `
       <div class="crew-lb-row ${m.isYou ? 'you' : ''}">
         <div style="flex:1;">
           <div class="crew-lb-member">${escapeHtml(m.name)}${m.isYou ? ' (You)' : ''}</div>
-          ${!m.isYou ? `<div style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">💣 ${Math.floor(m.bombs)} | 🚗 ${Math.floor(m.cars)} | 🔫 ${Math.floor(m.guns)}</div>` : ''}
+          ${!m.isYou ? `<div style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">🚗 ${Math.floor(m.cars)}</div>` : ''}
         </div>
         <div class="crew-lb-nw">${fmtMoney(m.nw)}</div>
       </div>
