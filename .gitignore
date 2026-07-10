@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+game.db
+game.db.bak.*
+.env
+.claude/
+venv/
