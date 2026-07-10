@@ -5151,6 +5151,13 @@
     const fn = PAGE_RENDERERS[pageId];
     if(fn) fn();
 
+    // Leaderboard pages show everyone else's progress, which can change
+    // between polls - paint instantly with whatever's cached, then refresh
+    // right away instead of waiting up to 5s for the next background tick.
+    if(pageId === 'page-leaderboard' || pageId === 'page-crew-leaderboard'){
+      syncState();
+    }
+
     // The Informer page gets its own background, overriding the current
     // city - restore the real city image the moment you leave.
     const bgScene = document.querySelector('.bg-scene');
