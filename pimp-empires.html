@@ -187,11 +187,14 @@
 
   @media (max-width:900px){
     .app-shell{flex-direction:column;}
-    .sidebar{
-      width:100%; position:static; transform:none; flex-direction:row; align-items:center; gap:10px;
-      overflow-x:auto;
+    .left-sidebar{width:100%; box-sizing:border-box;}
+    .sidebar-logo{height:100px;}
+    .sidebar-links{
+      flex-direction:row; flex-shrink:0; align-items:center; gap:10px;
+      overflow-x:auto; -webkit-overflow-scrolling:touch;
     }
-    .sidebar-links{flex-direction:row; flex-shrink:0;}
+    .sidebar-link{flex-shrink:0; padding:10px 12px; border-left:none; border-bottom:3px solid transparent;}
+    .sidebar-link.active{border-left-color:transparent; border-bottom-color:var(--hot);}
     .sidebar-link span{display:none;}
     .topbar{flex-direction:column; align-items:stretch;}
     .topbar-left{max-width:100%;}
