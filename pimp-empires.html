@@ -1217,7 +1217,7 @@
           </div>
         </div>
         <div class="ts-stat thugs">
-          <span class="ts-icon">🔱</span>
+          <span class="ts-icon">💪</span>
           <div class="ts-main">
             <div class="ts-label">Thugs</div>
             <div class="ts-value" id="statThugs">0</div>
@@ -3191,7 +3191,7 @@
         <div class="lb-gang">${r.gang ? `${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
         <div class="lb-city">${escapeHtml(r.city)}</div>
         <div class="lb-stat">👠 ${r.hoes}</div>
-        <div class="lb-stat">🔱 ${r.thugs}</div>
+        <div class="lb-stat">💪 ${r.thugs}</div>
         <div class="lb-stat">🚗 ${Math.floor(r.cars)}</div>
         <div class="lb-nw">${fmtMoney(r.netWorth)}</div>
       </div>
@@ -3261,7 +3261,7 @@
         <div class="lb-name">${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.name)}${r.isYours ? ' <span style="color:var(--teal); font-size:0.75rem;">(you)</span>' : ''}</div>
         <div class="lb-stat">${r.members}</div>
         <div class="lb-stat">👠 ${r.hoes}</div>
-        <div class="lb-stat">🔱 ${r.thugs}</div>
+        <div class="lb-stat">💪 ${r.thugs}</div>
         <div class="lb-stat">🚗 ${Math.floor(r.cars)}</div>
         <div class="lb-nw">${fmtMoney(r.netWorth)}</div>
       </div>
@@ -3412,7 +3412,7 @@
         <span>💰 ${fmtMoney(r.cash)} ${r.bank !== undefined ? 'liquid cash' : 'operating cash'}</span>
         ${r.bank !== undefined ? `<span>🏦 ${fmtMoney(r.bank)} banked</span>` : ''}
         ${r.hoeCash !== undefined ? `<span>💵 ${fmtMoney(r.hoeCash)} hoe earnings</span>` : ''}
-        <span>🔱 ${r.thugs} thugs</span>
+        <span>💪 ${r.thugs} thugs</span>
         <span>👠 ${r.hoes} hoes</span>
         <span>🚗 ${Math.floor(r.cadillacs||0)} cadillacs</span>
         <span>🛡️ ${Math.floor(r.armoredTrucks||0)} trucks</span>
