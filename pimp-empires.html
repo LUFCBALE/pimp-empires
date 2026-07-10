@@ -316,15 +316,11 @@
     background:var(--panel); border:1px solid var(--panel-line); border-radius:10px;
     padding:12px 16px; margin-bottom:16px;
   }
-  .quick-supplies-panel input[type=range]{
-    -webkit-appearance:none; width:100%; height:5px; border-radius:99px;
-    background:var(--bg); border:1px solid var(--panel-line); outline:none;
+  .quick-supplies-panel input[type=number]{
+    width:100%; background:var(--bg); border:1px solid var(--panel-line); color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:0.85rem; padding:7px 8px; border-radius:6px; outline:none;
   }
-  .quick-supplies-panel input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
-    background:var(--hot); box-shadow:0 0 8px rgba(255,47,120,0.7); cursor:pointer;
-    border:2px solid #fff;
-  }
+  .quick-supplies-panel input[type=number]:focus{border-color:var(--hot);}
   @media(max-width:700px){.quick-supplies-panel > div{grid-template-columns:1fr !important;}}
 
   /* ---- England Map (Leaflet / OpenStreetMap) ---- */
@@ -535,15 +531,11 @@
   .store-item .effect{font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--text-dim); margin-top:2px;}
   .store-qty-row{display:flex; align-items:center; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--text-dim);}
   .store-qty-row b{color:var(--teal); font-size:0.85rem;}
-  .store-item input[type=range]{
-    width:100%; -webkit-appearance:none; height:5px; border-radius:99px;
-    background:var(--bg); border:1px solid var(--panel-line); outline:none;
+  .store-item input[type=number]{
+    width:100%; background:var(--bg); border:1px solid var(--panel-line); color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:0.85rem; padding:7px 8px; border-radius:6px; outline:none;
   }
-  .store-item input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
-    background:var(--gold); box-shadow:0 0 8px rgba(240,196,25,0.7); cursor:pointer;
-    border:2px solid #fff;
-  }
+  .store-item input[type=number]:focus{border-color:var(--gold);}
   .store-quickbtns{display:flex; gap:6px;}
   .store-quickbtns button{
     flex:1; background:var(--bg); border:1px solid var(--panel-line); color:var(--text-dim);
@@ -1283,7 +1275,7 @@
               <div class="ho-top"><span>👠 Hoe Happiness</span><b id="hoOverlayPct">50%</b></div>
               <div class="ho-bar-wrap"><div class="ho-bar-fill" id="hoOverlayFill" style="width:50%"></div></div>
               <div class="ho-qty-row"><span>Meds to buy</span><b id="hoMedsQtyLabel">1</b></div>
-              <input type="range" id="hoMedsSlider" min="1" max="1" value="1">
+              <input type="number" id="hoMedsSlider" min="1" max="1" value="1">
               <button class="ho-buy-btn" id="quickBuyMedsBtn" style="margin-top:6px; width:100%;">Quick Buy Meds</button>
             </div>
 
@@ -1291,7 +1283,7 @@
               <div class="ho-top"><span>💪 Thugs Morale</span><b id="thugMoraleValue">50%</b></div>
               <div class="ho-bar-wrap"><div class="ho-bar-fill" id="thugMoraleBar" style="width:50%; background:#ff6b9d;"></div></div>
               <div class="ho-qty-row"><span>Chains to buy</span><b id="gunsQtyLabel">1</b></div>
-              <input type="range" id="gunsSlider" min="1" max="1" value="1">
+              <input type="number" id="gunsSlider" min="1" max="1" value="1">
               <button class="ho-buy-btn" id="quickBuyGunsBtn" style="margin-top:6px; width:100%;">Quick Buy Chains</button>
             </div>
           </div>
@@ -1443,13 +1435,13 @@
   <div class="panel">
     <div class="slider-row">
       <div class="row-top"><span>Deposit to bank</span><b id="depositLabel">£0</b></div>
-      <input type="range" id="depositSlider" min="0" max="0" value="0">
+      <input type="number" id="depositSlider" min="0" max="0" value="0">
     </div>
     <button class="cta gold" id="bankBtn" style="width:100%;">Deposit</button>
 
     <div class="slider-row" style="margin-top:16px;">
       <div class="row-top"><span>Withdraw from bank</span><b id="withdrawLabel">£0</b></div>
-      <input type="range" id="withdrawSlider" min="0" max="0" value="0">
+      <input type="number" id="withdrawSlider" min="0" max="0" value="0">
     </div>
     <button class="cta gold" id="withdrawBtn" style="width:100%;">Withdraw</button>
 
@@ -1632,7 +1624,7 @@
       <input type="number" min="1" value="1" id="buyMedicalQty">
       <button class="cta cta-buy" id="buyMedicalBtn" style="margin-top:8px;">Buy 1 — £940,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellMedicalQtyLabel">0</b></div>
-      <input type="range" min="0" max="0" value="0" id="sellMedicalSlider">
+      <input type="number" min="0" max="0" value="0" id="sellMedicalSlider">
       <button class="cta cta-sm cta-red" id="sellMedicalBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
@@ -1671,7 +1663,7 @@
       <input type="number" min="1" value="1" id="buyGunQty">
       <button class="cta cta-buy" id="buyGunBtn" style="margin-top:8px;">Buy 1 — £25,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellGunQtyLabel">0</b></div>
-      <input type="range" min="0" max="0" value="0" id="sellGunSlider">
+      <input type="number" min="0" max="0" value="0" id="sellGunSlider">
       <button class="cta cta-sm cta-red" id="sellGunBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
@@ -1710,7 +1702,7 @@
       <input type="number" min="1" value="1" id="buyCarQty">
       <button class="cta cta-buy" id="buyCarBtn" style="margin-top:8px;">Buy 1 — £30,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellCarQtyLabel">0</b></div>
-      <input type="range" min="0" max="0" value="0" id="sellCarSlider">
+      <input type="number" min="0" max="0" value="0" id="sellCarSlider">
       <button class="cta cta-sm cta-red" id="sellCarBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
@@ -1731,7 +1723,7 @@
       <input type="number" min="1" value="1" id="buyDrugQty">
       <button class="cta cta-buy" id="buyDrugBtn" style="margin-top:8px;">Buy 1 — £14,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellDrugQtyLabel">0</b></div>
-      <input type="range" min="0" max="0" value="0" id="sellDrugSlider">
+      <input type="number" min="0" max="0" value="0" id="sellDrugSlider">
       <button class="cta cta-sm cta-red" id="sellDrugBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
@@ -1752,7 +1744,7 @@
       <input type="number" min="1" value="1" id="buyExplosiveQty">
       <button class="cta cta-buy" id="buyExplosiveBtn" style="margin-top:8px;">Buy 1 — £32,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellExplosiveQtyLabel">0</b></div>
-      <input type="range" min="0" max="0" value="0" id="sellExplosiveSlider">
+      <input type="number" min="0" max="0" value="0" id="sellExplosiveSlider">
       <button class="cta cta-sm cta-red" id="sellExplosiveBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
@@ -1774,7 +1766,7 @@
       <input type="number" min="1" value="1" id="buyCounterfeitQty">
       <button class="cta cta-buy" id="buyCounterfeitBtn" style="margin-top:8px;">Buy 1 — £23,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellCounterfeitQtyLabel">0</b></div>
-      <input type="range" min="0" max="0" value="0" id="sellCounterfeitSlider">
+      <input type="number" min="0" max="0" value="0" id="sellCounterfeitSlider">
       <button class="cta cta-sm cta-red" id="sellCounterfeitBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
@@ -3748,7 +3740,7 @@
       <div class="store-item">
         <div class="info"><div class="name">${item.name}</div><div class="effect">${item.desc}</div></div>
         <div class="store-qty-row"><span>Quantity</span><b data-qtylabel="${key}">1</b></div>
-        <input type="range" min="1" max="${max}" value="1" data-qtyslider="${key}">
+        <input type="number" min="1" max="${max}" value="1" data-qtyslider="${key}">
         <div class="store-quickbtns">
           <button type="button" data-qbtn="${key}" data-v="1">1</button>
           <button type="button" data-qbtn="${key}" data-v="10">10</button>
@@ -3812,7 +3804,9 @@
           </div>
           <div class="bm-price">Cost: <b>${fmtMoney(price)}</b> each</div>
           <div class="ho-qty-row"><span>Qty to buy</span><b class="bmBuyLabel-${item.key}">1</b></div>
-          <input type="range" class="bmBuySlider-${item.key}" min="1" max="${afford}" value="1">
+          <div class="bm-qty">
+            <input type="number" class="bmBuySlider-${item.key}" min="1" max="${afford}" value="1">
+          </div>
           <div class="bm-total">Total: <b class="bmBuyTotal-${item.key}">${fmtMoney(price)}</b></div>
           <button class="cta cta-buy" data-bmbuy="${item.key}" ${state.cash < price ? 'disabled' : ''}>Buy</button>
         </div>`;
