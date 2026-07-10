@@ -1933,6 +1933,13 @@
   <h2 class="page-title">Your Crew</h2>
   <div class="page-subtitle" id="crewSubtitle">0 / 5 members</div>
   <div class="panel" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Crew Name</h3>
+    <div style="display:flex; gap:10px;">
+      <input type="text" id="crewNameInput" placeholder="Enter your crew/gang name" maxlength="40" style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px;">
+      <button class="cta gold" id="saveCrewNameBtn">Save Crew</button>
+    </div>
+  </div>
+  <div class="panel" style="margin-bottom:16px;">
     <h3 style="margin-top:0;">Crew Emblem</h3>
     <div style="font-size:0.85rem; color:var(--gold); margin-bottom:6px;">👑 Crew Leader: <b id="crewLeaderName">You</b></div>
     <div class="hint" style="margin-bottom:10px;">Only the crew leader can set the emblem — founding the crew makes you the leader. It'll show up next to your name on the Leaderboard.</div>
@@ -2030,11 +2037,6 @@
     <div style="display:flex; gap:10px; margin-bottom:20px;">
       <input type="text" id="pimpNameInput" placeholder="Enter your pimp name" maxlength="30" style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px;">
       <button class="cta gold" id="savePimpNameBtn">Save Name</button>
-    </div>
-    <h3>Crew Name</h3>
-    <div style="display:flex; gap:10px; margin-bottom:20px;">
-      <input type="text" id="crewNameInput" placeholder="Enter your crew/gang name" maxlength="40" style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px;">
-      <button class="cta gold" id="saveCrewNameBtn">Save Crew</button>
     </div>
     <h3>Game</h3>
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
@@ -4499,8 +4501,8 @@
     }
 
     if(!state.gang){
-      members.innerHTML = '<div class="hint">🚨 You haven\'t created a crew name yet! Go to Settings and create one to start recruiting.</div>';
-      available.innerHTML = '<div class="hint">Create a crew name first to invite members.</div>';
+      members.innerHTML = '<div class="hint">🚨 You haven\'t created a crew name yet! Set one above to start recruiting.</div>';
+      available.innerHTML = '<div class="hint">Create a crew name above to invite members.</div>';
       subtitle.textContent = '0 / 5 members';
       return;
     }
