@@ -313,6 +313,8 @@ def default_state(pimp_name="Big Boss"):
         "cadillacs": 0,
         "armoredTrucks": 0,
         "medsStock": 1,
+        "lifetimeEarnings": 0,
+        "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
         "carFactoryRatio": 1.0,
         "gunFactoryRatio": 0.0,
@@ -1008,6 +1010,7 @@ def fight_bot(state, bot_id, world):
         cash_won = jround(bot["hoeCash"] * hoe_cash_cut)
         bot["hoeCash"] = max(0, bot["hoeCash"] - cash_won)
         state["cash"] += cash_won
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_won
 
         # A win wipes the defender's whole crew - most are dead/scattered
         # for good, but a chunk just got hospitalized and walks back in
@@ -1155,6 +1158,7 @@ def fight_human(state, defender, world, defender_target_id=None):
         cash_won = jround(defender["cash"] * cash_cut)
         defender["cash"] = max(0, defender["cash"] - cash_won)
         state["cash"] += cash_won
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_won
 
         thugs_wiped = defender["thugs"]
         hospital_pct = ATTACK_HOSPITAL_PCT_MIN + random.random() * (ATTACK_HOSPITAL_PCT_MAX - ATTACK_HOSPITAL_PCT_MIN)
@@ -1406,6 +1410,7 @@ def work_block(state, requested_turns):
 
     distribute_earnings(state, cash_gain, turns)
     state["cash"] += cash_gain
+    state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_gain
     add_hoes(state, hoes_gain)
     state["thugs"] += thugs_gain
     state["thugs"] = max(0, state["thugs"] - thugs_lost)
@@ -1669,6 +1674,8 @@ def run_factories(state, ticks):
         state["bombs"] += bombs
     if counterfeit_cash > 0:
         state["cash"] += counterfeit_cash
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + counterfeit_cash
+        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + counterfeit_cash
 
 
 # ---------------------------------------------------------------------------
@@ -1693,6 +1700,7 @@ def run_heist(state, job_id):
         pct = lo + random.random() * (hi - lo)
         thugs_lost = max(0, jround(state["thugs"] * pct))
         state["cash"] += cash_won
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_won
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
         recalc_morale(state)
@@ -1733,6 +1741,7 @@ def run_casino_heist(state, world):
         player_share = jround(total_cash * 0.60)
         crew_share_per_member = jround(total_cash * 0.40 / crew_size)
         state["cash"] += player_share
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + player_share
         lo, hi = job["casualtyPct"]
         pct = lo + random.random() * (hi - lo)
         thugs_lost = jround(thugs_needed * pct)

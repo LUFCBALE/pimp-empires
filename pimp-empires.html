@@ -819,6 +819,10 @@
   .logline.money{color:var(--gold);}
   .logline.bad{color:var(--danger);}
   .logline.info{color:var(--text-dim);}
+  .inv-row{display:flex; justify-content:space-between; gap:10px;}
+  .inv-row .inv-val{color:var(--teal); font-weight:700;}
+  .inv-row.inv-total{margin-top:8px; padding-top:8px; border-top:1px solid var(--panel-line);}
+  .inv-row.inv-total .inv-val{color:var(--gold);}
   .cursor{display:inline-block; width:7px; height:14px; background:var(--teal); vertical-align:middle; animation:blink 1s step-start infinite;}
   @keyframes blink{50%{opacity:0;}}
 
@@ -1288,11 +1292,9 @@
           <div id="logBody"></div>
         </div>
 
-        <div class="terminal" id="attackFeedBox" style="margin-top:8px;">
-          <div class="title-row"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;attack_feed.log</div>
-          <div id="attackFeedList">
-            <div style="color:var(--text-dim);">No attacks yet.</div>
-          </div>
+        <div class="terminal" id="inventoryBox" style="margin-top:8px;">
+          <div class="title-row"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;inventory.log</div>
+          <div id="inventoryList"></div>
         </div>
       </div>
 
@@ -3695,7 +3697,7 @@
     renderStore();
     renderLocation();
     renderLog();
-    renderAttackFeed();
+    renderInventory();
 
     document.getElementById('navStoreSub').textContent =
       `hoes ${Math.round(state.hoeMorale)}% · thugs ${Math.round(state.thugMorale)}%`;
@@ -4022,18 +4024,34 @@
     term.scrollTop = term.scrollHeight;
   }
 
-  function renderAttackFeed(){
-    const list = document.getElementById('attackFeedList');
+  function renderInventory(){
+    const list = document.getElementById('inventoryList');
     if(!list) return;
-    const entries = (state.globalAttackLog || []).slice().sort((a,b) => b.t - a.t);
-    if(entries.length === 0){
-      list.innerHTML = '<div class="logline info">No attacks yet.</div>';
-      return;
-    }
-    const who = (name, gang, emblem) => `${escapeHtml(name)}${gang ? ` <span style="color:var(--text-dim);">(${emblem ? escapeHtml(emblem) + ' ' : ''}${escapeHtml(gang)})</span>` : ''}`;
-    list.innerHTML = entries.map(e => `
-      <div class="logline bad"><span class="ts">[${fmtLogTime(e.t)}]</span>${who(e.attacker, e.attackerGang, e.attackerEmblem)} ➜ ${who(e.defender, e.defenderGang, e.defenderEmblem)}</div>
-    `).join('');
+    const f = state.factories || {};
+    const g = state.guns || {};
+    const rows = [
+      ['Medical Factories', f.medical || 0],
+      ['Gun Factories', f.gun || 0],
+      ['Car Factories', f.car || 0],
+      ['Drug Factories', f.drug || 0],
+      ['Explosive Factories', f.explosive || 0],
+      ['Counterfeit Factories', f.counterfeit || 0],
+      ['9mm Pistols', g.pistol9mm || 0],
+      ['12 Gauge Shotguns', g.shotgun12gauge || 0],
+      ['AK-47s', g.ak47 || 0],
+      ['M249s', g.m249 || 0],
+      ['Cadillacs', state.cadillacs || 0],
+      ['Armored Trucks', state.armoredTrucks || 0],
+      ['Meds Stockpile', Math.floor(state.medsStock || 0)],
+      ['Bombs', Math.floor(state.bombs || 0)],
+      ['Cocaine', Math.floor((state.drugs || {}).coke || 0)],
+    ];
+    list.innerHTML = rows.map(([label, val]) => `
+      <div class="logline info inv-row"><span>${label}</span><span class="inv-val">${val}</span></div>
+    `).join('') + `
+      <div class="logline good inv-row"><span>Counterfeit Earned</span><span class="inv-val">${fmtMoney(state.counterfeitEarnings || 0)}</span></div>
+      <div class="logline money inv-row inv-total"><span>All-Time Earnings</span><span class="inv-val">${fmtMoney(state.lifetimeEarnings || 0)}</span></div>
+    `;
   }
 
   function escapeHtml(s){
