@@ -191,13 +191,13 @@ HOE_WAGE_PCT = 0.10
 HEIST_JOBS = {
     "shop": {"minThugs": 200, "turnCost": 10, "minCash": 800, "maxCash": 4000,
              "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35),
-             "netWorthPct": (0.0005, 0.0015)},
+             "netWorthPct": (0.0025, 0.0075)},
     "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 8000, "maxCash": 35000,
                   "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55),
-                  "netWorthPct": (0.002, 0.006)},
+                  "netWorthPct": (0.01, 0.03)},
     "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 60000, "maxCash": 250000,
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
-             "netWorthPct": (0.008, 0.025)},
+             "netWorthPct": (0.04, 0.125)},
 }
 CASINO_JOB = {
     "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 500000, "maxCash": 2000000,
