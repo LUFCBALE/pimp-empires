@@ -3360,7 +3360,8 @@
     try{
       const data = await apiCall('/api/bomb', {botId, factoryType});
       const bonus = data.result.bombsDestroyed ? ` and torched their ${data.result.bombsDestroyed} stockpiled bombs` : '';
-      showToast(`💣 Wiped out every ${data.result.target} factory ${data.result.boss} owned${bonus} (-${data.result.bombsSpent} bombs)!`);
+      const verb = data.result.wipedOut ? `Wiped out every` : `Destroyed ${data.result.destroyed} of`;
+      showToast(`💣 ${verb} ${data.result.target} factory ${data.result.boss} owned${bonus} (-${data.result.bombsSpent} bombs)!`);
       render(); renderLocation(); renderAttacks();
     } catch(e){ /* toast already shown */ }
   }

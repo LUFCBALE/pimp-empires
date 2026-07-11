@@ -1061,9 +1061,10 @@ BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "expl
 def bomb_bot(state, bot_id, factory_type, world):
     """Blind by holdings, not by type: you pick which kind of factory to
     hit (medical/gun/car/etc) without ever being shown how many of anything
-    they actually own. Whichever type you choose, every factory of that type
-    gets wiped in one strike - cost is however many they turn out to have,
-    times that type's per-unit tier cost."""
+    they actually own. You throw your whole bomb stockpile at it - that
+    buys you as many kills of that factory type as it can afford, capped at
+    however many they actually own. Doesn't need to be enough to wipe them
+    out entirely; any bomb is better than none."""
     if factory_type not in BOMB_COST_BY_FACTORY:
         raise GameError("Invalid factory type")
     bot = next((b for b in world["bots"] if b["id"] == bot_id), None)
@@ -1074,13 +1075,17 @@ def bomb_bot(state, bot_id, factory_type, world):
     owned = bot["factories"].get(factory_type, 0)
     if owned <= 0:
         raise GameError(f"They have no {factory_type} factories")
-    cost = BOMB_COST_BY_FACTORY[factory_type] * owned
-    if state["bombs"] < cost:
-        raise GameError(f"Need {cost} bombs to wipe out their {factory_type} factories")
+    per_unit = BOMB_COST_BY_FACTORY[factory_type]
+    destroyed = min(owned, state["bombs"] // per_unit)
+    if destroyed <= 0:
+        raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
+    cost = destroyed * per_unit
     state["bombs"] -= cost
-    bot["factories"][factory_type] = 0
-    add_log(state, f"You spent {cost} bombs wiping out every {factory_type} factory {bot['boss']} owned.", "good")
-    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost}
+    bot["factories"][factory_type] -= destroyed
+    wiped_out = bot["factories"][factory_type] <= 0
+    add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
+                   + (" (all of them)" if wiped_out else f" ({bot['factories'][factory_type]} left standing)") + ".", "good")
+    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out}
 
 
 # ---------------------------------------------------------------------------
@@ -1196,7 +1201,9 @@ def fight_human(state, defender, world, defender_target_id=None):
 
 
 def bomb_human(state, defender, factory_type):
-    """Same type-targeted strike as bomb_bot, for a real player."""
+    """Same partial-strike logic as bomb_bot, for a real player: your bomb
+    stockpile buys as many kills of that factory type as it can afford,
+    capped at however many they actually own."""
     if factory_type not in BOMB_COST_BY_FACTORY:
         raise GameError("Invalid factory type")
     if defender["thugs"] > 0:
@@ -1204,24 +1211,30 @@ def bomb_human(state, defender, factory_type):
     owned = defender["factories"].get(factory_type, 0)
     if owned <= 0:
         raise GameError(f"They have no {factory_type} factories")
-    cost = BOMB_COST_BY_FACTORY[factory_type] * owned
-    if state["bombs"] < cost:
-        raise GameError(f"Need {cost} bombs to wipe out their {factory_type} factories")
+    per_unit = BOMB_COST_BY_FACTORY[factory_type]
+    destroyed = min(owned, state["bombs"] // per_unit)
+    if destroyed <= 0:
+        raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
+    cost = destroyed * per_unit
     state["bombs"] -= cost
-    defender["factories"][factory_type] = 0
+    defender["factories"][factory_type] -= destroyed
+    wiped_out = defender["factories"][factory_type] <= 0
 
-    # Blow up someone's explosive factories and their whole bomb stockpile
-    # goes with it - there's nowhere else those bombs were being kept.
+    # Blow up someone's explosive factories and a matching share of their
+    # bomb stockpile goes with it - there's nowhere else those bombs were
+    # being kept. Only lost if you actually wipe them all out.
     bombs_destroyed = 0
-    if factory_type == "explosive":
+    if factory_type == "explosive" and wiped_out:
         bombs_destroyed = defender.get("bombs", 0)
         defender["bombs"] = 0
 
-    add_log(state, f"You spent {cost} bombs wiping out every {factory_type} factory {defender['name']} owned"
+    add_log(state, f"You spent {cost} bombs destroying {destroyed} of {defender['name']}'s {factory_type} factories"
+                   + (" (all of them)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
                    + (f", destroying their {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "good")
-    add_log(defender, f"{state['name']} wiped out all of your {factory_type} factories with a bombing run"
+    add_log(defender, f"{state['name']} destroyed {destroyed} of your {factory_type} factories with a bombing run"
+                       + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
                        + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
-    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "bombsDestroyed": bombs_destroyed}
+    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed}
 
 
 # ---------------------------------------------------------------------------
