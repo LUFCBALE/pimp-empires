@@ -253,14 +253,6 @@
   }
 
   /* ---- Hoe happiness overlay ---- */
-  .quick-buy-section{}
-  .ho-top{
-    display:flex; justify-content:space-between; align-items:center;
-    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--text-dim); margin-bottom:4px;
-  }
-  .ho-top b{color:var(--gold); font-size:0.8rem; font-family:'Anton',sans-serif;}
-  .ho-bar-wrap{height:6px; background:var(--bg); border-radius:99px; overflow:hidden; border:1px solid var(--panel-line); margin-bottom:6px;}
-  .ho-bar-fill{height:100%; transition:width .3s ease, background-color .3s ease;}
   .ho-qty-row{
     display:flex; justify-content:space-between;
     font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--text-dim); margin-bottom:2px;
@@ -1319,8 +1311,7 @@
           <button class="cta" id="workBtn">Hit the block</button>
 
           <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-line);" id="hoeHappinessBlock">
-            <div class="ho-top"><span>👠 Hoe Happiness</span><b id="hoOverlayPct">50%</b></div>
-            <div class="ho-bar-wrap"><div class="ho-bar-fill" id="hoOverlayFill" style="width:50%"></div></div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px;">👠 Keep Your Hoes Happy</div>
             <div class="ho-qty-row"><span>Meds to buy</span><b id="hoMedsQtyLabel">1</b></div>
             <input type="number" class="ho-qty-input" id="hoMedsSlider" min="1" max="1" value="1">
             <button class="ho-buy-btn" id="quickBuyMedsBtn" style="margin-top:6px; width:100%;">Quick Buy Meds</button>
@@ -2899,13 +2890,6 @@
     return betterBots + 1;
   }
 
-  function happinessColor(h){
-    if(h >= 80) return 'var(--teal)';
-    if(h >= 50) return 'var(--gold)';
-    if(h >= 25) return '#ff9d4d';
-    return 'var(--danger)';
-  }
-
   function quickBuyMeds(){
     const slider = document.getElementById('hoMedsSlider');
     const qty = slider ? (parseInt(slider.value) || 1) : 1;
@@ -2925,16 +2909,8 @@
   }
 
   function renderHappinessOverlay(){
-    const fill = document.getElementById('hoOverlayFill');
-    const pctEl = document.getElementById('hoOverlayPct');
     const slider = document.getElementById('hoMedsSlider');
-    if(!fill || !pctEl || !slider) return;
-
-    const roster = state.hoeRoster || [];
-    const avg = roster.length ? Math.round(roster.reduce((s,h) => s + h.happiness, 0) / roster.length) : 0;
-    fill.style.width = avg + '%';
-    fill.style.background = happinessColor(avg);
-    pctEl.textContent = avg + '%';
+    if(!slider) return;
 
     const medsItem = STORE_ITEMS.girls.find(i => i.id === 'condoms');
     const afford = Math.max(1, Math.floor(state.cash / medsItem.cost));
@@ -4567,7 +4543,7 @@
     {
       target: '#hoeHappinessBlock',
       title: '👠 Hoe Happiness',
-      body: "Keep this above 40% or hoes start walking. Meds are the fastest fix — buy them right here whenever happiness dips.",
+      body: "Keep it above 40% (check the Hoes card up top) or hoes start walking. Meds are the fastest fix — buy them right here whenever happiness dips.",
     },
     {
       target: '.ts-stat.thugs',
