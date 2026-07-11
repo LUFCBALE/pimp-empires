@@ -411,15 +411,19 @@
   /* ---- Leaderboard ---- */
   .nav-btn.leaderboard .icon{color:var(--gold);}
   .lb-wrap{overflow-x:auto;}
+  .wrap:has(#page-leaderboard.active){max-width:1180px;}
   .lb-header, .lb-row{
-    display:grid; grid-template-columns: 30px 1fr 0.9fr 0.8fr 50px 50px 50px 0.8fr; gap:6px; align-items:center;
+    display:grid; grid-template-columns: 38px 1fr 0.9fr 0.8fr 65px 65px 50px 0.8fr; gap:6px; align-items:center;
     padding:8px; font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
   }
   .lb-header{color:var(--text-dim); font-size:0.64rem; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--panel-line); padding-bottom:8px; margin-bottom:2px;}
   .lb-row{border-bottom:1px solid var(--panel-line);}
   .lb-row:last-child{border-bottom:none;}
   .lb-row.lb-you{background:rgba(255,47,120,0.1); border-radius:8px;}
-  .lb-rank{color:var(--text-dim); font-weight:700;}
+  .lb-rank{font-family:'Anton',sans-serif; font-size:1rem; letter-spacing:0.01em; color:var(--text-dim); display:flex; align-items:center; gap:4px;}
+  .lb-rank.lb-gold{color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.5);}
+  .lb-rank.lb-silver{color:#d8d8e0; text-shadow:0 0 6px rgba(216,216,224,0.4);}
+  .lb-rank.lb-bronze{color:#cd7f32; text-shadow:0 0 6px rgba(205,127,50,0.4);}
   .lb-name{color:#fff; font-weight:600;}
   .lb-presence-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:2px; vertical-align:middle;}
   .lb-presence-dot.online{background:#2fe08a; box-shadow:0 0 6px rgba(47,224,138,0.8);}
@@ -3242,9 +3246,11 @@
       lbBaselineTime[lbActiveTab] = nowTs;
     }
 
+    const rankTier = i => i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
+    const rankMedal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
     list.innerHTML = rows.map((r,i) => `
       <div class="lb-row ${r.isYou ? 'lb-you' : ''}">
-        <div class="lb-rank">#${String(i + 1).padStart(2, '0')} ${r.rankArrow}</div>
+        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}#${String(i + 1).padStart(2, '0')} ${r.rankArrow}</div>
         <div class="lb-name">
           <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou && !r.inYourCrew ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
@@ -3321,9 +3327,11 @@
 
     const rows = Object.values(groups).sort((a,b) => b.netWorth - a.netWorth);
 
+    const rankTier = i => i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
+    const rankMedal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
     list.innerHTML = rows.map((r,i) => `
       <div class="lb-row lb-crewview ${r.isYours ? 'lb-you' : ''}">
-        <div class="lb-rank">#${String(i + 1).padStart(2, '0')}</div>
+        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}#${String(i + 1).padStart(2, '0')}</div>
         <div class="lb-name">${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.name)}${r.isYours ? ' <span style="color:var(--teal); font-size:0.75rem;">(you)</span>' : ''}</div>
         <div class="lb-stat">${r.members}</div>
         <div class="lb-stat">👠 ${r.hoes}</div>
