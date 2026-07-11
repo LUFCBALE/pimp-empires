@@ -241,7 +241,10 @@
   .player-card .nw-item{display:flex; justify-content:space-between; align-items:center;}
   .player-card .nw-label{color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em;}
   .player-card .nw-value{color:var(--gold); font-weight:700; font-size:12px;}
-  .topbar .work-panel{width:100%; max-width:420px;}
+  .topbar .work-panel{width:100%; max-width:420px; padding:14px 16px;}
+  .work-panel h2{font-size:1rem; margin-bottom:8px;}
+  .work-panel .slider-row{margin-bottom:8px;}
+  .work-panel .cta:not(.secondary){padding:10px; margin-top:4px;}
   .work-block-col{display:flex; flex-direction:column; gap:12px; width:100%; max-width:420px;}
 
   @media (max-width:900px){
@@ -1302,11 +1305,11 @@
         <div class="panel work-panel" style="max-width:none;">
           <h2>Work the Block <span class="info-tip" data-tip="Send your crew out to hustle. More turns spent per shift means more cash, more recruits, and more risk of catching heat from the cops. Max 150 turns per shift.">?</span></h2>
 
-          <div style="margin-bottom:12px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-              <button class="cta secondary" id="locRedLight" style="font-size:0.85rem; padding:8px;">🔴 Red Light</button>
-              <button class="cta secondary" id="locNightclub" style="font-size:0.85rem; padding:8px;">🍻 Nightclub</button>
-              <button class="cta secondary" id="locPullup" style="font-size:0.85rem; padding:8px;">🚗 Pull Up</button>
+          <div style="margin-bottom:8px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+              <button class="cta secondary" id="locRedLight" style="font-size:0.78rem; padding:6px;">🔴 Red Light</button>
+              <button class="cta secondary" id="locNightclub" style="font-size:0.78rem; padding:6px;">🍻 Nightclub</button>
+              <button class="cta secondary" id="locPullup" style="font-size:0.78rem; padding:6px;">🚗 Pull Up</button>
             </div>
           </div>
 
@@ -1323,11 +1326,11 @@
 
           <button class="cta" id="workBtn">Hit the block</button>
 
-          <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-line);" id="hoeHappinessBlock">
-            <div style="font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px;">👠 Keep Your Hoes Happy</div>
+          <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--panel-line);" id="hoeHappinessBlock">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;">👠 Keep Your Hoes Happy</div>
             <div class="ho-qty-row"><span>Meds to buy</span><b id="hoMedsQtyLabel">1</b></div>
             <input type="number" class="ho-qty-input" id="hoMedsSlider" min="1" max="1" value="1">
-            <button class="ho-buy-btn" id="quickBuyMedsBtn" style="margin-top:6px; width:100%;">Quick Buy Meds</button>
+            <button class="ho-buy-btn" id="quickBuyMedsBtn" style="margin-top:5px; width:100%;">Quick Buy Meds</button>
           </div>
         </div>
 
