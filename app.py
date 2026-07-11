@@ -726,6 +726,40 @@ def api_informer():
     return action_response(user['id'], state, world, {'result': result})
 
 
+@app.route('/api/profile/<int:target_id>', methods=['GET'])
+@login_required
+def api_profile(target_id):
+    """Public profile for a real player - name, crew, net worth, rank, and
+    join date only. No combat stats here; that's still what the Informer
+    fee is for. Bots don't have accounts/profiles, so only human IDs
+    (target_id >= HUMAN_ID_OFFSET) resolve."""
+    if target_id < ge.HUMAN_ID_OFFSET:
+        return jsonify({'error': 'No profile for this target'}), 404
+    target_user_id = target_id - ge.HUMAN_ID_OFFSET
+
+    db = get_db()
+    row = db.execute('SELECT id, pimp_name, created_at FROM users WHERE id = ?', (target_user_id,)).fetchone()
+    db.close()
+    if not row:
+        return jsonify({'error': 'Player not found'}), 404
+
+    target_state = load_state(target_user_id, row['pimp_name'])
+    save_state(target_user_id, target_state)
+
+    return jsonify({
+        'success': True,
+        'profile': {
+            'botId': target_id,
+            'name': row['pimp_name'],
+            'gang': target_state.get('gang', ''),
+            'emblem': target_state.get('crewEmblem', ''),
+            'netWorth': ge.total_net_worth(target_state),
+            'joinDate': row['created_at'],
+            'rank': ge.rank_info(target_state.get('xp', 0)),
+        },
+    })
+
+
 # ---------------------------------------------------------------------------
 # Hoes / crew / travel / settings
 # ---------------------------------------------------------------------------
