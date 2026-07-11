@@ -2875,7 +2875,7 @@
   }
 
   function botNetWorth(b){
-    return factorySellValue(b.factories) + produceSellValue(b.guns, b.cadillacs, b.armoredTrucks, null, null);
+    return factorySellValue(b.factories) + produceSellValue(b.guns, b.cadillacs, b.armoredTrucks, null, null) + (b.thugs || 0) * THUG_NET_WORTH_VALUE;
   }
 
   function crewRosterIds(){
