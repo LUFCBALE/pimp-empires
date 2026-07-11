@@ -842,6 +842,58 @@
     opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:50;
   }
   .toast.show{opacity:1;}
+
+  /* ---- Onboarding tutorial (spotlight coach marks) ---- */
+  #tutorialOverlay{
+    display:none; position:fixed; inset:0; z-index:10000;
+  }
+  #tutorialOverlay.show{display:block;}
+  .tutorial-highlight{
+    position:fixed; border-radius:10px; border:2px solid var(--gold);
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.78), 0 0 18px rgba(240,196,25,0.6);
+    transition:top .25s ease, left .25s ease, width .25s ease, height .25s ease;
+    pointer-events:none;
+  }
+  .tutorial-highlight.center-mode{
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.78);
+    border-color:transparent;
+  }
+  .tutorial-tooltip{
+    position:fixed; width:300px; max-width:calc(100vw - 24px);
+    background:var(--card-bg); border:2px solid var(--card-border); border-radius:12px;
+    padding:18px 20px; box-shadow:0 10px 34px rgba(0,0,0,0.6);
+    transition:top .25s ease, left .25s ease;
+  }
+  .tutorial-tooltip.center-mode{
+    top:50% !important; left:50% !important; transform:translate(-50%,-50%);
+  }
+  .tutorial-arrow{
+    position:absolute; width:14px; height:14px; background:var(--card-bg);
+    border-left:2px solid var(--card-border); border-top:2px solid var(--card-border);
+  }
+  .tutorial-arrow.arrow-up{top:-8px; transform:rotate(45deg);}
+  .tutorial-arrow.arrow-down{bottom:-8px; transform:rotate(225deg);}
+  .tutorial-step-label{
+    font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:6px;
+  }
+  .tutorial-title{font-family:'Anton',sans-serif; font-size:1.15rem; color:#fff; margin-bottom:8px; letter-spacing:0.01em;}
+  .tutorial-body{font-size:0.88rem; color:var(--text-dim); line-height:1.5; margin-bottom:16px;}
+  .tutorial-actions{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .tutorial-skip{
+    background:none; border:none; color:var(--text-dim); font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem; cursor:pointer; padding:6px 0; text-decoration:underline;
+  }
+  .tutorial-skip:hover{color:#fff;}
+  .tutorial-nav{display:flex; gap:8px;}
+  .tutorial-nav button{
+    font-family:'IBM Plex Mono',monospace; font-size:0.78rem; font-weight:600;
+    padding:8px 16px; border-radius:6px; cursor:pointer; border:1px solid var(--panel-line);
+  }
+  .tutorial-back{background:var(--bg-2); color:var(--text-dim);}
+  .tutorial-back:hover{color:#fff;}
+  .tutorial-next{background:linear-gradient(90deg, var(--hot), #ff6b9d); color:#fff; border-color:var(--hot);}
+  .tutorial-next:hover{filter:brightness(1.1);}
 </style>
 </head>
 <body>
@@ -1266,7 +1318,7 @@
 
           <button class="cta" id="workBtn">Hit the block</button>
 
-          <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-line);">
+          <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-line);" id="hoeHappinessBlock">
             <div class="ho-top"><span>👠 Hoe Happiness</span><b id="hoOverlayPct">50%</b></div>
             <div class="ho-bar-wrap"><div class="ho-bar-fill" id="hoOverlayFill" style="width:50%"></div></div>
             <div class="ho-qty-row"><span>Meds to buy</span><b id="hoMedsQtyLabel">1</b></div>
@@ -2094,6 +2146,13 @@
       </div>
       <input type="checkbox" id="workResultsToggle" style="width:24px; height:24px; cursor:pointer;">
     </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
+      <div>
+        <div style="font-weight:700; margin-bottom:4px;">Welcome Tutorial</div>
+        <div style="font-size:0.85rem; color:var(--text-dim);">Show the "Welcome to The Hustle" walkthrough on login</div>
+      </div>
+      <input type="checkbox" id="tutorialToggle" style="width:24px; height:24px; cursor:pointer;">
+    </div>
     <button class="cta danger" id="resetBtn" style="width:100%;">Reset Empire</button>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--panel-line); font-size:0.75rem; color:var(--text-dim);">
       Music: "Dark Ambience Loop" by Iwan Gabovitch (qubodup.net), licensed under CC-BY 3.0.
@@ -2150,6 +2209,23 @@
 </div><!-- /.gameContainer -->
 
 <div class="toast" id="toast"></div>
+
+<div id="tutorialOverlay">
+  <div class="tutorial-highlight" id="tutorialHighlight"></div>
+  <div class="tutorial-tooltip" id="tutorialTooltip">
+    <div class="tutorial-arrow" id="tutorialArrow"></div>
+    <div class="tutorial-step-label" id="tutorialStepLabel">Step 1 of 8</div>
+    <div class="tutorial-title" id="tutorialTitle"></div>
+    <div class="tutorial-body" id="tutorialBody"></div>
+    <div class="tutorial-actions">
+      <button class="tutorial-skip" id="tutorialSkipBtn">Skip tutorial</button>
+      <div class="tutorial-nav">
+        <button class="tutorial-back" id="tutorialBackBtn">← Back</button>
+        <button class="tutorial-next" id="tutorialNextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="./socket.io.min.js"></script>
 <script>
@@ -2498,6 +2574,7 @@
     if(data.state) state = data.state;
     updateAuthUI();
     render();
+    maybeShowTutorial();
   };
 
   window.homeSignInSubmit = async function(){
@@ -2527,6 +2604,7 @@
     if(data.state) state = data.state;
     updateAuthUI();
     render();
+    maybeShowTutorial();
   };
 
   async function load(){
@@ -4465,6 +4543,134 @@
   function renderSettings(){
     const toggle = document.getElementById('workResultsToggle');
     if(toggle) toggle.checked = state.showWorkResults;
+    const tutorialToggle = document.getElementById('tutorialToggle');
+    if(tutorialToggle) tutorialToggle.checked = state.showTutorial !== false;
+  }
+
+  // ---- Onboarding tutorial ----
+  const TUTORIAL_STEPS = [
+    {
+      target: null,
+      title: '👋 Welcome to THE HUSTLE!',
+      body: "You're building a criminal empire from nothing. This quick tour covers turns, working the block, keeping your crew happy, and how your net worth actually grows.",
+    },
+    {
+      target: '.ts-stat.turns',
+      title: '⏳ Turns',
+      body: "Turns are your energy. Working the block, attacking, and pulling jobs all cost turns — they refill on their own over time, so you're never stuck for long.",
+    },
+    {
+      target: '.work-panel',
+      title: '💼 Work the Block',
+      body: "This is your main income. Pick a location, set how many turns to spend, then hit the block — you'll earn cash and pick up new hoes and thugs. Higher-earning spots draw more police attention.",
+    },
+    {
+      target: '#hoeHappinessBlock',
+      title: '👠 Hoe Happiness',
+      body: "Keep this above 40% or hoes start walking. Meds are the fastest fix — buy them right here whenever happiness dips.",
+    },
+    {
+      target: '.ts-stat.thugs',
+      title: '💪 Thug Morale',
+      body: "Happy thugs hit harder in a fight and lower your chance of getting busted. Keep an eye on this percentage up here.",
+    },
+    {
+      target: '#bribeBtn',
+      title: '👮 Bribe the Cops',
+      body: "Pay to keep raids off your back for a few minutes — handy right before a big push on the block.",
+    },
+    {
+      target: '.player-networth',
+      title: '📈 Building Net Worth',
+      body: "Cash, hoes, and thugs don't count toward net worth — factories do. Buy them on the Real Estate page and they'll passively produce goods forever. That's what actually climbs the Leaderboard.",
+    },
+    {
+      target: '[data-page="page-settings"]',
+      title: '⚙️ One Last Thing',
+      body: 'That\'s the basics! You can turn this welcome tutorial off anytime here in Settings if you don\'t want to see it again.',
+    },
+  ];
+
+  let tutorialStep = 0;
+
+  function openTutorial(){
+    showPage('page-main');
+    tutorialStep = 0;
+    document.getElementById('tutorialOverlay').classList.add('show');
+    renderTutorialStep();
+    window.addEventListener('resize', renderTutorialStep);
+  }
+
+  function closeTutorial(){
+    document.getElementById('tutorialOverlay').classList.remove('show');
+    window.removeEventListener('resize', renderTutorialStep);
+  }
+
+  function renderTutorialStep(){
+    const step = TUTORIAL_STEPS[tutorialStep];
+    const highlight = document.getElementById('tutorialHighlight');
+    const tooltip = document.getElementById('tutorialTooltip');
+    const arrow = document.getElementById('tutorialArrow');
+
+    document.getElementById('tutorialStepLabel').textContent = `Step ${tutorialStep + 1} of ${TUTORIAL_STEPS.length}`;
+    document.getElementById('tutorialTitle').textContent = step.title;
+    document.getElementById('tutorialBody').textContent = step.body;
+    document.getElementById('tutorialBackBtn').style.visibility = tutorialStep === 0 ? 'hidden' : 'visible';
+    document.getElementById('tutorialNextBtn').textContent = tutorialStep === TUTORIAL_STEPS.length - 1 ? 'Got it!' : 'Next →';
+
+    const targetEl = step.target ? document.querySelector(step.target) : null;
+
+    if(!targetEl){
+      highlight.classList.add('center-mode');
+      tooltip.classList.add('center-mode');
+      arrow.style.display = 'none';
+      return;
+    }
+
+    highlight.classList.remove('center-mode');
+    tooltip.classList.remove('center-mode');
+    arrow.style.display = 'block';
+
+    targetEl.scrollIntoView({block: 'center', behavior: 'auto'});
+
+    requestAnimationFrame(() => {
+      const rect = targetEl.getBoundingClientRect();
+      const pad = 6;
+      highlight.style.top = (rect.top - pad) + 'px';
+      highlight.style.left = (rect.left - pad) + 'px';
+      highlight.style.width = (rect.width + pad * 2) + 'px';
+      highlight.style.height = (rect.height + pad * 2) + 'px';
+
+      const tooltipWidth = tooltip.offsetWidth || 300;
+      const tooltipHeight = tooltip.offsetHeight || 160;
+      const margin = 14;
+
+      const placeBelow = (rect.bottom + margin + tooltipHeight) <= window.innerHeight;
+      let top;
+      if(placeBelow){
+        top = rect.bottom + margin;
+        arrow.className = 'tutorial-arrow arrow-up';
+      } else {
+        top = rect.top - margin - tooltipHeight;
+        arrow.className = 'tutorial-arrow arrow-down';
+      }
+      top = Math.max(10, Math.min(top, window.innerHeight - tooltipHeight - 10));
+
+      let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+      left = Math.max(10, Math.min(left, window.innerWidth - tooltipWidth - 10));
+
+      tooltip.style.top = top + 'px';
+      tooltip.style.left = left + 'px';
+
+      const arrowLeft = Math.max(16, Math.min(rect.left + rect.width / 2 - left - 7, tooltipWidth - 30));
+      arrow.style.left = arrowLeft + 'px';
+    });
+  }
+
+  function maybeShowTutorial(){
+    if(currentUser && state && state.showTutorial !== false){
+      openTutorial();
+    }
   }
 
   function renderCrewLeaderboard(){
@@ -5323,6 +5529,26 @@
     state.showWorkResults = e.target.checked;
     save();
   });
+  document.getElementById('tutorialToggle').addEventListener('change', async (e) => {
+    try{
+      await apiCall('/api/settings/tutorial', {enabled: e.target.checked});
+    } catch(err){ /* toast already shown */ }
+  });
+  document.getElementById('tutorialNextBtn').addEventListener('click', () => {
+    if(tutorialStep >= TUTORIAL_STEPS.length - 1){
+      closeTutorial();
+    } else {
+      tutorialStep++;
+      renderTutorialStep();
+    }
+  });
+  document.getElementById('tutorialBackBtn').addEventListener('click', () => {
+    if(tutorialStep > 0){
+      tutorialStep--;
+      renderTutorialStep();
+    }
+  });
+  document.getElementById('tutorialSkipBtn').addEventListener('click', closeTutorial);
   document.getElementById('crewPowerBtn').addEventListener('click', () => navigateTo('page-crew-leaderboard'));
   document.getElementById('informerTargetSelect').addEventListener('change', updateInformerCostPreview);
   document.getElementById('informerBuyBtn').addEventListener('click', buyInformerReport);
@@ -5397,12 +5623,15 @@
     setInterval(syncState, 20000);
     setInterval(syncLeaderboardIfActive, 5000);
 
+    maybeShowTutorial();
+
     // Escape key closes modals
     document.addEventListener('keydown', (e) => {
       if(e.key === 'Escape'){
         document.getElementById('workResultsModal').classList.add('hidden');
         document.getElementById('attackResultModal').classList.add('hidden');
         document.getElementById('dmModal').classList.add('hidden');
+        closeTutorial();
         if(document.getElementById('authModal')){
           document.getElementById('authModal').style.display = 'none';
         }

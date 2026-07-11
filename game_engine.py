@@ -352,6 +352,7 @@ def default_state(pimp_name="Big Boss"):
         "last24HourBonus": now,
         "lastRealMoneyPurchase": 0,
         "showWorkResults": False,
+        "showTutorial": True,
         "messages": [],
         "log": [],
         "pimpNameLocked": True,
@@ -2238,6 +2239,10 @@ def save_pimp_name(state, name):
     if not name:
         raise GameError("Name required")
     state["name"] = name
+
+
+def set_tutorial_visibility(state, enabled):
+    state["showTutorial"] = bool(enabled)
 
 
 def buy_turns_with_real_money(state):

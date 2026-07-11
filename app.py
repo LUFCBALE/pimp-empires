@@ -836,6 +836,13 @@ def api_settings_pimpname():
     return handle_action(ge.save_pimp_name, data.get('name', ''))
 
 
+@app.route('/api/settings/tutorial', methods=['POST'])
+@login_required
+def api_settings_tutorial():
+    data = request.get_json() or {}
+    return handle_action(ge.set_tutorial_visibility, bool(data.get('enabled', True)))
+
+
 @app.route('/api/settings/reset', methods=['POST'])
 @login_required
 def api_settings_reset():
