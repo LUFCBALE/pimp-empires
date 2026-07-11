@@ -330,8 +330,6 @@ def default_state(pimp_name="Big Boss"):
         "lastCasinoHeist": 0,
         "bribeActiveUntil": 0,
         "bribeCooldownUntil": 0,
-        "hoeRoster": [],
-        "nextHoeId": 0,
         "crewMembers": [],
         "crewAttackBans": {},
         "crewEmblem": "",
@@ -355,7 +353,6 @@ def default_state(pimp_name="Big Boss"):
         "log": [],
         "pimpNameLocked": True,
     }
-    ensure_hoe_roster(state)
     return state
 
 
@@ -365,59 +362,8 @@ def add_log(state, msg, cls="info"):
         state["log"] = state["log"][-60:]
 
 
-# ---------------------------------------------------------------------------
-# Hoe roster
-# ---------------------------------------------------------------------------
-
-def _random_hoe_name(state):
-    for _ in range(20):
-        name = f"{random.choice(HOE_FIRST_NAMES)} {random.choice(HOE_LAST_NAMES)}"
-        if not any(h["name"] == name for h in state["hoeRoster"]):
-            return name
-    return f"{random.choice(HOE_FIRST_NAMES)} {random.choice(HOE_LAST_NAMES)}"
-
-
-def create_hoe(state):
-    state["nextHoeId"] += 1
-    hoe = {
-        "id": state["nextHoeId"],
-        "name": _random_hoe_name(state),
-        "happiness": jround(state["hoeMorale"]),
-        "earned": 0,
-        "turnsWorked": 0,
-    }
-    state["hoeRoster"].append(hoe)
-    return hoe
-
-
-def ensure_hoe_roster(state):
-    target = state["hoes"]
-    roster = state["hoeRoster"]
-    while len(roster) < target:
-        create_hoe(state)
-    if len(roster) > target:
-        state["hoeRoster"] = roster[:target] if target > 0 else []
-    state["hoes"] = len(state["hoeRoster"])
-
-
 def add_hoes(state, n):
-    for _ in range(max(0, n)):
-        create_hoe(state)
-    state["hoes"] = len(state["hoeRoster"])
-
-
-def distribute_earnings(state, total, turns_spent):
-    """Earnings are driven by collective hoeMorale, not each hoe's individual
-    happiness, so the payout is just split evenly across the roster - this
-    is purely for each hoe's own "earned" display stat, not a real cash
-    allocation."""
-    roster = state["hoeRoster"]
-    if not roster:
-        return
-    per_hoe = total / len(roster)
-    for h in roster:
-        h["turnsWorked"] += turns_spent
-        h["earned"] += jround(per_hoe)
+    state["hoes"] = max(0, state.get("hoes", 0) + n)
 
 
 def recalc_morale(state):
@@ -429,8 +375,6 @@ def recalc_morale(state):
     apply_catchup so it's always accurate regardless of which action ran."""
     hoes = state.get("hoes", 0)
     state["hoeMorale"] = min(100, jround(100 * state.get("medsStock", 0) / hoes)) if hoes > 0 else 100
-    for h in state.get("hoeRoster", []):
-        h["happiness"] = state["hoeMorale"]
 
     thugs = state.get("thugs", 0)
     if thugs > 0:
@@ -447,33 +391,25 @@ def check_thug_attrition(state):
 
 
 HOE_ATTRITION_HAPPINESS_THRESHOLD = 40
-HOE_ATTRITION_MIN_CHANCE = 0.05  # chance an individual hoe walks, right at the 40% threshold
+HOE_ATTRITION_MIN_CHANCE = 0.05  # chance a hoe walks, right at the 40% threshold
 HOE_ATTRITION_MAX_CHANCE = 0.40  # chance at rock-bottom 0% happiness
 
 
 def check_hoe_attrition(state):
     """Hoes are never lost to a raid/bust - the only way you lose them is
-    letting happiness collapse. Below 40% happiness each hoe has a small,
-    escalating chance of walking per work session; by 0% happiness a lot
-    of them go. Checked per-individual against their own happiness, not the
-    aggregate hoeMorale."""
-    roster = state.get("hoeRoster", [])
-    if not roster:
+    letting happiness collapse. Below 40% happiness there's a small,
+    escalating chance any given hoe walks per work session; by 0% happiness
+    a lot of them go. Applied as an expected fraction of the roster against
+    the aggregate hoeMorale, not tracked per-individual."""
+    hoes = state.get("hoes", 0)
+    happiness = state.get("hoeMorale", 100)
+    if hoes <= 0 or happiness >= HOE_ATTRITION_HAPPINESS_THRESHOLD:
         return 0
-    survivors = []
-    left = 0
-    for h in roster:
-        happiness = h["happiness"]
-        if happiness < HOE_ATTRITION_HAPPINESS_THRESHOLD:
-            severity = 1 - (happiness / HOE_ATTRITION_HAPPINESS_THRESHOLD)
-            leave_chance = HOE_ATTRITION_MIN_CHANCE + severity * (HOE_ATTRITION_MAX_CHANCE - HOE_ATTRITION_MIN_CHANCE)
-            if random.random() < leave_chance:
-                left += 1
-                continue
-        survivors.append(h)
+    severity = 1 - (happiness / HOE_ATTRITION_HAPPINESS_THRESHOLD)
+    leave_chance = HOE_ATTRITION_MIN_CHANCE + severity * (HOE_ATTRITION_MAX_CHANCE - HOE_ATTRITION_MIN_CHANCE)
+    left = min(hoes, jround(hoes * leave_chance))
     if left:
-        state["hoeRoster"] = survivors
-        state["hoes"] = len(survivors)
+        state["hoes"] -= left
     return left
 
 
@@ -1429,7 +1365,6 @@ def work_block(state, requested_turns):
         thugs_lost = jround(thugs_gain * 0.7)
         thugs_gain = jround(thugs_gain * 0.3)
 
-    distribute_earnings(state, cash_gain, turns)
     state["cash"] += cash_gain
     state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_gain
     add_hoes(state, hoes_gain)
@@ -2279,7 +2214,8 @@ def apply_catchup(state):
         state["thugsHospitalReadyAt"] = 0
     if "pendingCrewInvites" not in state:
         state["pendingCrewInvites"] = []
-    ensure_hoe_roster(state)
+    state.pop("hoeRoster", None)
+    state.pop("nextHoeId", None)
     tick_regen(state, now)
     tick_factories(state, now)
     tick_market(state, now)
