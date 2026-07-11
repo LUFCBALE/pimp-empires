@@ -2743,6 +2743,10 @@
     return factorySellValue(b.factories) + produceSellValue(b.guns, b.cadillacs, b.armoredTrucks, null, null);
   }
 
+  function crewRosterIds(){
+    return new Set(((state.crewRoster && state.crewRoster.members) || []).map(m => m.botId));
+  }
+
   function getPlayerCityRank(){
     ensureBots();
     const playerNW = totalNetWorth();
@@ -3058,9 +3062,9 @@
       bots = bots.filter(b => b.city === state.location);
     }
 
-    const crewRosterIds = new Set(((state.crewRoster && state.crewRoster.members) || []).map(m => m.botId));
+    const rosterIds = crewRosterIds();
     const rows = bots.map(b => {
-      const inYourCrew = crewRosterIds.has(b.id);
+      const inYourCrew = rosterIds.has(b.id);
       const botNW = botNetWorth(b);
       const isInRange = b.city === state.location && botNW >= minAttackNW && botNW <= maxAttackNW;
       return {
@@ -3122,7 +3126,7 @@
       <div class="lb-row ${r.isYou ? 'lb-you' : ''}">
         <div class="lb-rank">#${String(i + 1).padStart(2, '0')} ${r.rankArrow}</div>
         <div class="lb-name">
-          <span>${escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
+          <span>${escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou && !r.inYourCrew ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
         </div>
         <div class="lb-gang">${r.gang ? `${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
@@ -4341,27 +4345,32 @@
       validContainer.innerHTML = '<div class="hint">No valid targets in your city.</div>';
     } else {
       const now = Date.now();
+      const rosterIds = crewRosterIds();
       validContainer.innerHTML = validTargets.map(b => {
         const banUntil = (state.crewAttackBans || {})[b.id] || 0;
         const banned = now < banUntil;
         const banMinsLeft = banned ? Math.ceil((banUntil - now) / 60000) : 0;
+        const inCrew = rosterIds.has(b.id);
+        const blocked = banned || inCrew;
         return `
         <div class="bot-card">
           <div class="bot-card-top">
             <div class="bot-name">${escapeHtml(b.boss)}${b.isHuman ? ' <span style="color:var(--teal); font-size:0.7rem; font-weight:700;">🧑 REAL PLAYER</span>' : ''}</div>
           </div>
           <div style="font-size:0.8rem; color:var(--text-dim);">Net Worth: ${fmtMoney(botNetWorth(b))}</div>
-          ${banned
+          ${inCrew
+            ? `<div style="font-size:0.8rem; color:var(--teal); text-align:center; padding:8px;">🤝 In your crew — can't be attacked</div>`
+            : banned
             ? `<div style="font-size:0.8rem; color:var(--danger); text-align:center; padding:8px;">🛡️ Recently dropped from your crew — attackable again in ${banMinsLeft} min</div>`
             : `<button class="cta" data-attack-bot="${b.id}" ${state.thugs < 1 ? 'disabled' : ''}>⚔️ Attack — Send all thugs</button>`}
-          ${!banned && b.thugs === 0 ? `
+          ${!blocked && b.thugs === 0 ? `
             <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type to wipe out — you won't see what they actually have until you commit.</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
               ${Object.entries(FACTORY_TYPE_LABELS).map(([type, label]) => `
                 <button class="cta cta-sm" data-bomb="${b.id}" data-bomb-type="${type}" style="background:var(--red); width:100%;">💣 ${label}</button>
               `).join('')}
             </div>` : ''}
-          ${!banned && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories</div>` : ''}
+          ${!blocked && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories</div>` : ''}
         </div>`;
       }).join('');
       validContainer.querySelectorAll('[data-attack-bot]').forEach(btn => {

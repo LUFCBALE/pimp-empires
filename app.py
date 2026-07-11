@@ -295,6 +295,15 @@ def build_crew_roster(user_id, state, world):
     return {'emblem': leader_state.get('crewEmblem', ''), 'members': members}
 
 
+def crew_protected_ids(user_id, state, world):
+    """Bot/human IDs currently in the caller's own crew (leader or
+    fellow member, never the caller themselves) - used to block
+    attacking/bombing your own crew regardless of which side of the
+    leader/member split the caller is on."""
+    roster = build_crew_roster(user_id, state, world)
+    return {m['botId'] for m in roster['members'] if not m['isYou']}
+
+
 def attach_world_view(state, world, user_id):
     """Mutates `state` in place to carry the shared bots plus every other
     real player for display - call this AFTER state has been saved, since
@@ -646,6 +655,8 @@ def api_attack():
     state = load_state(user['id'], user['pimp_name'])
     world = load_world()
     try:
+        if target_id in crew_protected_ids(user['id'], state, world):
+            raise ge.GameError("You can't attack your own crew")
         if target_id is not None and target_id >= ge.HUMAN_ID_OFFSET:
             defender_id = target_id - ge.HUMAN_ID_OFFSET
             if defender_id == user['id']:
@@ -671,6 +682,8 @@ def api_bomb():
     state = load_state(user['id'], user['pimp_name'])
     world = load_world()
     try:
+        if target_id in crew_protected_ids(user['id'], state, world):
+            raise ge.GameError("You can't bomb your own crew")
         if target_id is not None and target_id >= ge.HUMAN_ID_OFFSET:
             defender_id = target_id - ge.HUMAN_ID_OFFSET
             if defender_id == user['id']:
