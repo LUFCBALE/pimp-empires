@@ -1023,15 +1023,24 @@ def log_attack(world, attacker_name, attacker_gang, attacker_emblem, defender_na
 ATTACK_RATE_LIMIT_COUNT = 10
 ATTACK_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
 
+# Short spam-click guard: your first hit on a target is instant, but every
+# hit after that on the SAME target needs this long to have passed since
+# your last hit on them specifically. Doesn't touch attacking anyone else
+# in between.
+ATTACK_REPEAT_COOLDOWN_MS = 7 * 1000
+
 
 def check_attack_rate_limit(state, target_id, target_name=None):
     now = now_ms()
     history = state.setdefault("attackHistory", {})
     key = str(target_id)
     recent = [t for t in history.get(key, []) if now - t < ATTACK_RATE_LIMIT_WINDOW_MS]
+    who = target_name or "this target"
+    if recent and now - recent[-1] < ATTACK_REPEAT_COOLDOWN_MS:
+        wait_sec = math.ceil((ATTACK_REPEAT_COOLDOWN_MS - (now - recent[-1])) / 1000)
+        raise GameError(f"Hold up — you can hit {who} again in {wait_sec}s")
     if len(recent) >= ATTACK_RATE_LIMIT_COUNT:
         wait_min = math.ceil((ATTACK_RATE_LIMIT_WINDOW_MS - (now - min(recent))) / 60000)
-        who = target_name or "this target"
         raise GameError(f"You've hit {who} too many times recently — try again in {wait_min} min")
     recent.append(now)
     history[key] = recent
