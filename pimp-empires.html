@@ -1250,6 +1250,7 @@
         <button class="sidebar-link" data-page="page-attacks">⚔️<span>Attacks</span></button>
         <button class="sidebar-link" data-page="page-informer">🕵️<span>Informer</span></button>
         <button class="sidebar-link" data-page="page-leaderboard">🏆<span>Leaderboard</span></button>
+        <button class="sidebar-link" data-page="page-achievements">🎖️<span>Achievements</span></button>
         <button class="sidebar-link" data-page="page-settings">⚙️<span>Settings</span></button>
         <button class="sidebar-link" data-page="page-about">ℹ️<span>About</span></button>
         <button class="sidebar-link" data-page="page-faq">❓<span>FAQ</span></button>
@@ -2065,6 +2066,15 @@
   </div>
 </div>
 
+<div class="page" id="page-achievements">
+  <button class="back-btn" data-back>← Back to the block</button>
+  <h2 class="page-title">Achievements</h2>
+  <div class="page-subtitle" id="achievementsSubtitle">Badges you've earned show up on your profile.</div>
+  <div class="panel">
+    <div id="achievementsGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;"></div>
+  </div>
+</div>
+
 <div class="page" id="page-crew">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Your Crew</h2>
@@ -2578,7 +2588,14 @@
       throw new Error(data.error || 'request failed');
     }
     if(data.state){
+      const before = new Set((state && state.achievements) || []);
       state = data.state;
+      (state.achievements || []).forEach(id => {
+        if(!before.has(id)){
+          const a = ACHIEVEMENTS_BY_ID[id];
+          if(a) showToast(`🏆 Achievement unlocked: ${a.emoji} ${a.name} (+${a.xp} XP)`);
+        }
+      });
     }
     return data;
   }
@@ -3472,6 +3489,43 @@
       <div style="font-size:0.85rem;"><b>Factories:</b> ${factoryLines || 'none'}</div>
     `;
     panel.style.display = 'block';
+  }
+
+  const ACHIEVEMENTS = [
+    {id:'first_blood', name:'First Blood', emoji:'🔰', img:'badges/first_blood.jpg', desc:'Win your first attack', xp:100},
+    {id:'demolition_man', name:'Demolition Man', emoji:'💣', img:'badges/demolition_man.jpg', desc:'Complete your first bombing run', xp:100},
+    {id:'pulled_a_job', name:'Pulled a Job', emoji:'🕶️', img:'badges/pulled_a_job.jpg', desc:'Win your first heist', xp:100},
+    {id:'high_roller', name:'High Roller', emoji:'🎰', desc:'Win your first Casino Heist', xp:250},
+    {id:'real_estate_mogul', name:'Real Estate Mogul', emoji:'🏭', img:'badges/real_estate_mogul.jpg', desc:'Own your first factory', xp:100},
+    {id:'armed_to_the_teeth', name:'Armed to the Teeth', emoji:'🔫', img:'badges/armed_to_the_teeth.jpg', desc:'Own at least one of every gun type', xp:150},
+    {id:'crew_cut', name:'Crew Cut', emoji:'🤝', img:'badges/crew_cut.jpg', desc:'Join or form a crew', xp:50},
+    {id:'gang_leader_rank', name:'Gang Leader', emoji:'👑', desc:'Reach rank 6 (Gang Leader)', xp:300},
+    {id:'millionaire', name:'Millionaire', emoji:'💰', img:'badges/millionaire.jpg', desc:'Hit £1,000,000 net worth', xp:300},
+    {id:'tycoon', name:'Tycoon', emoji:'🏦', img:'badges/tycoon.jpg', desc:'Hit £100,000,000 net worth', xp:750},
+    {id:'the_don', name:'THE DON', emoji:'😈', desc:'Reach max rank', xp:1000},
+    {id:'top_of_the_charts', name:'Top of the Charts', emoji:'🥇', img:'badges/top_of_the_charts.jpg', desc:'Reach #1 on the global leaderboard', xp:500},
+    {id:'top_ten', name:'Top Ten', emoji:'🥈', desc:'Reach the top 10 on the global leaderboard', xp:200},
+  ];
+  const ACHIEVEMENTS_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
+
+  function renderAchievements(){
+    const earned = new Set(state.achievements || []);
+    const grid = document.getElementById('achievementsGrid');
+    document.getElementById('achievementsSubtitle').textContent = `${earned.size} / ${ACHIEVEMENTS.length} badges earned — they show up on your profile.`;
+    grid.innerHTML = ACHIEVEMENTS.map(a => {
+      const got = earned.has(a.id);
+      const art = a.img
+        ? `<img src="${a.img}" alt="${escapeHtml(a.name)}" style="width:72px; height:72px; object-fit:contain; margin-bottom:6px; filter:${got ? 'none' : 'grayscale(1)'};">`
+        : `<div style="font-size:2rem; margin-bottom:6px; filter:${got ? 'none' : 'grayscale(1)'};">${a.emoji}</div>`;
+      return `
+        <div style="border:1px solid ${got ? 'var(--gold)' : 'var(--panel-line)'}; border-radius:10px; padding:14px; background:${got ? 'rgba(255,200,0,0.08)' : 'var(--bg-2)'}; opacity:${got ? '1' : '0.55'}; text-align:center;">
+          ${art}
+          <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(a.name)}</div>
+          <div style="font-size:0.78rem; color:var(--text-dim); margin-bottom:6px;">${escapeHtml(a.desc)}</div>
+          <div style="font-size:0.72rem; color:var(--gold);">${got ? '✅ Earned' : `🔒 +${a.xp} XP`}</div>
+        </div>
+      `;
+    }).join('');
   }
 
   const HEIST_JOBS = {
@@ -4408,6 +4462,20 @@
             <div style="font-weight:700;">${joinDate}</div>
           </div>
         </div>
+        ${(p.achievements || []).length > 0 ? `
+        <div style="margin-bottom:16px;">
+          <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Badges</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            ${p.achievements.map(id => {
+              const a = ACHIEVEMENTS_BY_ID[id];
+              if(!a) return '';
+              const art = a.img
+                ? `<img src="${a.img}" alt="${escapeHtml(a.name)}" style="width:40px; height:40px; object-fit:contain;">`
+                : `<span style="font-size:1.6rem;">${a.emoji}</span>`;
+              return `<span title="${escapeHtml(a.name)} — ${escapeHtml(a.desc)}" style="display:inline-flex; align-items:center; border:1px solid var(--gold); border-radius:8px; padding:6px 10px; background:rgba(255,200,0,0.08);">${art}</span>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
         <button class="cta gold" id="profileMsgBtn" style="width:100%;">✉️ Message ${escapeHtml(p.name)}</button>
       `;
       document.getElementById('profileMsgBtn').addEventListener('click', () => openDMModal(p.botId));
@@ -5453,6 +5521,7 @@
     'page-informer': renderInformer,
     'page-messages': renderMessages,
     'page-leaderboard': renderLeaderboard,
+    'page-achievements': renderAchievements,
     'page-settings': renderSettings,
   };
 

@@ -318,6 +318,7 @@ def default_state(pimp_name="Big Boss"):
         "medsStock": 1,
         "lifetimeEarnings": 0,
         "xp": 0,
+        "achievements": [],
         "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
         "carFactoryRatio": 1.0,
@@ -465,6 +466,81 @@ def rank_info(xp):
         "nextName": next_rank[1] if next_rank else None,
         "xpToNext": (next_rank[2] - xp) if next_rank else 0,
     }
+
+
+# ---------------------------------------------------------------------------
+# Achievements
+# ---------------------------------------------------------------------------
+
+# GUN_TYPE_NAMES isn't defined yet at this point in the file, so this list
+# is spelled out explicitly rather than referencing it.
+ALL_GUN_TYPES = ("pistol9mm", "shotgun12gauge", "ak47", "m249")
+
+ACHIEVEMENTS = [
+    {"id": "first_blood", "name": "First Blood", "emoji": "🔰", "desc": "Win your first attack", "xp": 100},
+    {"id": "demolition_man", "name": "Demolition Man", "emoji": "💣", "desc": "Complete your first bombing run", "xp": 100},
+    {"id": "pulled_a_job", "name": "Pulled a Job", "emoji": "🕶️", "desc": "Win your first heist", "xp": 100},
+    {"id": "high_roller", "name": "High Roller", "emoji": "🎰", "desc": "Win your first Casino Heist", "xp": 250},
+    {"id": "real_estate_mogul", "name": "Real Estate Mogul", "emoji": "🏭", "desc": "Own your first factory", "xp": 100},
+    {"id": "armed_to_the_teeth", "name": "Armed to the Teeth", "emoji": "🔫", "desc": "Own at least one of every gun type", "xp": 150},
+    {"id": "crew_cut", "name": "Crew Cut", "emoji": "🤝", "desc": "Join or form a crew", "xp": 50},
+    {"id": "gang_leader_rank", "name": "Gang Leader", "emoji": "👑", "desc": "Reach rank 6 (Gang Leader)", "xp": 300},
+    {"id": "millionaire", "name": "Millionaire", "emoji": "💰", "desc": "Hit £1,000,000 net worth", "xp": 300},
+    {"id": "tycoon", "name": "Tycoon", "emoji": "🏦", "desc": "Hit £100,000,000 net worth", "xp": 750},
+    {"id": "the_don", "name": "THE DON", "emoji": "😈", "desc": "Reach max rank", "xp": 1000},
+    {"id": "top_of_the_charts", "name": "Top of the Charts", "emoji": "🥇", "desc": "Reach #1 on the global leaderboard", "xp": 500},
+    {"id": "top_ten", "name": "Top Ten", "emoji": "🥈", "desc": "Reach the top 10 on the global leaderboard", "xp": 200},
+]
+ACHIEVEMENTS_BY_ID = {a["id"]: a for a in ACHIEVEMENTS}
+
+
+def award_achievement(state, achievement_id):
+    """Awards an achievement once, ever - re-awarding is a safe no-op, so
+    every call site can just call this unconditionally whenever the
+    triggering event happens rather than tracking "have I checked this
+    already" itself. Returns the achievement dict if newly earned, else
+    None (used by callers that want to log/notify on a fresh unlock)."""
+    earned = state.setdefault("achievements", [])
+    if achievement_id in earned:
+        return None
+    ach = ACHIEVEMENTS_BY_ID.get(achievement_id)
+    if not ach:
+        return None
+    earned.append(achievement_id)
+    add_xp(state, ach["xp"])
+    add_log(state, f"🏆 Achievement unlocked: {ach['emoji']} {ach['name']} (+{ach['xp']} XP)", "good")
+    return ach
+
+
+def check_milestone_achievements(state):
+    """Achievements derivable purely from the player's own state - called
+    unconditionally from apply_catchup so they're picked up on every load
+    without needing a hook at every mutation site, same "recompute, don't
+    drift" approach as recalc_morale/rank_info. Leaderboard-position
+    achievements (top_of_the_charts/top_ten) need visibility into every
+    other player's net worth, which isn't available here - those are
+    checked separately in app.py's attach_world_view."""
+    if sum(state.get("factories", {}).values()) > 0:
+        award_achievement(state, "real_estate_mogul")
+
+    guns = state.get("guns", {})
+    if all(guns.get(g, 0) > 0 for g in ALL_GUN_TYPES):
+        award_achievement(state, "armed_to_the_teeth")
+
+    if state.get("gang"):
+        award_achievement(state, "crew_cut")
+
+    rank = rank_info(state.get("xp", 0))
+    if rank["level"] >= 6:
+        award_achievement(state, "gang_leader_rank")
+    if rank["level"] >= 8:
+        award_achievement(state, "the_don")
+
+    nw = total_net_worth(state)
+    if nw >= 1_000_000:
+        award_achievement(state, "millionaire")
+    if nw >= 100_000_000:
+        award_achievement(state, "tycoon")
 
 
 # ---------------------------------------------------------------------------
@@ -1029,6 +1105,7 @@ def fight_bot(state, bot_id, world):
         add_log(state, f"You hit {bot['boss']} of \"{bot['gang']}\" for £{cash_won} and wiped out {thugs_wiped} thugs ({thugs_hospitalized} hospitalized, the rest gone for good). Their crew fired back before going down, killing {your_thugs_lost} of your thugs.", "good")
         recalc_morale(state)
         add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS + ATTACK_XP_WIN_BONUS)
+        award_achievement(state, "first_blood")
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
     else:
         thugs_lost_pct = 0.1 + random.random() * 0.15
@@ -1078,6 +1155,7 @@ def bomb_bot(state, bot_id, factory_type, world):
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else f" ({bot['factories'][factory_type]} left standing)") + ".", "good")
     add_xp(state, BOMB_XP)
+    award_achievement(state, "demolition_man")
     return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out}
 
 
@@ -1181,6 +1259,7 @@ def fight_human(state, defender, world, defender_target_id=None):
         recalc_morale(state)
         recalc_morale(defender)
         add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS + ATTACK_XP_WIN_BONUS)
+        award_achievement(state, "first_blood")
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": defender["name"], "gang": defender.get("gang", "")}
     else:
         thugs_lost_pct = 0.1 + random.random() * 0.15
@@ -1230,6 +1309,7 @@ def bomb_human(state, defender, factory_type):
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
                        + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
     add_xp(state, BOMB_XP)
+    award_achievement(state, "demolition_man")
     return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed}
 
 
@@ -1730,6 +1810,7 @@ def run_heist(state, job_id):
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
         recalc_morale(state)
         add_xp(state, job["turnCost"] * XP_PER_TURN_SPENT)
+        award_achievement(state, "pulled_a_job")
         return {"won": True, "cashWon": cash_won, "thugsLost": thugs_lost}
     else:
         lo, hi = job["failCasualtyPct"]
@@ -1780,6 +1861,7 @@ def run_casino_heist(state, world):
         add_log(state, f"Casino heist scored £{player_share} for you!", "good")
         recalc_morale(state)
         add_xp(state, turns_needed * XP_PER_TURN_SPENT)
+        award_achievement(state, "high_roller")
         return {"won": True, "playerShare": player_share, "thugsLost": thugs_lost}
     else:
         lo, hi = job["failCasualtyPct"]
@@ -2289,6 +2371,8 @@ def apply_catchup(state):
         state["pendingCrewInvites"] = []
     if "xp" not in state:
         state["xp"] = 0
+    if "achievements" not in state:
+        state["achievements"] = []
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     tick_regen(state, now)
@@ -2299,6 +2383,7 @@ def apply_catchup(state):
     check_dealer_reset(state, now)
     check_daily_bonus(state, now)
     recalc_morale(state)
+    check_milestone_achievements(state)
     return state
 
 

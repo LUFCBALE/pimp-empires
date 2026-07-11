@@ -313,6 +313,23 @@ def attach_world_view(state, world, user_id):
     state['globalAttackLog'] = world.get('globalAttackLog', [])
     state['crewRoster'] = build_crew_roster(user_id, state, world)
     state['rankInfo'] = ge.rank_info(state.get('xp', 0))
+
+    # Leaderboard-position achievements need visibility into every other
+    # player's net worth, which only exists once state['bots'] is built
+    # above - can't be checked in apply_catchup like the other milestone
+    # achievements. This runs after the caller already saved state, so
+    # re-save if a new one actually unlocks.
+    player_nw = ge.total_net_worth(state)
+    better_count = sum(1 for b in state['bots'] if ge.bot_net_worth(b) > player_nw)
+    global_rank = better_count + 1
+    unlocked = False
+    if global_rank == 1 and ge.award_achievement(state, 'top_of_the_charts'):
+        unlocked = True
+    if global_rank <= 10 and ge.award_achievement(state, 'top_ten'):
+        unlocked = True
+    if unlocked:
+        save_state(user_id, state)
+
     return state
 
 
@@ -756,6 +773,7 @@ def api_profile(target_id):
             'netWorth': ge.total_net_worth(target_state),
             'joinDate': row['created_at'],
             'rank': ge.rank_info(target_state.get('xp', 0)),
+            'achievements': target_state.get('achievements', []),
         },
     })
 
