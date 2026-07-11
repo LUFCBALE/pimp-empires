@@ -311,17 +311,16 @@
   }
   .tagline{color:var(--text-dim); font-family:'IBM Plex Mono',monospace; font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; margin-top:6px;}
 
-  /* ---- Quick supplies panel (hoe happiness / thugs morale / bribe) ---- */
+  /* ---- Quick supplies panel (bribe) ---- */
   .quick-supplies-panel{
     background:var(--panel); border:1px solid var(--panel-line); border-radius:10px;
     padding:12px 16px; margin-bottom:16px;
   }
-  .quick-supplies-panel input[type=number]{
+  .ho-qty-input{
     width:100%; background:var(--bg); border:1px solid var(--panel-line); color:var(--text);
     font-family:'IBM Plex Mono',monospace; font-size:0.85rem; padding:7px 8px; border-radius:6px; outline:none;
   }
-  .quick-supplies-panel input[type=number]:focus{border-color:var(--hot);}
-  @media(max-width:700px){.quick-supplies-panel > div{grid-template-columns:1fr !important;}}
+  .ho-qty-input:focus{border-color:var(--hot);}
 
   /* ---- England Map (Leaflet / OpenStreetMap) ---- */
   .uk-map-wrap{
@@ -1213,7 +1212,7 @@
           <div class="ts-main">
             <div class="ts-label">Thugs</div>
             <div class="ts-value" id="statThugs">0</div>
-            <div class="ts-sub">keeps the heat off</div>
+            <div class="ts-sub" id="statThugsSub">50% happy</div>
           </div>
         </div>
         <div class="ts-stat turns">
@@ -1266,32 +1265,19 @@
           </div>
 
           <button class="cta" id="workBtn">Hit the block</button>
-          <div class="hint" id="projHint">projected: ~£0, +0 hoes, +0 thugs</div>
+
+          <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-line);">
+            <div class="ho-top"><span>👠 Hoe Happiness</span><b id="hoOverlayPct">50%</b></div>
+            <div class="ho-bar-wrap"><div class="ho-bar-fill" id="hoOverlayFill" style="width:50%"></div></div>
+            <div class="ho-qty-row"><span>Meds to buy</span><b id="hoMedsQtyLabel">1</b></div>
+            <input type="number" class="ho-qty-input" id="hoMedsSlider" min="1" max="1" value="1">
+            <button class="ho-buy-btn" id="quickBuyMedsBtn" style="margin-top:6px; width:100%;">Quick Buy Meds</button>
+          </div>
         </div>
 
         <div class="quick-supplies-panel">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <div>
-              <div class="ho-top"><span>👠 Hoe Happiness</span><b id="hoOverlayPct">50%</b></div>
-              <div class="ho-bar-wrap"><div class="ho-bar-fill" id="hoOverlayFill" style="width:50%"></div></div>
-              <div class="ho-qty-row"><span>Meds to buy</span><b id="hoMedsQtyLabel">1</b></div>
-              <input type="number" id="hoMedsSlider" min="1" max="1" value="1">
-              <button class="ho-buy-btn" id="quickBuyMedsBtn" style="margin-top:6px; width:100%;">Quick Buy Meds</button>
-            </div>
-
-            <div>
-              <div class="ho-top"><span>💪 Thugs Morale</span><b id="thugMoraleValue">50%</b></div>
-              <div class="ho-bar-wrap"><div class="ho-bar-fill" id="thugMoraleBar" style="width:50%; background:#ff6b9d;"></div></div>
-              <div class="ho-qty-row"><span>Chains to buy</span><b id="gunsQtyLabel">1</b></div>
-              <input type="number" id="gunsSlider" min="1" max="1" value="1">
-              <button class="ho-buy-btn" id="quickBuyGunsBtn" style="margin-top:6px; width:100%;">Quick Buy Chains</button>
-            </div>
-          </div>
-
-          <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--panel-line);">
-            <button class="cta bribe cta-sm" id="bribeBtn" style="width:100%;">👮 Bribe the Cops — £0</button>
-            <div class="hint" id="bribeHint">Keeps raids off your back for 5 minutes · once every hour · £15 per hoe on the roster</div>
-          </div>
+          <button class="cta bribe cta-sm" id="bribeBtn" style="width:100%;">👮 Bribe the Cops — £0</button>
+          <div class="hint" id="bribeHint">Keeps raids off your back for 5 minutes · once every hour · £15 per hoe on the roster</div>
         </div>
       </div>
 
@@ -2856,25 +2842,6 @@
     btn.disabled = state.cash < medsItem.cost * qty;
   }
 
-  function quickBuyGuns(){
-    const slider = document.getElementById('gunsSlider');
-    const qty = slider ? (parseInt(slider.value) || 1) : 1;
-    buyStoreItem('thugs', 'chains', qty);
-  }
-
-  function updateGunsQty(){
-    const slider = document.getElementById('gunsSlider');
-    const label = document.getElementById('gunsQtyLabel');
-    const btn = document.getElementById('quickBuyGunsBtn');
-    if(!slider || !label || !btn) return;
-    const chainsItem = STORE_ITEMS.thugs.find(i => i.id === 'chains');
-    if(!chainsItem) return;
-    const qty = parseInt(slider.value) || 1;
-    label.textContent = qty;
-    btn.textContent = `Quick Buy Chains — ${fmtMoney(chainsItem.cost * qty)}`;
-    btn.disabled = state.cash < chainsItem.cost * qty;
-  }
-
   function renderHappinessOverlay(){
     const fill = document.getElementById('hoOverlayFill');
     const pctEl = document.getElementById('hoOverlayPct');
@@ -2887,33 +2854,11 @@
     fill.style.background = happinessColor(avg);
     pctEl.textContent = avg + '%';
 
-    // Update thugs morale display
-    const thugMoraleBar = document.getElementById('thugMoraleBar');
-    const thugMoraleValue = document.getElementById('thugMoraleValue');
-    if(thugMoraleBar && thugMoraleValue){
-      const moraleVal = Math.round(state.thugMorale || 50);
-      thugMoraleBar.style.width = moraleVal + '%';
-      thugMoraleBar.style.background = happinessColor(moraleVal);
-      thugMoraleValue.textContent = moraleVal + '%';
-    }
-
     const medsItem = STORE_ITEMS.girls.find(i => i.id === 'condoms');
     const afford = Math.max(1, Math.floor(state.cash / medsItem.cost));
     slider.max = afford;
     if(parseInt(slider.value) > afford) slider.value = afford;
     updateMedsOverlayQty();
-
-    // Update chains slider (Thugs Morale quick-buy)
-    const gunsSlider = document.getElementById('gunsSlider');
-    if(gunsSlider){
-      const chainsItem = STORE_ITEMS.thugs.find(i => i.id === 'chains');
-      if(chainsItem){
-        const chainsAfford = Math.max(1, Math.floor(state.cash / chainsItem.cost));
-        gunsSlider.max = chainsAfford;
-        if(parseInt(gunsSlider.value) > chainsAfford) gunsSlider.value = chainsAfford;
-        updateGunsQty();
-      }
-    }
   }
 
   const CITY_COORDS = {
@@ -3682,7 +3627,6 @@
 
     renderStore();
     renderLocation();
-    updateProjection();
     renderLog();
     renderAttackFeed();
 
@@ -3692,6 +3636,7 @@
     document.getElementById('navBlackMarketSub').textContent =
       `${Math.floor(state.gunsOwned||0)} guns · ${Math.floor(state.medsStock||0)} meds · ${Math.floor(state.cadillacs||0)} cars`;
     document.getElementById('statHoesSub').textContent = `${Math.round(state.hoeMorale || 0)}% happy`;
+    document.getElementById('statThugsSub').textContent = `${Math.round(state.thugMorale || 0)}% happy`;
 
     const pimpNameInput = document.getElementById('pimpNameInput');
     if(pimpNameInput && pimpNameInput.value !== state.name) pimpNameInput.value = state.name;
@@ -3962,8 +3907,6 @@
   const HOE_RECRUIT_TURN_BLOCK = 10;
   const HOE_RECRUIT_MIN = 1, HOE_RECRUIT_MAX = 3;
 
-  const THUG_RECRUIT_PER_TURN = 1; // 1 new thugs per turn spent working the block
-
   const NIGHT_TURNS = 150; // a "full night" = a max-length shift
   const HOE_NIGHTLY_CAP = 2000; // a hoe at 100% happiness earns up to this per full night
 
@@ -3972,14 +3915,6 @@
     nightclub: {name: '🍻 Nightclub', bustRisk: 0.7, thugRecruitMult: 1.0, desc: 'Medium earnings & recruitment, medium risk'},
     pullup: {name: '🚗 Pull Up', bustRisk: 0.4, thugRecruitMult: 1.1, desc: 'Low earnings, high recruitment, low risk'},
   };
-
-  // Base earnings per 100 hoes per 10 turns at 100% collective hoe
-  // happiness, plus a flat area bonus % and base hoe recruitment per 10
-  // turns - mirrors game_engine.py's WORK_LOCATION_* constants.
-  const WORK_LOCATION_BASE_EARN_PER_100_HOES_PER_10_TURNS = {redlight: 35000, nightclub: 31500, pullup: 28000};
-  const WORK_LOCATION_AREA_BONUS_PCT = {redlight: 0.03, nightclub: 0.02, pullup: 0.01};
-  const WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS = {redlight: 4, nightclub: 5, pullup: 7};
-  const HOE_WAGE_PCT = 0.10;
 
   const CAR_FACTORY_CADILLAC_AT_MAX = 46, CAR_FACTORY_CADILLAC_AT_MIN = 3;
   const CAR_FACTORY_ARMORED_AT_MAX = 4, CAR_FACTORY_ARMORED_AT_MIN = 13;
@@ -4007,39 +3942,6 @@
     };
   }
 
-  function hoeEarningPotential(turns){
-    const loc = WORK_LOCATION_BASE_EARN_PER_100_HOES_PER_10_TURNS[state.workLocation] ? state.workLocation : 'redlight';
-    const baseRate = WORK_LOCATION_BASE_EARN_PER_100_HOES_PER_10_TURNS[loc];
-    const happinessFrac = (state.hoeMorale || 0) / 100;
-    const gross = baseRate * ((state.hoes || 0) / 100) * happinessFrac * (turns / 10);
-    return gross * (1 + WORK_LOCATION_AREA_BONUS_PCT[loc]);
-  }
-
-  function projectedYield(turns){
-    const loc = WORK_LOCATION_BASE_EARN_PER_100_HOES_PER_10_TURNS[state.workLocation] ? state.workLocation : 'redlight';
-    const gross = hoeEarningPotential(turns);
-    const happinessFrac = (state.hoeMorale || 0) / 100;
-    const hoeRecruitBase = WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS[loc];
-    return {
-      cash: Math.round(gross * (1 - HOE_WAGE_PCT)),
-      hoeWage: Math.round(gross * HOE_WAGE_PCT),
-      hoes: Math.round(hoeRecruitBase * (turns / 10) * happinessFrac),
-      thugs: Math.round(THUG_RECRUIT_PER_TURN * turns),
-    };
-  }
-
-  function bustChance(){
-    const gunsBonus = state.gunsStock > 0 ? 0.01 : 0;
-    const moraleBonus = (state.thugMorale / 100) * 0.03;
-    return Math.max(0.03, 0.28 - state.thugs * 0.0015 - gunsBonus - moraleBonus);
-  }
-
-  function updateProjection(){
-    const turns = parseInt(document.getElementById('turnSlider').value) || 0;
-    const proj = projectedYield(turns);
-    document.getElementById('projHint').textContent =
-      `projected: ~${fmtMoney(proj.cash)} (after ${fmtMoney(proj.hoeWage)} hoe wages), +${proj.hoes} hoes, +${proj.thugs} thugs · bust risk 15%`;
-  }
 
   function fmtLogTime(t){
     const d = new Date(t);
@@ -5372,13 +5274,11 @@
   document.getElementById('doCasinoBtn').addEventListener('click', runCasinoHeist);
 
   // ---- Wire up ----
-  document.getElementById('turnSlider').addEventListener('input', updateProjection);
   document.getElementById('turnSlider').addEventListener('blur', (e)=>{
     const max = parseInt(e.target.max) || 150;
     let v = parseInt(e.target.value) || 1;
     v = Math.max(1, Math.min(v, max));
     e.target.value = v;
-    updateProjection();
   });
   document.querySelectorAll('.quickbtns button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -5387,7 +5287,6 @@
         : parseInt(btn.dataset.v);
       const input = document.getElementById('turnSlider');
       input.value = Math.min(v, parseInt(input.max));
-      updateProjection();
     });
   });
   document.getElementById('workBtn').addEventListener('click', workBlock);
@@ -5420,8 +5319,6 @@
   document.getElementById('informerBuyBtn').addEventListener('click', buyInformerReport);
   document.getElementById('quickBuyMedsBtn').addEventListener('click', quickBuyMeds);
   document.getElementById('hoMedsSlider').addEventListener('input', updateMedsOverlayQty);
-  document.getElementById('quickBuyGunsBtn').addEventListener('click', quickBuyGuns);
-  document.getElementById('gunsSlider').addEventListener('input', updateGunsQty);
 
   async function syncState(){
     if(!currentUser) return;
