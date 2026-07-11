@@ -137,6 +137,29 @@
   .top-strip-account button:hover{border-color:var(--hot); color:#fff;}
   .top-strip-account #buyTurnsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
 
+  .top-strip-xp{
+    display:flex; align-items:center; gap:10px;
+    padding:6px 12px;
+    border-top:1px solid var(--panel-line);
+  }
+  .top-strip-xp .xp-rank{
+    font-family:'Anton',sans-serif; font-size:0.78rem; letter-spacing:0.02em;
+    color:var(--gold); white-space:nowrap; flex-shrink:0;
+  }
+  .top-strip-xp .xp-bar-track{
+    flex:1; height:8px; background:var(--bg); border:1px solid var(--panel-line); border-radius:4px; overflow:hidden;
+  }
+  .top-strip-xp .xp-bar-fill{
+    height:100%; width:0%; background:linear-gradient(90deg, var(--hot), var(--gold)); transition:width 0.3s ease;
+  }
+  .top-strip-xp .xp-next{
+    font-family:'IBM Plex Mono',monospace; font-size:0.62rem; color:var(--text-dim); white-space:nowrap; flex-shrink:0;
+  }
+  @media (max-width:640px){
+    .top-strip-xp{flex-wrap:wrap;}
+    .top-strip-xp .xp-bar-track{order:3; flex-basis:100%;}
+  }
+
   .top-strip-stats{
     display:grid; grid-template-columns:repeat(4,1fr);
     border-top:1px solid var(--panel-line);
@@ -1251,6 +1274,13 @@
           <button id="buyTurnsBtn">💳 500 Turns for £4</button>
           <span id="buyTurnsCountdown"></span>
         </div>
+      </div>
+      <div class="top-strip-xp">
+        <span class="xp-rank" id="xpRankName">Lv.1 Junkie</span>
+        <div class="xp-bar-track">
+          <div class="xp-bar-fill" id="xpBarFill"></div>
+        </div>
+        <span class="xp-next" id="xpNextLabel">0 XP to next rank</span>
       </div>
       <div class="top-strip-stats">
         <div class="ts-stat cash">
@@ -3565,6 +3595,22 @@
     return calcNetWorth();
   }
 
+  function renderXP(){
+    const r = state.rankInfo;
+    if(!r) return;
+    document.getElementById('xpRankName').textContent = `Lv.${r.level} ${r.name}`;
+    const fill = document.getElementById('xpBarFill');
+    const nextLabel = document.getElementById('xpNextLabel');
+    if(r.nextName){
+      const pct = r.xpForLevel > 0 ? Math.min(100, Math.max(0, (r.xpIntoLevel / r.xpForLevel) * 100)) : 100;
+      fill.style.width = pct + '%';
+      nextLabel.textContent = `${r.xpToNext.toLocaleString()} XP to ${r.nextName}`;
+    } else {
+      fill.style.width = '100%';
+      nextLabel.textContent = `${r.xp.toLocaleString()} XP · MAX RANK`;
+    }
+  }
+
   function addLog(msg, cls){
     const time = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     state.log.push({t:time, msg, cls: cls||'info'});
@@ -3651,6 +3697,8 @@
     }
     document.getElementById('playerCityRank').innerHTML = `City: <b>#${getPlayerCityRank()}</b>`;
     document.getElementById('playerGlobalRank').innerHTML = `Global: <b>#${getPlayerGlobalRank()}</b>`;
+
+    renderXP();
 
     const playerNW = totalNetWorth();
     document.getElementById('playerNWValue').textContent = fmtMoney(playerNW);

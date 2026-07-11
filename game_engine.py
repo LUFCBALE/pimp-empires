@@ -317,6 +317,7 @@ def default_state(pimp_name="Big Boss"):
         "armoredTrucks": 0,
         "medsStock": 1,
         "lifetimeEarnings": 0,
+        "xp": 0,
         "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
         "carFactoryRatio": 1.0,
@@ -411,6 +412,59 @@ def check_hoe_attrition(state):
     if left:
         state["hoes"] -= left
     return left
+
+
+# ---------------------------------------------------------------------------
+# XP / Rank
+# ---------------------------------------------------------------------------
+
+# (level, name, xp required to reach it)
+RANKS = [
+    (1, "Junkie", 0),
+    (2, "Street Rat", 1000),
+    (3, "Foot Soldier", 4000),
+    (4, "Associate", 12000),
+    (5, "Gang Member", 30000),
+    (6, "Gang Leader", 70000),
+    (7, "Mob Boss", 150000),
+    (8, "THE DON", 300000),
+]
+
+XP_PER_TURN_SPENT = 1
+ATTACK_XP_LOSS = 20
+ATTACK_XP_WIN_BONUS = 30
+BOMB_XP = 30
+SELL_XP_PER_POUND = 0.0005  # 1 XP per £2,000 of produce sold
+
+
+def add_xp(state, amount):
+    if amount <= 0:
+        return
+    state["xp"] = state.get("xp", 0) + jround(amount)
+
+
+def rank_info(xp):
+    """Rank is always derived fresh from total xp, never stored separately -
+    same "recompute, don't drift" approach as recalc_morale, so it can never
+    go stale or desync from the xp total."""
+    current = RANKS[0]
+    next_rank = None
+    for i, r in enumerate(RANKS):
+        if xp >= r[2]:
+            current = r
+            next_rank = RANKS[i + 1] if i + 1 < len(RANKS) else None
+        else:
+            break
+    return {
+        "level": current[0],
+        "name": current[1],
+        "xp": xp,
+        "xpIntoLevel": xp - current[2],
+        "xpForLevel": (next_rank[2] - current[2]) if next_rank else 0,
+        "nextLevel": next_rank[0] if next_rank else None,
+        "nextName": next_rank[1] if next_rank else None,
+        "xpToNext": (next_rank[2] - xp) if next_rank else 0,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -974,6 +1028,7 @@ def fight_bot(state, bot_id, world):
 
         add_log(state, f"You hit {bot['boss']} of \"{bot['gang']}\" for £{cash_won} and wiped out {thugs_wiped} thugs ({thugs_hospitalized} hospitalized, the rest gone for good). Their crew fired back before going down, killing {your_thugs_lost} of your thugs.", "good")
         recalc_morale(state)
+        add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS + ATTACK_XP_WIN_BONUS)
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
     else:
         thugs_lost_pct = 0.1 + random.random() * 0.15
@@ -983,6 +1038,7 @@ def fight_bot(state, bot_id, world):
         state["cash"] = max(0, state["cash"] - cash_lost_amt)
         add_log(state, f"Attacked by {bot['boss']} of \"{bot['gang']}\" — they took £{cash_lost_amt} and {thugs_lost} thugs.", "bad")
         recalc_morale(state)
+        add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS)
         return {"won": False, "cashLost": cash_lost_amt, "thugsLost": thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
 
 
@@ -1021,6 +1077,7 @@ def bomb_bot(state, bot_id, factory_type, world):
     wiped_out = bot["factories"][factory_type] <= 0
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else f" ({bot['factories'][factory_type]} left standing)") + ".", "good")
+    add_xp(state, BOMB_XP)
     return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out}
 
 
@@ -1123,6 +1180,7 @@ def fight_human(state, defender, world, defender_target_id=None):
         add_log(defender, f"{state['name']} hit you for £{cash_won} and wiped out {thugs_wiped} of your thugs ({thugs_hospitalized} hospitalized).", "bad")
         recalc_morale(state)
         recalc_morale(defender)
+        add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS + ATTACK_XP_WIN_BONUS)
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": defender["name"], "gang": defender.get("gang", "")}
     else:
         thugs_lost_pct = 0.1 + random.random() * 0.15
@@ -1133,6 +1191,7 @@ def fight_human(state, defender, world, defender_target_id=None):
         add_log(state, f"Attacked {defender['name']} and lost — they took £{cash_lost_amt} and {thugs_lost} of your thugs.", "bad")
         add_log(defender, f"{state['name']} tried to hit you and failed.", "good")
         recalc_morale(state)
+        add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS)
         return {"won": False, "cashLost": cash_lost_amt, "thugsLost": thugs_lost, "boss": defender["name"], "gang": defender.get("gang", "")}
 
 
@@ -1170,6 +1229,7 @@ def bomb_human(state, defender, factory_type):
     add_log(defender, f"{state['name']} destroyed {destroyed} of your {factory_type} factories with a bombing run"
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
                        + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
+    add_xp(state, BOMB_XP)
     return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed}
 
 
@@ -1375,6 +1435,7 @@ def work_block(state, requested_turns):
         state["gunsStock"] -= 1
 
     recalc_morale(state)
+    add_xp(state, turns * XP_PER_TURN_SPENT)
 
     result = {
         "turnsSpent": turns,
@@ -1502,6 +1563,7 @@ def sell_all_cadillacs(state):
     state["cadillacs"] = 0
     state["cash"] += payout
     add_log(state, f"Sold all {qty} cadillacs to the dealer for £{payout}.", "good")
+    add_xp(state, payout * SELL_XP_PER_POUND)
     return {"qty": qty, "price": price, "payout": payout}
 
 
@@ -1515,6 +1577,7 @@ def sell_all_meds(state):
     state["medsStock"] = 0
     state["cash"] += payout
     add_log(state, f"Sold all {qty} safety kits to the dealer for £{payout}.", "good")
+    add_xp(state, payout * SELL_XP_PER_POUND)
     return {"qty": qty, "price": price, "payout": payout}
 
 
@@ -1548,6 +1611,7 @@ def sell_cocaine_overseas(state):
         payout = jround(qty * overseas_price)
         state["cash"] += payout
         add_log(state, f"Shipped {qty} cocaine overseas and cleared customs clean! Made £{payout}.", "good")
+        add_xp(state, payout * SELL_XP_PER_POUND)
         return {"success": True, "qty": qty, "price": jround(overseas_price), "payout": payout}
     else:
         add_log(state, f"Customs busted your overseas shipment of {qty} cocaine. Total loss — got nothing.", "bad")
@@ -1564,6 +1628,7 @@ def sell_all_armored_trucks(state):
     state["armoredTrucks"] = 0
     state["cash"] += payout
     add_log(state, f"Sold all {qty} armored trucks to the dealer for £{payout}.", "good")
+    add_xp(state, payout * SELL_XP_PER_POUND)
     return {"qty": qty, "price": price, "payout": payout}
 
 
@@ -1587,6 +1652,7 @@ def sell_all_guns(state, gun_type):
     state["guns"][gun_type] = 0
     state["cash"] += payout
     add_log(state, f"Sold all {qty} {GUN_TYPE_NAMES[gun_type]} to the dealer for £{payout}.", "good")
+    add_xp(state, payout * SELL_XP_PER_POUND)
     return {"qty": qty, "price": price, "payout": payout}
 
 
@@ -1663,6 +1729,7 @@ def run_heist(state, job_id):
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
         recalc_morale(state)
+        add_xp(state, job["turnCost"] * XP_PER_TURN_SPENT)
         return {"won": True, "cashWon": cash_won, "thugsLost": thugs_lost}
     else:
         lo, hi = job["failCasualtyPct"]
@@ -1671,6 +1738,7 @@ def run_heist(state, job_id):
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         add_log(state, f"{job_id.title()} heist failed! Lost {thugs_lost} thugs.", "bad")
         recalc_morale(state)
+        add_xp(state, job["turnCost"] * XP_PER_TURN_SPENT)
         return {"won": False, "thugsLost": thugs_lost}
 
 
@@ -1711,6 +1779,7 @@ def run_casino_heist(state, world):
                 bot["cash"] += crew_share_per_member
         add_log(state, f"Casino heist scored £{player_share} for you!", "good")
         recalc_morale(state)
+        add_xp(state, turns_needed * XP_PER_TURN_SPENT)
         return {"won": True, "playerShare": player_share, "thugsLost": thugs_lost}
     else:
         lo, hi = job["failCasualtyPct"]
@@ -1719,6 +1788,7 @@ def run_casino_heist(state, world):
         state["thugs"] = max(0, state["thugs"] + thugs_needed - thugs_lost)
         add_log(state, "Casino heist failed badly.", "bad")
         recalc_morale(state)
+        add_xp(state, turns_needed * XP_PER_TURN_SPENT)
         return {"won": False, "thugsLost": thugs_lost}
 
 
@@ -1779,6 +1849,7 @@ def sell_drugs(state, drug_id, qty):
     total_earnings = price * qty
     state["drugs"][drug_id] -= qty
     state["cash"] += total_earnings
+    add_xp(state, total_earnings * SELL_XP_PER_POUND)
     return {"totalEarnings": total_earnings, "price": price}
 
 
@@ -1888,6 +1959,7 @@ def sell_black_market(state, key, qty):
 
     state["cash"] += payout
     recalc_morale(state)
+    add_xp(state, payout * SELL_XP_PER_POUND)
     return {"payout": payout, "price": price}
 
 
@@ -2215,6 +2287,8 @@ def apply_catchup(state):
         state["thugsHospitalReadyAt"] = 0
     if "pendingCrewInvites" not in state:
         state["pendingCrewInvites"] = []
+    if "xp" not in state:
+        state["xp"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     tick_regen(state, now)
