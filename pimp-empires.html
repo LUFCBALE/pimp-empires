@@ -2685,8 +2685,8 @@
 
   function thugBuyPrice(){
     // Thugs get pricier the bigger your hoe roster gets: £100 at 0 hoes,
-    // £300 at 500, £1,000 at 1,000, climbing the same way beyond that.
-    const hoes = state.hoes || 0;
+    // £300 at 500, £1,000 at 1,000 hoes - then it caps there.
+    const hoes = Math.min(state.hoes || 0, 1000);
     const price = (hoes * (hoes - 100)) / 1000 + 100;
     return Math.max(100, Math.round(price));
   }

@@ -1829,8 +1829,9 @@ def _market_current_price(state, item):
 def thug_buy_price(state):
     """Thugs get pricier the bigger your hoe roster gets - a quadratic
     curve fitted to hit exactly £100 at 0 hoes, £300 at 500 hoes, and
-    £1,000 at 1,000 hoes, then keeps climbing the same way beyond that."""
-    hoes = state["hoes"]
+    £1,000 at 1,000 hoes - then it caps there. Past 1,000 hoes the price
+    stays flat at £1,000 instead of continuing to climb."""
+    hoes = min(state["hoes"], 1000)
     price = (hoes * (hoes - 100)) / 1000 + 100
     return max(100, jround(price))
 
