@@ -392,6 +392,7 @@ def signup():
         session['user_id'] = user_id
 
         state = ge.default_state(pimp_name)
+        ge.apply_catchup(state)
         save_state(user_id, state)
         world = load_world()
         attach_world_view(state, world, user_id)
@@ -848,6 +849,7 @@ def api_settings_tutorial():
 def api_settings_reset():
     user = get_current_user()
     state = ge.default_state(user['pimp_name'])
+    ge.apply_catchup(state)
     world = load_world()
     return action_response(user['id'], state, world)
 

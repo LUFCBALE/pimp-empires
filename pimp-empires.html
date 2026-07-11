@@ -1646,7 +1646,7 @@
         <div class="re-stat">🏗️ Cost: <b>£940,000</b></div>
         <div class="re-stat">🩺 Output: <b>130 Safety Kits / 30 mins</b></div>
         <div class="re-stat">📈 Net worth: <b>+£170,000 each</b></div>
-        <div class="re-stat">💊 Automatically boosts hoe morale each shift</div>
+        <div class="re-stat">💊 Automatically tops up your meds stockpile</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedMedical">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyMedicalQtyLabel">1</b></div>
@@ -1960,7 +1960,7 @@
 <div class="page" id="page-store">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">The Store</h2>
-  <div class="page-subtitle">Keep the crew happy or they earn nothing. Morale fades a little every shift — restock before it hits the floor.</div>
+  <div class="page-subtitle">Keep the crew happy or they earn nothing. 1 meds kit per hoe and 1 gun per thug keeps morale at 100% — fall short and it drops with the shortfall.</div>
   <div class="panel">
     <div class="store-grid">
       <div class="store-col">
@@ -2175,7 +2175,9 @@
     <h3>Working the Block</h3>
     <p>Spend turns to earn cash, recruit hoes, and recruit thugs, all at once. Pick a location first: Red Light earns the most but draws the most police attention; Nightclub is the middle ground; Pull Up earns the least but is safest and recruits hoes fastest. Get raided and you'll lose some of that shift's cash and thugs — but never any hoes from a raid, ever.</p>
     <h3>Why did my hoes leave if not from a raid?</h3>
-    <p>Purely happiness. Keep it above 40% and nobody walks. Let an individual hoe's happiness slide below that and there's a small, rising chance she quits every time you work the block — by the time she's at 0% happiness, it's a real risk. Safety Kits and Spa treatments (bought in the Store or Real Estate) are how you keep morale up.</p>
+    <p>Purely happiness, and happiness is purely meds: keep your meds stockpile at least equal to your hoe count and everyone's at 100%. Let it run short and happiness drops with the shortfall — below 40% each hoe has a small, rising chance of quitting every time you work the block. Buy Safety Kits (Store or Black Market) or build a Medical Factory (Real Estate) to keep the stockpile topped up.</p>
+    <h3>Thug Morale</h3>
+    <p>Same idea as hoe happiness, but guns instead of meds: own at least as many guns as you have thugs and morale sits at 100%, which removes bust risk entirely and boosts your combat power. Fewer guns than thugs and morale drops with the shortfall. Buy guns in the Store or Black Market, or build a Gun Factory.</p>
     <h3>Attacking</h3>
     <p>You need to be away from home turf (not London) with 30+ turns, and your target has to be in the same city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
@@ -2229,19 +2231,15 @@
 
   const STORE_ITEMS = {
     girls: [
-      {id:'condoms', name:'Safety Kits', cost:300, morale:8, desc:'1 kit fully satisfies 1 hoe · feeds the least happy first'},
-      {id:'wardrobe', name:'Designer Wardrobe', cost:1200, morale:16, desc:'+16% morale'},
-      {id:'jewelry', name:'Diamond Jewelry', cost:3000, morale:24, desc:'+24% morale'},
-      {id:'spa', name:'Spa Weekend', cost:6000, morale:35, desc:'1 spa day = +300% happiness for 1 hoe · feeds the least happy first'},
+      {id:'condoms', name:'Safety Kits', cost:300, desc:'Adds to your meds stockpile · 1 kit per hoe keeps them at 100% happy'},
     ],
     thugs: [
-      {id:'chains', name:'Gold Chains', cost:1500, morale:10, desc:'+10% morale'},
-      {id:'cadillac', name:'Cadillac', cost:15000, morale:30, desc:'+30% morale · status symbol'},
+      {id:'cadillac', name:'Cadillac', cost:15000, desc:'Status symbol · counts toward net worth'},
     ],
     weapons: [
-      {id:'pistol9mm', name:'9mm Pistol', cost:800, morale:5, desc:'Entry-level firearm · least damage'},
-      {id:'shotgun12gauge', name:'12 Gauge Shotgun', cost:3500, morale:12, desc:'Medium damage · good spread'},
-      {id:'ak47', name:'AK-47', cost:6000, morale:20, moraleThugBust:0.01, desc:'High damage · -1% bust risk'},
+      {id:'pistol9mm', name:'9mm Pistol', cost:800, desc:'Entry-level firearm · least damage · 1 gun per thug keeps them at 100% happy'},
+      {id:'shotgun12gauge', name:'12 Gauge Shotgun', cost:3500, desc:'Medium damage · good spread'},
+      {id:'ak47', name:'AK-47', cost:6000, desc:'High damage'},
     ],
   };
 
@@ -4548,7 +4546,7 @@
     {
       target: '.ts-stat.thugs',
       title: '💪 Thug Morale',
-      body: "Happy thugs hit harder in a fight and lower your chance of getting busted. Keep an eye on this percentage up here.",
+      body: "Same idea, but guns instead of meds — as many guns as thugs keeps morale at 100%. Happy thugs hit harder in a fight and lower your chance of getting busted.",
     },
     {
       target: '#bribeBtn',

@@ -73,19 +73,15 @@ DEALER_RESALE_COOLDOWN_MS = 10 * 60 * 1000
 
 STORE_ITEMS = {
     "girls": [
-        {"id": "condoms", "name": "Safety Kits", "cost": 300, "morale": 8},
-        {"id": "wardrobe", "name": "Designer Wardrobe", "cost": 1200, "morale": 16},
-        {"id": "jewelry", "name": "Diamond Jewelry", "cost": 3000, "morale": 24},
-        {"id": "spa", "name": "Spa Weekend", "cost": 6000, "morale": 35},
+        {"id": "condoms", "name": "Safety Kits", "cost": 300},
     ],
     "thugs": [
-        {"id": "chains", "name": "Gold Chains", "cost": 1500, "morale": 10},
-        {"id": "cadillac", "name": "Cadillac", "cost": 15000, "morale": 30},
+        {"id": "cadillac", "name": "Cadillac", "cost": 15000},
     ],
     "weapons": [
-        {"id": "pistol9mm", "name": "9mm Pistol", "cost": 800, "morale": 5},
-        {"id": "shotgun12gauge", "name": "12 Gauge Shotgun", "cost": 3500, "morale": 12},
-        {"id": "ak47", "name": "AK-47", "cost": 6000, "morale": 20},
+        {"id": "pistol9mm", "name": "9mm Pistol", "cost": 800},
+        {"id": "shotgun12gauge", "name": "12 Gauge Shotgun", "cost": 3500},
+        {"id": "ak47", "name": "AK-47", "cost": 6000},
     ],
 }
 
@@ -237,8 +233,6 @@ CAR_FACTORY_CADILLAC_AT_MAX = 46
 CAR_FACTORY_CADILLAC_AT_MIN = 3
 CAR_FACTORY_ARMORED_AT_MAX = 4
 CAR_FACTORY_ARMORED_AT_MIN = 13
-CAR_FACTORY_CADILLAC_MORALE_PER_UNIT = 0.15
-CAR_FACTORY_ARMORED_MORALE_PER_UNIT = 1.0
 
 
 def car_factory_output_rates(ratio):
@@ -262,7 +256,6 @@ GUN_FACTORY_AK_AT_VOLUME = 13
 GUN_FACTORY_AK_AT_ELITE = 13
 GUN_FACTORY_M249_AT_VOLUME = 3
 GUN_FACTORY_M249_AT_ELITE = 4
-GUN_FACTORY_MORALE_PER_UNIT = 0.1
 
 
 def gun_factory_output_rates(ratio):
@@ -319,7 +312,7 @@ def default_state(pimp_name="Big Boss"):
         "guns": {"pistol9mm": 0, "shotgun12gauge": 0, "ak47": 0, "m249": 0},
         "cadillacs": 0,
         "armoredTrucks": 0,
-        "medsStock": 0,
+        "medsStock": 1,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
         "carFactoryRatio": 1.0,
         "gunFactoryRatio": 0.0,
@@ -387,7 +380,6 @@ def create_hoe(state):
         "happiness": jround(state["hoeMorale"]),
         "earned": 0,
         "turnsWorked": 0,
-        "spaTurnsLeft": 0,
     }
     state["hoeRoster"].append(hoe)
     return hoe
@@ -423,78 +415,24 @@ def distribute_earnings(state, total, turns_spent):
         h["earned"] += jround(per_hoe)
 
 
-def boost_all_hoe_happiness(state, amount):
-    for h in state["hoeRoster"]:
-        h["happiness"] = clamp(h["happiness"] + amount, 0, 100)
+def recalc_morale(state):
+    """Happiness/morale are pure supply ratios - meds:hoes and guns:thugs,
+    both 1:1 for 100% - recalculated fresh from current stock every time
+    this runs. No decay, no drift, no bonus from heists or purchases;
+    just "do you have enough," reflected live. Call this any time hoes,
+    thugs, medsStock, or guns change, and unconditionally at the end of
+    apply_catchup so it's always accurate regardless of which action ran."""
+    hoes = state.get("hoes", 0)
+    state["hoeMorale"] = min(100, jround(100 * state.get("medsStock", 0) / hoes)) if hoes > 0 else 100
+    for h in state.get("hoeRoster", []):
+        h["happiness"] = state["hoeMorale"]
 
-
-def hoe_happiness_stable(state):
-    """Keep every hoe stocked with a safety kit and outnumbered by your own
-    thugs (protection) and happiness holds at a flat 100% - no drift, no
-    attrition risk."""
-    return state["medsStock"] >= state["hoes"] and state["thugs"] > state["hoes"]
-
-
-def drift_hoe_happiness(state):
-    if hoe_happiness_stable(state):
-        for h in state["hoeRoster"]:
-            h["happiness"] = 100
-        return
-    meds_available = state["medsStock"] >= state["hoes"]
-    for h in state["hoeRoster"]:
-        if h["spaTurnsLeft"] > 0:
-            continue
-        if meds_available:
-            drift = random.random() * 2 - 1
-        else:
-            drift = (state["hoeMorale"] - h["happiness"]) * 0.3 + (random.random() * 10 - 5)
-        h["happiness"] = clamp(jround(h["happiness"] + drift), 0, 100)
-
-
-def tick_spa_timers(state, turns_spent):
-    for h in state["hoeRoster"]:
-        h["spaTurnsLeft"] = max(0, h["spaTurnsLeft"] - turns_spent)
-
-
-def feed_meds_to_hoes(state, qty):
-    roster = sorted(state["hoeRoster"], key=lambda h: h["happiness"])
-    fed = 0
-    remaining = qty
-    for h in roster:
-        if remaining <= 0:
-            break
-        if h["happiness"] >= 100:
-            continue
-        h["happiness"] = 100
-        fed += 1
-        remaining -= 1
-    leftover = max(0, remaining)
-    state["medsStock"] += leftover
-    return {"fed": fed, "leftover": leftover}
-
-
-def feed_spa_to_hoes(state, qty):
-    roster = sorted(state["hoeRoster"], key=lambda h: h["happiness"])
-    treated = 0
-    remaining = qty
-    for h in roster:
-        if remaining <= 0:
-            break
-        if h["happiness"] >= 100:
-            continue
-        boost = max(1, h["happiness"]) * 3
-        h["happiness"] = min(100, h["happiness"] + boost)
-        h["spaTurnsLeft"] = 100
-        treated += 1
-        remaining -= 1
-    return {"treated": treated}
-
-
-def recalc_hoe_morale_from_roster(state):
-    roster = state["hoeRoster"]
-    if not roster:
-        return
-    state["hoeMorale"] = jround(sum(h["happiness"] for h in roster) / len(roster))
+    thugs = state.get("thugs", 0)
+    if thugs > 0:
+        total_guns = sum(state.get("guns", {}).values())
+        state["thugMorale"] = min(100, jround(100 * total_guns / thugs))
+    else:
+        state["thugMorale"] = 100
 
 
 def check_thug_attrition(state):
@@ -1089,6 +1027,7 @@ def fight_bot(state, bot_id, world):
         state["thugs"] = max(0, state["thugs"] - your_thugs_lost)
 
         add_log(state, f"You hit {bot['boss']} of \"{bot['gang']}\" for £{cash_won} and wiped out {thugs_wiped} thugs ({thugs_hospitalized} hospitalized, the rest gone for good). Their crew fired back before going down, killing {your_thugs_lost} of your thugs.", "good")
+        recalc_morale(state)
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
     else:
         thugs_lost_pct = 0.1 + random.random() * 0.15
@@ -1096,8 +1035,8 @@ def fight_bot(state, bot_id, world):
         thugs_lost = jround(state["thugs"] * thugs_lost_pct)
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         state["cash"] = max(0, state["cash"] - cash_lost_amt)
-        state["thugMorale"] = max(0, state["thugMorale"] - 8)
         add_log(state, f"Attacked by {bot['boss']} of \"{bot['gang']}\" — they took £{cash_lost_amt} and {thugs_lost} thugs.", "bad")
+        recalc_morale(state)
         return {"won": False, "cashLost": cash_lost_amt, "thugsLost": thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
 
 
@@ -1230,6 +1169,8 @@ def fight_human(state, defender, world, defender_target_id=None):
 
         add_log(state, f"You hit {defender['name']} for £{cash_won} and wiped out {thugs_wiped} thugs ({thugs_hospitalized} hospitalized, the rest gone for good). They fired back before going down, killing {your_thugs_lost} of your thugs.", "good")
         add_log(defender, f"{state['name']} hit you for £{cash_won} and wiped out {thugs_wiped} of your thugs ({thugs_hospitalized} hospitalized).", "bad")
+        recalc_morale(state)
+        recalc_morale(defender)
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": defender["name"], "gang": defender.get("gang", "")}
     else:
         thugs_lost_pct = 0.1 + random.random() * 0.15
@@ -1237,9 +1178,9 @@ def fight_human(state, defender, world, defender_target_id=None):
         thugs_lost = jround(state["thugs"] * thugs_lost_pct)
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         state["cash"] = max(0, state["cash"] - cash_lost_amt)
-        state["thugMorale"] = max(0, state["thugMorale"] - 8)
         add_log(state, f"Attacked {defender['name']} and lost — they took £{cash_lost_amt} and {thugs_lost} of your thugs.", "bad")
         add_log(defender, f"{state['name']} tried to hit you and failed.", "good")
+        recalc_morale(state)
         return {"won": False, "cashLost": cash_lost_amt, "thugsLost": thugs_lost, "boss": defender["name"], "gang": defender.get("gang", "")}
 
 
@@ -1469,17 +1410,10 @@ def work_block(state, requested_turns):
     state["thugs"] += thugs_gain
     state["thugs"] = max(0, state["thugs"] - thugs_lost)
 
-    shift_fatigue = 1 + (turns / 150) * 2.5
-    if hoe_happiness_stable(state):
-        state["hoeMorale"] = 100
-    else:
-        state["hoeMorale"] = max(0, state["hoeMorale"] - shift_fatigue)
-    state["thugMorale"] = max(0, state["thugMorale"] - shift_fatigue * 0.7)
     if state["gunsStock"] > 0:
         state["gunsStock"] -= 1
 
-    drift_hoe_happiness(state)
-    tick_spa_timers(state, turns)
+    recalc_morale(state)
 
     result = {
         "turnsSpent": turns,
@@ -1718,8 +1652,7 @@ def run_factories(state, ticks):
     counterfeit_cash = jround(f["counterfeit"] * COUNTERFEIT_CASH_RATE * ticks)
 
     if kits > 0:
-        feed_meds_to_hoes(state, kits)
-        recalc_hoe_morale_from_roster(state)
+        state["medsStock"] += kits
     if gun_units_total > 0:
         state["guns"]["pistol9mm"] += pistol_units
         state["guns"]["shotgun12gauge"] += shotgun_units
@@ -1727,16 +1660,9 @@ def run_factories(state, ticks):
         state["guns"]["m249"] += m249_units
         state["gunsOwned"] += gun_units_total
         state["gunsStock"] = max(state["gunsStock"], 5)
-        moraleGain = min(100 - state["thugMorale"], gun_units_total * GUN_FACTORY_MORALE_PER_UNIT)
-        state["thugMorale"] = min(100, state["thugMorale"] + moraleGain)
     if cadillac_units > 0 or armored_units > 0:
         state["cadillacs"] += cadillac_units
         state["armoredTrucks"] += armored_units
-        moraleGain = min(
-            100 - state["thugMorale"],
-            cadillac_units * CAR_FACTORY_CADILLAC_MORALE_PER_UNIT + armored_units * CAR_FACTORY_ARMORED_MORALE_PER_UNIT,
-        )
-        state["thugMorale"] = min(100, state["thugMorale"] + moraleGain)
     if coke > 0:
         state["drugs"]["coke"] = state["drugs"].get("coke", 0) + coke
     if bombs > 0:
@@ -1768,16 +1694,16 @@ def run_heist(state, job_id):
         thugs_lost = max(0, jround(state["thugs"] * pct))
         state["cash"] += cash_won
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
-        state["thugMorale"] = min(100, state["thugMorale"] + 12)
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
+        recalc_morale(state)
         return {"won": True, "cashWon": cash_won, "thugsLost": thugs_lost}
     else:
         lo, hi = job["failCasualtyPct"]
         pct = lo + random.random() * (hi - lo)
         thugs_lost = max(1, jround(state["thugs"] * pct))
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
-        state["thugMorale"] = max(0, state["thugMorale"] - 20)
         add_log(state, f"{job_id.title()} heist failed! Lost {thugs_lost} thugs.", "bad")
+        recalc_morale(state)
         return {"won": False, "thugsLost": thugs_lost}
 
 
@@ -1811,20 +1737,20 @@ def run_casino_heist(state, world):
         pct = lo + random.random() * (hi - lo)
         thugs_lost = jround(thugs_needed * pct)
         state["thugs"] = max(0, state["thugs"] + thugs_needed - thugs_lost)
-        state["thugMorale"] = min(100, state["thugMorale"] + 15)
         for member in state["crewMembers"]:
             bot = next((b for b in world["bots"] if b["id"] == member["botId"]), None)
             if bot:
                 bot["cash"] += crew_share_per_member
         add_log(state, f"Casino heist scored £{player_share} for you!", "good")
+        recalc_morale(state)
         return {"won": True, "playerShare": player_share, "thugsLost": thugs_lost}
     else:
         lo, hi = job["failCasualtyPct"]
         pct = lo + random.random() * (hi - lo)
         thugs_lost = max(crew_size, jround(thugs_needed * pct))
         state["thugs"] = max(0, state["thugs"] + thugs_needed - thugs_lost)
-        state["thugMorale"] = max(0, state["thugMorale"] - 25)
         add_log(state, "Casino heist failed badly.", "bad")
+        recalc_morale(state)
         return {"won": False, "thugsLost": thugs_lost}
 
 
@@ -1908,33 +1834,20 @@ def buy_store_item(state, group, item_id, qty):
     if qty < 1:
         raise GameError("Can't afford that")
 
-    if group == "girls" and item_id == "condoms":
-        total_cost = qty * item["cost"]
-        state["cash"] -= total_cost
-        feed_meds_to_hoes(state, qty)
-        recalc_hoe_morale_from_roster(state)
-        return {"totalCost": total_cost}
-
-    if group == "girls" and item_id == "spa":
-        needy = sum(1 for h in state["hoeRoster"] if h["happiness"] < 100)
-        actual_qty = min(qty, needy)
-        if actual_qty < 1:
-            raise GameError("Nobody needs the spa right now")
-        total_cost = actual_qty * item["cost"]
-        state["cash"] -= total_cost
-        feed_spa_to_hoes(state, actual_qty)
-        recalc_hoe_morale_from_roster(state)
-        return {"totalCost": total_cost, "treated": actual_qty}
-
     total_cost = qty * item["cost"]
     state["cash"] -= total_cost
-    if group == "girls":
-        state["hoeMorale"] = min(100, state["hoeMorale"] + item["morale"] * qty)
-        boost_all_hoe_happiness(state, item["morale"] * qty)
+
+    if group == "girls" and item_id == "condoms":
+        state["medsStock"] += qty
+    elif group == "thugs" and item_id == "cadillac":
+        state["cadillacs"] += qty
+    elif group == "weapons":
+        state["guns"][item_id] = state["guns"].get(item_id, 0) + qty
+        state["gunsOwned"] = state.get("gunsOwned", 0) + qty
     else:
-        state["thugMorale"] = min(100, state["thugMorale"] + item["morale"] * qty)
-        if item_id == "cadillac":
-            state["cadillacs"] += qty
+        raise GameError("Invalid item")
+
+    recalc_morale(state)
     return {"totalCost": total_cost}
 
 
@@ -1971,9 +1884,9 @@ def buy_black_market_item(state, key, qty):
         state["medsStock"] += qty
     elif item["stock"] == "thugs":
         state["thugs"] += qty
-        state["thugMorale"] = min(100, state["thugMorale"] + 5)
     elif item["stock"] == "cadillacs":
         state["cadillacs"] += qty
+    recalc_morale(state)
     return {"totalCost": total_cost, "price": price}
 
 
@@ -2005,6 +1918,7 @@ def sell_black_market(state, key, qty):
         state[item["stock"]] -= qty
 
     state["cash"] += payout
+    recalc_morale(state)
     return {"payout": payout, "price": price}
 
 
@@ -2340,6 +2254,7 @@ def apply_catchup(state):
     process_human_hospital(state, now)
     check_dealer_reset(state, now)
     check_daily_bonus(state, now)
+    recalc_morale(state)
     return state
 
 
