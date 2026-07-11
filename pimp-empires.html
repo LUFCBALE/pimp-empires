@@ -3438,6 +3438,7 @@
       name:'Corner Shop', emoji:'🏪',
       minThugs:200, maxThugs:400, turnCost:10,
       minCash:800, maxCash:4000,
+      netWorthPct:{min:0.0005, max:0.0015},
       successChance:0.60,
       casualtyPct:{min:0.05, max:0.15},
       failCasualtyPct:{min:0.15, max:0.35},
@@ -3447,6 +3448,7 @@
       name:'Jewellery Store', emoji:'💎',
       minThugs:1000, maxThugs:2000, turnCost:50,
       minCash:8000, maxCash:35000,
+      netWorthPct:{min:0.002, max:0.006},
       successChance:0.42,
       casualtyPct:{min:0.10, max:0.25},
       failCasualtyPct:{min:0.30, max:0.55},
@@ -3456,6 +3458,7 @@
       name:'National Bank', emoji:'🏦',
       minThugs:5000, maxThugs:10000, turnCost:150,
       minCash:60000, maxCash:250000,
+      netWorthPct:{min:0.008, max:0.025},
       successChance:0.28,
       casualtyPct:{min:0.20, max:0.40},
       failCasualtyPct:{min:0.45, max:0.80},
@@ -3550,11 +3553,13 @@
 
   // Net worth is what everything would actually sell for right now -
   // factories at their sell/refund price, plus produce (guns, cars/trucks,
-  // meds, cocaine) at market sell price. Cash, workforce (thugs/hoes) and
-  // bombs still don't count at all.
+  // meds, cocaine) at market sell price, plus every thug's muscle value.
+  // Cash, hoes and bombs still don't count at all.
+  const THUG_NET_WORTH_VALUE = 500;
   function calcNetWorth(){
     return factorySellValue(state.factories)
-      + produceSellValue(state.guns, state.cadillacs, state.armoredTrucks, state.medsStock, (state.drugs || {}).coke);
+      + produceSellValue(state.guns, state.cadillacs, state.armoredTrucks, state.medsStock, (state.drugs || {}).coke)
+      + (state.thugs || 0) * THUG_NET_WORTH_VALUE;
   }
 
   function totalNetWorth(){
@@ -5240,6 +5245,8 @@
   function renderHeistPage(){
     const jobs = {shop: HEIST_JOBS.shop, jewellery: HEIST_JOBS.jewellery, bank: HEIST_JOBS.bank};
     const btns = {shop:'doShopBtn', jewellery:'doJewBtn', bank:'doBankBtn'};
+    const cashSpans = {shop:'shopCash', jewellery:'jewCash', bank:'bankCash'};
+    const nw = totalNetWorth();
     Object.entries(jobs).forEach(([id, job]) => {
       const btn = document.getElementById(btns[id]);
       const hasThugs = state.thugs >= job.minThugs;
@@ -5252,6 +5259,10 @@
       } else {
         btn.textContent = 'Send the crew in';
       }
+
+      const lo = Math.max(job.minCash, Math.round(nw * job.netWorthPct.min));
+      const hi = Math.max(job.maxCash, Math.round(nw * job.netWorthPct.max));
+      document.getElementById(cashSpans[id]).textContent = `${fmtMoney(lo)} – ${fmtMoney(hi)}`;
     });
   }
 

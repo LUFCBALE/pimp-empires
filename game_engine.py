@@ -190,11 +190,14 @@ HOE_WAGE_PCT = 0.10
 
 HEIST_JOBS = {
     "shop": {"minThugs": 200, "turnCost": 10, "minCash": 800, "maxCash": 4000,
-             "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35)},
+             "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35),
+             "netWorthPct": (0.0005, 0.0015)},
     "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 8000, "maxCash": 35000,
-                  "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55)},
+                  "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55),
+                  "netWorthPct": (0.002, 0.006)},
     "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 60000, "maxCash": 250000,
-             "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80)},
+             "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
+             "netWorthPct": (0.008, 0.025)},
 }
 CASINO_JOB = {
     "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 500000, "maxCash": 2000000,
@@ -1700,7 +1703,10 @@ def run_heist(state, job_id):
     won = random.random() < (job["successChance"] + (state["thugMorale"] / 100) * 0.08)
 
     if won:
-        cash_won = jround(job["minCash"] + random.random() * (job["maxCash"] - job["minCash"]))
+        flat_cash = jround(job["minCash"] + random.random() * (job["maxCash"] - job["minCash"]))
+        nw_lo, nw_hi = job["netWorthPct"]
+        scaled_cash = jround(total_net_worth(state) * (nw_lo + random.random() * (nw_hi - nw_lo)))
+        cash_won = max(flat_cash, scaled_cash)
         lo, hi = job["casualtyPct"]
         pct = lo + random.random() * (hi - lo)
         thugs_lost = max(0, jround(state["thugs"] * pct))
