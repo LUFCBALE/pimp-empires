@@ -664,6 +664,11 @@
     border:1px solid rgba(123,79,214,0.35); border-radius:14px;
     padding:22px 16px; text-align:center; margin-bottom:16px;
   }
+  .slot-spins-left{
+    font-family:'IBM Plex Mono',monospace; font-size:0.75rem; font-weight:700;
+    letter-spacing:0.05em; color:var(--purple); text-transform:uppercase;
+    margin-bottom:12px;
+  }
   .slot-reels{
     display:flex; justify-content:center; gap:10px; font-size:2.8rem;
     margin-bottom:10px;
@@ -1648,9 +1653,10 @@
 <div class="page" id="page-slots">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Slot Machine</h2>
-  <div class="page-subtitle">Feed it cash, pull the lever, maybe walk away with extra turns instead of waiting on regen. The house keeps the edge — don't feed it what you can't lose.</div>
+  <div class="page-subtitle">Free to play — pull the lever, maybe walk away with extra turns instead of waiting on regen. You get <span id="slotDailyTotalSub">5</span> free spins a day, any mix of tiers, shared across all three.</div>
 
   <div class="slot-display">
+    <div class="slot-spins-left" id="slotSpinsLeft">5 spins left today</div>
     <div class="slot-reels" id="slotReels"><span>🍒</span><span>🍋</span><span>🔔</span></div>
     <div class="slot-result" id="slotResult">Pull the lever to spin.</div>
   </div>
@@ -1661,36 +1667,36 @@
       <div class="heist-art"><div style="font-size:2.4rem; text-align:center;">🎰</div></div>
       <div class="heist-info">
         <div class="heist-name">Low Stakes</div>
-        <div class="heist-tier low-label">£100 A SPIN</div>
+        <div class="heist-tier low-label">SMALL PAYOUTS</div>
         <div class="heist-stat">🍒🍒 Pair (20%): <span>+6 turns</span></div>
         <div class="heist-stat">🍀🍀🍀 Triple (8%): <span>+24 turns</span></div>
         <div class="heist-stat">7️⃣7️⃣7️⃣ Jackpot (2%): <span>+100 turns</span></div>
       </div>
-      <button class="cta risk-low" data-slot-spin="low" id="slotSpinLow">🎰 Spin — £100</button>
+      <button class="cta risk-low" data-slot-spin="low" id="slotSpinLow">🎰 Spin</button>
     </div>
 
     <div class="heist-card mid">
       <div class="heist-art"><div style="font-size:2.4rem; text-align:center;">🎰</div></div>
       <div class="heist-info">
         <div class="heist-name">Mid Stakes</div>
-        <div class="heist-tier mid-label">£500 A SPIN</div>
+        <div class="heist-tier mid-label">BIGGER PAYOUTS</div>
         <div class="heist-stat">🍒🍒 Pair (20%): <span>+30 turns</span></div>
         <div class="heist-stat">🍀🍀🍀 Triple (8%): <span>+120 turns</span></div>
         <div class="heist-stat">7️⃣7️⃣7️⃣ Jackpot (2%): <span>+500 turns</span></div>
       </div>
-      <button class="cta risk-mid" data-slot-spin="mid" id="slotSpinMid">🎰 Spin — £500</button>
+      <button class="cta risk-mid" data-slot-spin="mid" id="slotSpinMid">🎰 Spin</button>
     </div>
 
     <div class="heist-card high">
       <div class="heist-art"><div style="font-size:2.4rem; text-align:center;">🎰</div></div>
       <div class="heist-info">
         <div class="heist-name">High Stakes</div>
-        <div class="heist-tier high-label">£2,000 A SPIN</div>
+        <div class="heist-tier high-label">HUGE PAYOUTS</div>
         <div class="heist-stat">🍒🍒 Pair (20%): <span>+120 turns</span></div>
         <div class="heist-stat">🍀🍀🍀 Triple (8%): <span>+480 turns</span></div>
         <div class="heist-stat">7️⃣7️⃣7️⃣ Jackpot (2%): <span>+2,000 turns</span></div>
       </div>
-      <button class="cta risk-high" data-slot-spin="high" id="slotSpinHigh">🎰 Spin — £2,000</button>
+      <button class="cta risk-high" data-slot-spin="high" id="slotSpinHigh">🎰 Spin</button>
     </div>
 
   </div>
@@ -2273,7 +2279,7 @@
     <h3>Turns</h3>
     <p>Turns are your energy — almost everything costs them. They regenerate on their own over time and cap out at your max. Out of turns and impatient? There's a real-money option to top up on the Settings page, or try your luck on the Slot Machine — it pays out in turns instead of cash.</p>
     <h3>Slot Machine</h3>
-    <p>Pick a stake (£100/£500/£2,000 a spin) and pull the lever — every tier has the same odds (70% nothing, 20% a small pair, 8% a triple, 2% jackpot), just bigger numbers at higher stakes. Payouts are turns, not cash, and the house keeps the edge on average, so don't feed it money you need for anything else. Winnings still can't push you past your turn cap — anything over the top is lost.</p>
+    <p>Free to play — you get 5 spins a day, shared across all three tiers (Low/Mid/High Stakes), so spend them however you like. Every tier has the same odds (70% nothing, 20% a small pair, 8% a triple, 2% jackpot), just bigger turn payouts at higher tiers. Winnings still can't push you past your turn cap — anything over the top is lost. Resets 24 hours after your first spin of the day.</p>
     <h3>Working the Block</h3>
     <p>Spend turns to earn cash, recruit hoes, and recruit thugs, all at once. Pick a location first: Red Light earns the most but draws the most police attention; Nightclub is the middle ground; Pull Up earns the least but is safest and recruits hoes fastest. Get raided and you'll lose some of that shift's cash and thugs — but never any hoes from a raid, ever.</p>
     <h3>Why did my hoes leave if not from a raid?</h3>
@@ -2398,6 +2404,8 @@
       bankLockedUntil: 0,
       lastCasinoHeist: 0,
       lastJobHeist: 0,
+      slotSpinsToday: 0,
+      lastSlotReset: Date.now(),
       bribeActiveUntil: 0,
       bribeCooldownUntil: 0,
       bots: [],
@@ -5564,22 +5572,34 @@
     });
   }
 
-  const SLOT_TIERS = {low: {cost: 100, btnId: 'slotSpinLow'}, mid: {cost: 500, btnId: 'slotSpinMid'}, high: {cost: 2000, btnId: 'slotSpinHigh'}};
+  const SLOT_DAILY_SPINS = 5;
+  const SLOT_RESET_MS = 24 * 60 * 60 * 1000;
+  const SLOT_TIERS = {low: {btnId: 'slotSpinLow'}, mid: {btnId: 'slotSpinMid'}, high: {btnId: 'slotSpinHigh'}};
   const SLOT_SYMBOLS = ['🍒','🍋','🔔','🍀','7️⃣'];
   let slotSpinning = false;
 
+  function slotSpinsLeft(){
+    if(Date.now() - (state.lastSlotReset || 0) >= SLOT_RESET_MS) return SLOT_DAILY_SPINS;
+    return Math.max(0, SLOT_DAILY_SPINS - (state.slotSpinsToday || 0));
+  }
+
   function renderSlots(){
-    Object.entries(SLOT_TIERS).forEach(([key, t]) => {
+    const totalSub = document.getElementById('slotDailyTotalSub');
+    if(totalSub) totalSub.textContent = SLOT_DAILY_SPINS;
+    const left = slotSpinsLeft();
+    const leftEl = document.getElementById('slotSpinsLeft');
+    if(leftEl) leftEl.textContent = `${left} spin${left === 1 ? '' : 's'} left today`;
+    Object.values(SLOT_TIERS).forEach(t => {
       const btn = document.getElementById(t.btnId);
       if(!btn || slotSpinning) return;
-      btn.disabled = state.cash < t.cost;
+      btn.disabled = left <= 0;
+      btn.textContent = left <= 0 ? '🎰 Out of spins' : '🎰 Spin';
     });
   }
 
   async function spinSlots(tier){
     if(slotSpinning) return;
-    const cost = SLOT_TIERS[tier].cost;
-    if(state.cash < cost){ showToast(`Need £${fmtMoney(cost)} to play that tier`); return; }
+    if(slotSpinsLeft() <= 0){ showToast('Out of free spins for today — come back tomorrow'); return; }
     slotSpinning = true;
     document.querySelectorAll('[data-slot-spin]').forEach(b => b.disabled = true);
     const reels = document.getElementById('slotReels');

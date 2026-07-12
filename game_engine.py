@@ -341,6 +341,8 @@ def default_state(pimp_name="Big Boss"):
         "gameStartTime": now,
         "last24HourBonus": now,
         "lastRealMoneyPurchase": 0,
+        "slotSpinsToday": 0,
+        "lastSlotReset": now,
         "showWorkResults": False,
         "showTutorial": True,
         "messages": [],
@@ -1927,46 +1929,58 @@ def run_casino_heist(state, world):
 
 
 # ---------------------------------------------------------------------------
-# Slot Machine (cash in, maybe turns out - something to do while turns regen)
+# Slot Machine (free to play - a handful of daily spins for turns while you
+# wait on regen, not a cash sink)
 # ---------------------------------------------------------------------------
 
 SLOT_SYMBOLS = ["🍒", "🍋", "🔔", "🍀", "7️⃣"]
+SLOT_DAILY_SPINS = 5
+SLOT_RESET_MS = 24 * 60 * 60 * 1000
 
-# Every tier shares the same odds and the same house edge - only the stake
-# (and so the size of the win) changes. Expected turns back per £1 staked:
-# 0.20*0.06 + 0.08*0.24 + 0.02*1.0 = 0.0512 - i.e. the house keeps the
-# large majority of the value on average, with rare big swings up.
 SLOT_TIERS = {
-    "low": {"name": "Low Stakes", "cost": 100},
-    "mid": {"name": "Mid Stakes", "cost": 500},
-    "high": {"name": "High Stakes", "cost": 2000},
+    "low": {"name": "Low Stakes"},
+    "mid": {"name": "Mid Stakes"},
+    "high": {"name": "High Stakes"},
 }
-# (probability, outcome, turns-won-per-£1-staked)
-SLOT_PAYTABLE = [
-    (0.02, "jackpot", 1.0),
-    (0.08, "triple", 0.24),
-    (0.20, "pair", 0.06),
-    (0.70, "none", 0.0),
+# Fixed turns won per tier/outcome - all three tiers share one daily spin
+# pool (SLOT_DAILY_SPINS total, any mix of tiers), so only the payout size
+# scales between them, not how often you get to play.
+SLOT_PAYOUTS = {
+    "low": {"pair": 6, "triple": 24, "jackpot": 100},
+    "mid": {"pair": 30, "triple": 120, "jackpot": 500},
+    "high": {"pair": 120, "triple": 480, "jackpot": 2000},
+}
+SLOT_ODDS = [
+    (0.02, "jackpot"),
+    (0.08, "triple"),
+    (0.20, "pair"),
+    (0.70, "none"),
 ]
+
+
+def check_slot_reset(state, now):
+    if now - state.get("lastSlotReset", 0) >= SLOT_RESET_MS:
+        state["slotSpinsToday"] = 0
+        state["lastSlotReset"] = now
 
 
 def play_slots(state, tier_key):
     tier = SLOT_TIERS.get(tier_key)
     if not tier:
         raise GameError("Invalid stake")
-    bet = tier["cost"]
-    if state["cash"] < bet:
-        raise GameError(f"Need £{bet} to play {tier['name']}")
-
-    state["cash"] -= bet
+    check_slot_reset(state, now_ms())
+    spins_left = SLOT_DAILY_SPINS - state["slotSpinsToday"]
+    if spins_left <= 0:
+        raise GameError("Out of free spins for today — come back tomorrow")
+    state["slotSpinsToday"] += 1
 
     roll = random.random()
     cumulative = 0.0
-    outcome, ratio = "none", 0.0
-    for prob, name, r in SLOT_PAYTABLE:
+    outcome = "none"
+    for prob, name in SLOT_ODDS:
         cumulative += prob
         if roll < cumulative:
-            outcome, ratio = name, r
+            outcome = name
             break
 
     if outcome == "jackpot":
@@ -1982,7 +1996,7 @@ def play_slots(state, tier_key):
     else:
         symbols = random.sample(SLOT_SYMBOLS, 3)
 
-    turns_won = jround(bet * ratio)
+    turns_won = SLOT_PAYOUTS[tier_key].get(outcome, 0)
     turns_wasted = 0
     if turns_won > 0:
         room = state["maxTurns"] - state["turns"]
@@ -1996,8 +2010,9 @@ def play_slots(state, tier_key):
         add_log(state, f"🎰 {tier['name']} spin: {''.join(symbols)} — nothing, house wins.", "bad")
 
     return {
-        "tier": tier_key, "bet": bet, "symbols": symbols,
-        "outcome": outcome, "turnsWon": turns_won, "turnsWasted": turns_wasted,
+        "tier": tier_key, "symbols": symbols, "outcome": outcome,
+        "turnsWon": turns_won, "turnsWasted": turns_wasted,
+        "spinsLeft": SLOT_DAILY_SPINS - state["slotSpinsToday"],
     }
 
 
@@ -2473,6 +2488,10 @@ def apply_catchup(state):
         state["statsMoneyStolen"] = 0
     if "lastJobHeist" not in state:
         state["lastJobHeist"] = 0
+    if "slotSpinsToday" not in state:
+        state["slotSpinsToday"] = 0
+    if "lastSlotReset" not in state:
+        state["lastSlotReset"] = now
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     tick_regen(state, now)
@@ -2482,6 +2501,7 @@ def apply_catchup(state):
     process_human_hospital(state, now)
     check_dealer_reset(state, now)
     check_daily_bonus(state, now)
+    check_slot_reset(state, now)
     recalc_morale(state)
     check_milestone_achievements(state)
     return state
