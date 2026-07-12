@@ -411,16 +411,16 @@
   /* ---- Leaderboard ---- */
   .nav-btn.leaderboard .icon{color:var(--gold);}
   .lb-wrap{overflow-x:auto;}
-  .wrap:has(#page-leaderboard.active){max-width:1180px;}
+  .wrap:has(#page-leaderboard.active){max-width:1320px;}
   .lb-header, .lb-row{
-    display:grid; grid-template-columns: 38px 1fr 0.9fr 0.8fr 65px 65px 50px 0.8fr; gap:6px; align-items:center;
-    padding:8px; font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
+    display:grid; grid-template-columns: 44px 1fr 0.9fr 0.8fr 70px 70px 55px 0.9fr; gap:12px; align-items:center;
+    padding:12px 10px; font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
   }
   .lb-header{color:var(--text-dim); font-size:0.64rem; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--panel-line); padding-bottom:8px; margin-bottom:2px;}
   .lb-row{border-bottom:1px solid var(--panel-line);}
   .lb-row:last-child{border-bottom:none;}
   .lb-row.lb-you{background:rgba(255,47,120,0.1); border-radius:8px;}
-  .lb-row.lb-crewmate{background:rgba(139,0,0,0.35); border-radius:8px;}
+  .lb-row.lb-crewmate{background:rgba(139,0,0,0.12); border-radius:8px;}
   .lb-rank{font-family:'Comic Neue',cursive; font-weight:700; font-size:1.05rem; letter-spacing:0.02em; color:var(--text-dim); display:flex; align-items:center; gap:5px;}
   .lb-rank.lb-gold{color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.5);}
   .lb-rank.lb-silver{color:#d8d8e0; text-shadow:0 0 6px rgba(216,216,224,0.4);}
@@ -2060,7 +2060,7 @@
     <span style="display:flex; align-items:center; gap:6px;"><span class="lb-presence-dot online"></span>Online now</span>
     <span style="display:flex; align-items:center; gap:6px;"><span class="lb-presence-dot offline"></span>Real player, offline</span>
     <span style="display:flex; align-items:center; gap:6px;">No dot = AI bot</span>
-    <span style="display:flex; align-items:center; gap:6px;"><span style="color:var(--teal); font-size:0.9rem;">🤝</span>In your crew</span>
+    <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:rgba(139,0,0,0.4); border:1px solid rgba(139,0,0,0.7); display:inline-block;"></span>In your crew</span>
     <span style="display:flex; align-items:center; gap:6px;"><span style="color:var(--red); font-weight:700; font-size:0.95rem;">⌖</span>Attackable — click to quick attack</span>
   </div>
   <div class="panel">
@@ -3264,7 +3264,7 @@
       <div class="lb-row ${r.isYou ? 'lb-you' : (r.inYourCrew ? 'lb-crewmate' : '')}">
         <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)} ${r.rankArrow}</div>
         <div class="lb-name">
-          <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou && !r.inYourCrew ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
+          <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.isInRange && !r.isYou && !r.inYourCrew ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
         </div>
         <div class="lb-gang">${r.gang ? `${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
