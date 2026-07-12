@@ -663,11 +663,16 @@ def ensure_bots(world):
 
 
 def ensure_bot_crew_emblems(world):
-    """Each of the 4 street crews gets a random emblem, assigned once.
-    First come, first served: no two crews (bot or player) share one."""
-    if world.get("botCrewEmblems"):
+    """Each of the 4 street crews gets a random emblem image, assigned
+    once. First come, first served: no two crews (bot or player) share
+    one. Also re-rolls if the stored set is still the old emoji style
+    (from before real emblem images existed) or references an id that no
+    longer exists in the image catalog."""
+    current = world.get("botCrewEmblems")
+    stale = not current or any(e not in CREW_EMBLEM_IMAGES for e in current.values())
+    if not stale:
         return
-    available = random.sample(CREW_EMBLEMS, len(GANG_NAMES))
+    available = random.sample(list(CREW_EMBLEM_IMAGES.keys()), len(GANG_NAMES))
     world["botCrewEmblems"] = dict(zip(GANG_NAMES, available))
 
 
@@ -2189,6 +2194,9 @@ def save_crew_name(state, name):
     state["gang"] = name
 
 
+# Legacy emoji emblems - no longer offered (looked like garbage next to
+# the real image emblems below), kept only so any value already stored in
+# an old save still resolves to *something* instead of rendering blank.
 CREW_EMBLEMS = ["🐍", "🦂", "🐺", "💀", "🔥", "👑", "🗡️", "🦅", "🐉", "⚡", "🎩", "♠️"]
 # Image-based emblems - id -> filename under crew_emblems/. Populated as
 # real image assets get added (processed the same way as achievement
@@ -2222,7 +2230,7 @@ CREW_EMBLEM_IMAGES = {
 def set_crew_emblem(state, emblem, world):
     if state.get("crewLeaderUserId"):
         raise GameError("Only the crew leader can set the emblem")
-    if emblem not in CREW_EMBLEMS and emblem not in CREW_EMBLEM_IMAGES:
+    if emblem not in CREW_EMBLEM_IMAGES:
         raise GameError("Invalid emblem")
     taken_by = next((crew for crew, e in world.get("botCrewEmblems", {}).items() if e == emblem), None)
     if taken_by:

@@ -3172,10 +3172,11 @@
     shark: {icon: '🦈', label: 'Shark', desc: 'Preys on other crews in town'},
   };
 
-  const CREW_EMBLEMS = ['🐍', '🦂', '🐺', '💀', '🔥', '👑', '🗡️', '🦅', '🐉', '⚡', '🎩', '♠️'];
-  // Image-based emblems - id -> file under ./crew_emblems/. Stored ids are
-  // just the emoji glyph itself for the emoji set (so old saved values keep
-  // resolving with zero migration), or one of these keys for an image.
+  // Legacy emoji emblems - no longer offered in the picker (looked like
+  // garbage next to the real image emblems below). Kept only so old saved
+  // values still render as *something* instead of going blank.
+  const LEGACY_EMOJI_EMBLEMS = ['🐍', '🦂', '🐺', '💀', '🔥', '👑', '🗡️', '🦅', '🐉', '⚡', '🎩', '♠️'];
+  // Image-based emblems - id -> file under ./crew_emblems/.
   const IMAGE_EMBLEMS = {
     the_pride: 'crew_emblems/the_pride.png',
     the_forge: 'crew_emblems/the_forge.png',
@@ -3199,12 +3200,14 @@
     the_chroniclers: 'crew_emblems/the_chroniclers.png',
     the_lone_wolves: 'crew_emblems/the_lone_wolves.png',
   };
-  const ALL_EMBLEM_IDS = () => CREW_EMBLEMS.concat(Object.keys(IMAGE_EMBLEMS));
+  const ALL_EMBLEM_IDS = () => Object.keys(IMAGE_EMBLEMS);
 
-  // Small inline glyph for names/rows (leaderboard, profile, etc).
+  // Small inline glyph for names/rows (leaderboard, profile, etc). Sized a
+  // bit bigger than 1em so it actually reads on the leaderboard rows.
   function emblemInlineHtml(id){
     if(!id) return '';
-    if(IMAGE_EMBLEMS[id]) return `<img src="${IMAGE_EMBLEMS[id]}" alt="" style="height:1em; width:1em; object-fit:contain; vertical-align:-0.15em;">`;
+    if(IMAGE_EMBLEMS[id]) return `<img src="${IMAGE_EMBLEMS[id]}" alt="" style="height:1.7em; width:1.7em; object-fit:contain; vertical-align:-0.5em;">`;
+    if(LEGACY_EMOJI_EMBLEMS.includes(id)) return `<span style="font-size:1.4em;">${escapeHtml(id)}</span>`;
     return escapeHtml(id);
   }
 
