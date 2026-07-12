@@ -789,8 +789,12 @@ def api_attack():
                 raise ge.GameError("You can't attack yourself")
             defender_state = load_state(defender_id)
             result = ge.fight_human(state, defender_state, world, defender_target_id=target_id)
-            save_state(defender_id, defender_state)
             attack_text = f"{state['name']} just hit you for £{result.get('cashWon', 0)}!" if result.get('won') else f"{state['name']} tried to hit you and failed."
+            defender_state.setdefault('messages', []).append({
+                'from': ge.HUMAN_ID_OFFSET + user['id'], 'to': 'player',
+                'text': attack_text, 'timestamp': ge.now_ms(), 'read': False, 'kind': 'attack',
+            })
+            save_state(defender_id, defender_state)
             notify_user(defender_id, 'attacked', {'text': attack_text})
             send_push_notification(defender_id, "You're under attack!", attack_text)
         else:
@@ -822,11 +826,17 @@ def api_bomb():
                 raise ge.GameError("You can't bomb yourself")
             defender_state = load_state(defender_id)
             result = ge.bomb_human(state, defender_state, factory_type, qty)
-            save_state(defender_id, defender_state)
             if result['destroyed'] > 0:
                 bomb_text = f"{state['name']} just bombed your {factory_type} factories!"
+                defender_state.setdefault('messages', []).append({
+                    'from': ge.HUMAN_ID_OFFSET + user['id'], 'to': 'player',
+                    'text': bomb_text, 'timestamp': ge.now_ms(), 'read': False, 'kind': 'attack',
+                })
+                save_state(defender_id, defender_state)
                 notify_user(defender_id, 'attacked', {'text': bomb_text})
                 send_push_notification(defender_id, "You're under attack!", bomb_text)
+            else:
+                save_state(defender_id, defender_state)
         else:
             result = ge.bomb_bot(state, target_id, factory_type, world, qty)
     except ge.GameError as e:

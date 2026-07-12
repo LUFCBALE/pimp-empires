@@ -2624,6 +2624,7 @@
     const sfx = document.getElementById('attackAlertSound');
     if(!sfx) return;
     sfx.currentTime = 0;
+    sfx.volume = 1.0;
     sfx.play().catch(() => {});
   }
 
@@ -4800,6 +4801,15 @@
     );
 
     history.innerHTML = conversation.map(m => {
+      if(m.kind === 'attack'){
+        return `
+          <div style="display:flex; justify-content:center;">
+            <div style="background:rgba(255,77,77,0.12); border:1px solid var(--danger); color:var(--danger); padding:8px 14px; border-radius:8px; max-width:90%; text-align:center; font-weight:700; font-size:0.85rem;">
+              💥 ${escapeHtml(m.text)}
+            </div>
+          </div>
+        `;
+      }
       if(m.kind === 'crewInvite'){
         const incoming = m.to === 'player';
         const statusLabel = m.status === 'accepted' ? '✅ Accepted' : m.status === 'declined' ? '❌ Declined' : '';
@@ -5011,7 +5021,7 @@
       return {
         botId,
         botName: bot.boss,
-        lastMessage: lastMessage ? lastMessage.text : '',
+        lastMessage: lastMessage ? `${lastMessage.kind === 'attack' ? '💥 ' : ''}${lastMessage.text}` : '',
         lastTime: lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '',
         unreadCount,
         messageCount: messages.length,
