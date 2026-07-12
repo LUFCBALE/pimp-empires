@@ -493,6 +493,9 @@ ACHIEVEMENTS = [
     {"id": "the_don", "name": "THE DON", "emoji": "😈", "desc": "Reach max rank", "xp": 1000},
     {"id": "top_of_the_charts", "name": "Top of the Charts", "emoji": "🥇", "desc": "Reach #1 on the global leaderboard", "xp": 500},
     {"id": "top_ten", "name": "Top Ten", "emoji": "🥈", "desc": "Reach the top 10 on the global leaderboard", "xp": 200},
+    {"id": "most_thugs_killed", "name": "Body Count King", "emoji": "💀", "desc": "Hold the #1 spot for Most Thugs Killed", "xp": 400},
+    {"id": "most_money_stolen", "name": "Grand Larcenist", "emoji": "💸", "desc": "Hold the #1 spot for Most Money Stolen", "xp": 400},
+    {"id": "most_factories_destroyed", "name": "Wrecking Ball", "emoji": "🧨", "desc": "Hold the #1 spot for Most Factories Destroyed", "xp": 400},
 ]
 ACHIEVEMENTS_BY_ID = {a["id"]: a for a in ACHIEVEMENTS}
 

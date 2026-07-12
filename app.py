@@ -328,6 +328,23 @@ def attach_world_view(state, world, user_id):
         unlocked = True
     if global_rank <= 10 and ge.award_achievement(state, 'top_ten'):
         unlocked = True
+
+    # Hall of Fame leader badges - holds the #1 spot for a lifetime stat
+    # (thugs killed / money stolen / factories destroyed) against everyone
+    # else currently visible in the world. Sticks forever once earned, even
+    # if someone else takes the top spot later - same "recompute, don't
+    # revoke" rule as the other leaderboard-position badges above.
+    def _leads(stat_key):
+        val = state.get(stat_key, 0)
+        return val > 0 and not any(b.get(stat_key, 0) > val for b in state['bots'])
+
+    if _leads('statsThugsKilled') and ge.award_achievement(state, 'most_thugs_killed'):
+        unlocked = True
+    if _leads('statsMoneyStolen') and ge.award_achievement(state, 'most_money_stolen'):
+        unlocked = True
+    if _leads('statsFactoriesDestroyed') and ge.award_achievement(state, 'most_factories_destroyed'):
+        unlocked = True
+
     if unlocked:
         save_state(user_id, state)
 
