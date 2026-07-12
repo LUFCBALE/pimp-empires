@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Hustle">
 <meta name="theme-color" content="#0b0910">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <title>THE HUSTLE // a street hustle sim</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
@@ -1177,6 +1180,7 @@
 </div>
 
 <audio id="bgMusic" src="./bg-music.mp3" loop preload="auto"></audio>
+<audio id="attackAlertSound" src="./gunshot.wav" preload="auto"></audio>
 <button id="musicToggleBtn" title="Toggle music" style="position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); right:calc(16px + env(safe-area-inset-right)); z-index:10001; width:44px; height:44px; border-radius:50%; background:rgba(20,14,26,0.85); border:2px solid var(--gold); color:var(--gold); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.5);">🔊</button>
 
 <div id="homepage" style="position:fixed; inset:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #0b0910, #1a0f24); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;">
@@ -2292,6 +2296,13 @@
       </div>
       <input type="checkbox" id="tutorialToggle" style="width:24px; height:24px; cursor:pointer;">
     </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
+      <div>
+        <div style="font-weight:700; margin-bottom:4px;">🔫 Attack Alerts</div>
+        <div style="font-size:0.85rem; color:var(--text-dim);">Push notification + gunshot sound the moment someone hits you — even with the game closed</div>
+      </div>
+      <button class="cta gold" id="pushToggleBtn" style="flex-shrink:0;">Enable</button>
+    </div>
     <button class="cta danger" id="resetBtn" style="width:100%;">Reset Empire</button>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--panel-line); font-size:0.75rem; color:var(--text-dim);">
       Music: "Dark Ambience Loop" by Iwan Gabovitch (qubodup.net), licensed under CC-BY 3.0.
@@ -2602,6 +2613,20 @@
     }
   }
 
+  // Shared with the music mute toggle - one master switch for all in-game
+  // sound, music or SFX.
+  function isSoundMuted(){
+    return localStorage.getItem('pimpempires-music-muted') === 'true';
+  }
+
+  function playAttackAlert(){
+    if(isSoundMuted()) return;
+    const sfx = document.getElementById('attackAlertSound');
+    if(!sfx) return;
+    sfx.currentTime = 0;
+    sfx.play().catch(() => {});
+  }
+
   // Push layer: instant notifications for DMs/crew invites/attacks instead
   // of waiting up to 20s for the next poll. Falls back gracefully - if the
   // socket never connects (offline, blocked, etc.) the existing polling in
@@ -2611,11 +2636,97 @@
     if(liveSocket) return;
     liveSocket = io();
     liveSocket.on('dm', (data) => { if(data.text) showToast(`✉️ ${data.text}`); syncState(); });
-    liveSocket.on('attacked', (data) => { if(data.text) showToast(`💥 ${data.text}`); syncState(); });
+    liveSocket.on('attacked', (data) => { if(data.text) showToast(`💥 ${data.text}`); playAttackAlert(); syncState(); });
   }
   function disconnectLiveSocket(){
     if(liveSocket){ liveSocket.disconnect(); liveSocket = null; }
   }
+
+  // ---- Web Push (attack alerts - works even with the game closed) ----
+  // Fetched from the server rather than hardcoded, since the key only
+  // exists once the server generates/persists its own VAPID pair.
+  let vapidPublicKeyCache = null;
+  async function getVapidPublicKey(){
+    if(vapidPublicKeyCache) return vapidPublicKeyCache;
+    const res = await fetch('/api/push/vapid-public-key');
+    const data = await res.json();
+    vapidPublicKeyCache = data.publicKey;
+    return vapidPublicKeyCache;
+  }
+
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const out = new Uint8Array(rawData.length);
+    for(let i = 0; i < rawData.length; i++) out[i] = rawData.charCodeAt(i);
+    return out;
+  }
+
+  function registerServiceWorker(){
+    if(!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('./sw.js').then(() => updatePushToggleBtn()).catch(() => {});
+  }
+
+  function pushSupported(){
+    return 'serviceWorker' in navigator && 'PushManager' in window;
+  }
+
+  async function getPushSubscription(){
+    if(!pushSupported()) return null;
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      return await reg.pushManager.getSubscription();
+    } catch(e){ return null; }
+  }
+
+  async function updatePushToggleBtn(){
+    const btn = document.getElementById('pushToggleBtn');
+    if(!btn) return;
+    if(!pushSupported()){
+      btn.textContent = 'Not supported';
+      btn.disabled = true;
+      return;
+    }
+    btn.disabled = false;
+    const sub = await getPushSubscription();
+    btn.textContent = sub ? 'Disable' : 'Enable';
+  }
+
+  async function enablePushNotifications(){
+    try{
+      const permission = await Notification.requestPermission();
+      if(permission !== 'granted'){
+        showToast('Notifications blocked — allow them in your browser/OS settings to use this');
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const publicKey = await getVapidPublicKey();
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+      await apiCall('/api/push/subscribe', sub.toJSON());
+      showToast('🔫 Attack alerts enabled');
+    } catch(e){
+      showToast('Could not enable attack alerts');
+    }
+    updatePushToggleBtn();
+  }
+
+  async function disablePushNotifications(){
+    try{
+      const sub = await getPushSubscription();
+      if(sub){
+        await apiCall('/api/push/unsubscribe', {endpoint: sub.endpoint});
+        await sub.unsubscribe();
+      }
+      showToast('Attack alerts disabled');
+    } catch(e){ /* best-effort */ }
+    updatePushToggleBtn();
+  }
+
+  registerServiceWorker();
 
   function showAuthModal(isSignUp){
     const modal = document.getElementById('authModal');
@@ -4935,6 +5046,7 @@
     if(toggle) toggle.checked = state.showWorkResults;
     const tutorialToggle = document.getElementById('tutorialToggle');
     if(tutorialToggle) tutorialToggle.checked = state.showTutorial !== false;
+    updatePushToggleBtn();
   }
 
   // ---- Onboarding tutorial ----
@@ -6045,6 +6157,10 @@
     try{
       await apiCall('/api/settings/tutorial', {enabled: e.target.checked});
     } catch(err){ /* toast already shown */ }
+  });
+  document.getElementById('pushToggleBtn').addEventListener('click', async () => {
+    const sub = await getPushSubscription();
+    if(sub) disablePushNotifications(); else enablePushNotifications();
   });
   document.getElementById('tutorialNextBtn').addEventListener('click', () => {
     if(tutorialStep >= TUTORIAL_STEPS.length - 1){

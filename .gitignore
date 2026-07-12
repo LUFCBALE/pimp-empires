@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 game.db
 game.db.bak.*
+vapid_keys.json
 .env
 .claude/
 venv/

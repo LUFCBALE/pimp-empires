@@ -1,19 +1,56 @@
 from flask import Flask, request, jsonify, session, send_from_directory, abort
 from flask_socketio import SocketIO, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
+from pywebpush import webpush, WebPushException
 import sqlite3
 import json
 import os
+import logging
 from functools import wraps
 
 import game_engine as ge
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'game.db')
-ASSET_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.mp3', '.ogg', '.js'}
+ASSET_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.mp3', '.ogg', '.wav', '.js', '.json'}
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pimp-empires-secret-key-change-in-production')
+
+# Web Push (VAPID) - generated once on first run and persisted to a
+# gitignored local file, never committed to source. The public key is
+# handed to the client via /api/push/vapid-public-key rather than
+# hardcoded there too, so it can only ever come from whatever key this
+# specific server actually holds.
+VAPID_KEYS_PATH = os.path.join(BASE_DIR, 'vapid_keys.json')
+
+
+def _get_or_create_vapid_keys():
+    if os.path.exists(VAPID_KEYS_PATH):
+        with open(VAPID_KEYS_PATH) as f:
+            keys = json.load(f)
+        return keys['public'], keys['private']
+
+    from py_vapid import Vapid02
+    from cryptography.hazmat.primitives import serialization
+    import base64
+
+    v = Vapid02()
+    v.generate_keys()
+    pub_raw = v.public_key.public_bytes(
+        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
+    )
+    public_key = base64.urlsafe_b64encode(pub_raw).decode().rstrip('=')
+    priv_raw = v.private_key.private_numbers().private_value.to_bytes(32, 'big')
+    private_key = base64.urlsafe_b64encode(priv_raw).decode().rstrip('=')
+
+    with open(VAPID_KEYS_PATH, 'w') as f:
+        json.dump({'public': public_key, 'private': private_key}, f)
+    return public_key, private_key
+
+
+VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY = _get_or_create_vapid_keys()
+VAPID_CLAIMS = {'sub': 'mailto:admin@thehustlegame.co.uk'}
 
 # Push layer for instant notifications (DMs, crew invites, attacks) instead
 # of waiting on the client's poll interval. async_mode='threading' avoids
@@ -66,6 +103,44 @@ def notify_user(user_id, event, payload):
     Silently does nothing for offline users - they'll pick up the change on
     their next poll or the next time they log in."""
     socketio.emit(event, payload, room=str(user_id))
+
+
+def send_push_notification(user_id, title, body, url='/'):
+    """Best-effort browser push (works even with the game closed/backgrounded,
+    unlike notify_user's socket room above). Never raises - a dead
+    subscription just gets pruned, and any other delivery failure is logged
+    and skipped so it can never break the action that triggered it."""
+    db = get_db()
+    rows = db.execute(
+        'SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?',
+        (user_id,)
+    ).fetchall()
+    db.close()
+    if not rows:
+        return
+    payload = json.dumps({'title': title, 'body': body, 'url': url})
+    for row in rows:
+        try:
+            webpush(
+                subscription_info={
+                    'endpoint': row['endpoint'],
+                    'keys': {'p256dh': row['p256dh'], 'auth': row['auth']},
+                },
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=dict(VAPID_CLAIMS),
+            )
+        except WebPushException as e:
+            status = getattr(e.response, 'status_code', None)
+            if status in (404, 410):
+                db2 = get_db()
+                db2.execute('DELETE FROM push_subscriptions WHERE id = ?', (row['id'],))
+                db2.commit()
+                db2.close()
+            else:
+                logging.warning(f'Push failed for user {user_id}: {e}')
+        except Exception as e:
+            logging.warning(f'Push failed for user {user_id}: {e}')
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +203,22 @@ def init_db():
             id INTEGER PRIMARY KEY CHECK (id = 1),
             state_json TEXT NOT NULL,
             updated_at INTEGER NOT NULL
+        )
+    ''')
+
+    # Web Push subscriptions - one row per device/browser a user has opted
+    # in on, since the same account can be subscribed from a phone and a
+    # desktop at once. Endpoint is unique per browser install, so it also
+    # doubles as a natural de-dupe key if the same device subscribes twice.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            endpoint TEXT UNIQUE NOT NULL,
+            p256dh TEXT NOT NULL,
+            auth TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     ''')
 
@@ -699,7 +790,9 @@ def api_attack():
             defender_state = load_state(defender_id)
             result = ge.fight_human(state, defender_state, world, defender_target_id=target_id)
             save_state(defender_id, defender_state)
-            notify_user(defender_id, 'attacked', {'text': f"{state['name']} just hit you for £{result.get('cashWon', 0)}!" if result.get('won') else f"{state['name']} tried to hit you and failed."})
+            attack_text = f"{state['name']} just hit you for £{result.get('cashWon', 0)}!" if result.get('won') else f"{state['name']} tried to hit you and failed."
+            notify_user(defender_id, 'attacked', {'text': attack_text})
+            send_push_notification(defender_id, "You're under attack!", attack_text)
         else:
             result = ge.fight_bot(state, target_id, world)
     except ge.GameError as e:
@@ -731,7 +824,9 @@ def api_bomb():
             result = ge.bomb_human(state, defender_state, factory_type, qty)
             save_state(defender_id, defender_state)
             if result['destroyed'] > 0:
-                notify_user(defender_id, 'attacked', {'text': f"{state['name']} just bombed your {factory_type} factories!"})
+                bomb_text = f"{state['name']} just bombed your {factory_type} factories!"
+                notify_user(defender_id, 'attacked', {'text': bomb_text})
+                send_push_notification(defender_id, "You're under attack!", bomb_text)
         else:
             result = ge.bomb_bot(state, target_id, factory_type, world, qty)
     except ge.GameError as e:
@@ -936,6 +1031,46 @@ def api_settings_reset():
 @login_required
 def api_turns_buy():
     return handle_action(ge.buy_turns_with_real_money)
+
+
+@app.route('/api/push/vapid-public-key', methods=['GET'])
+def api_push_vapid_public_key():
+    return jsonify({'publicKey': VAPID_PUBLIC_KEY})
+
+
+@app.route('/api/push/subscribe', methods=['POST'])
+@login_required
+def api_push_subscribe():
+    data = request.get_json() or {}
+    endpoint = data.get('endpoint')
+    keys = data.get('keys') or {}
+    p256dh = keys.get('p256dh')
+    auth = keys.get('auth')
+    if not endpoint or not p256dh or not auth:
+        return jsonify({'error': 'Invalid subscription'}), 400
+    user = get_current_user()
+    db = get_db()
+    db.execute('''
+        INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth
+    ''', (user['id'], endpoint, p256dh, auth, ge.now_ms()))
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/push/unsubscribe', methods=['POST'])
+@login_required
+def api_push_unsubscribe():
+    data = request.get_json() or {}
+    endpoint = data.get('endpoint')
+    user = get_current_user()
+    db = get_db()
+    db.execute('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?', (user['id'], endpoint))
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
 
 
 # ---------------------------------------------------------------------------
