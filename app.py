@@ -615,16 +615,6 @@ def api_guns_sellall():
     return handle_action(ge.sell_all_guns, data.get('type', ''))
 
 
-@app.route('/api/store/buy', methods=['POST'])
-@login_required
-def api_store_buy():
-    data = request.get_json() or {}
-    group = data.get('group', '')
-    item_id = data.get('itemId', '')
-    qty = int(data.get('qty', 1))
-    return handle_action(ge.buy_store_item, group, item_id, qty)
-
-
 @app.route('/api/blackmarket/buy', methods=['POST'])
 @login_required
 def api_bm_buy():

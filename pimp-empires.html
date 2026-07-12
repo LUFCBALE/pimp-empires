@@ -475,7 +475,6 @@
   .nav-btn .icon{font-size:1.6rem;}
   .nav-btn .ntext .ntitle{font-family:'Anton',sans-serif; font-size:1rem; color:#fff; letter-spacing:0.02em;}
   .nav-btn .ntext .nsub{font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--text-dim); margin-top:2px;}
-  .nav-btn.store .icon{color:var(--gold);}
   .nav-btn.travel .icon{color:var(--teal);}
   .nav-btn.heist .icon{color:var(--hot);}
   .nav-btn.heist{border-color:rgba(255,47,120,0.3); background:linear-gradient(180deg, rgba(255,47,120,0.08), var(--bg-2));}
@@ -544,45 +543,11 @@
   /* ---- Main grid ---- */
   .grid{display:grid; grid-template-columns:1.1fr 1fr; gap:18px;}
   .grid.grid-single{grid-template-columns:1fr;}
-  @media (max-width:760px){ .grid{grid-template-columns:1fr;} .store-grid{grid-template-columns:1fr !important;} .nav-buttons{grid-template-columns:1fr;} }
+  @media (max-width:760px){ .grid{grid-template-columns:1fr;} .nav-buttons{grid-template-columns:1fr;} }
 
-  /* ---- Store ---- */
-  .store-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
-  .store-col h3{
-    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase;
-    color:var(--text-dim); margin:0 0 8px;
-  }
-  .store-item{
-    display:flex; flex-direction:column; gap:7px;
-    background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px;
-    padding:10px 12px; margin-bottom:10px;
-  }
-  .store-item .info{flex:1;}
-  .store-item .name{font-size:0.82rem; font-weight:600;}
-  .store-item .effect{font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--text-dim); margin-top:2px;}
+  /* Buy/sell quantity row - shared by Real Estate factory cards. */
   .store-qty-row{display:flex; align-items:center; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--text-dim);}
   .store-qty-row b{color:var(--teal); font-size:0.85rem;}
-  .store-item input[type=number]{
-    width:100%; background:var(--bg); border:1px solid var(--panel-line); color:var(--text);
-    font-family:'IBM Plex Mono',monospace; font-size:0.85rem; padding:7px 8px; border-radius:6px; outline:none;
-  }
-  .store-item input[type=number]:focus{border-color:var(--gold);}
-  .store-quickbtns{display:flex; gap:6px;}
-  .store-quickbtns button{
-    flex:1; background:var(--bg); border:1px solid var(--panel-line); color:var(--text-dim);
-    font-family:'IBM Plex Mono',monospace; font-size:0.66rem; padding:4px 0; border-radius:6px; cursor:pointer;
-  }
-  .store-quickbtns button:hover{color:#fff; border-color:var(--gold);}
-  .store-buy-row{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-  .store-total{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-dim);}
-  .store-total b{color:var(--gold);}
-  .store-item .buy-btn{
-    background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border:1px solid var(--buy-green-light); color:#04160c;
-    font-family:'IBM Plex Mono',monospace; font-size:0.72rem; font-weight:600;
-    padding:7px 12px; border-radius:6px; cursor:pointer; white-space:nowrap;
-  }
-  .store-item .buy-btn:hover:not(:disabled){filter:brightness(1.1);}
-  .store-item .buy-btn:disabled{opacity:0.35; cursor:not-allowed;}
 
   .panel{
     background:var(--card-bg);
@@ -1246,7 +1211,6 @@
     <div class="sidebar-section nav-section">
       <div class="sidebar-links" id="sidebar">
         <button class="sidebar-link" data-page="page-main">🏠<span>Home</span></button>
-        <button class="sidebar-link" data-page="page-store">🛒<span>The Store</span></button>
         <button class="sidebar-link" data-page="page-bank">🏦<span>Bank</span></button>
         <button class="sidebar-link" data-page="page-travel">✈️<span>Travel Agent</span></button>
         <button class="sidebar-link" data-page="page-heist">🔫<span>Pull a Job</span></button>
@@ -1448,11 +1412,7 @@
 
 <div class="page active" id="page-main">
   <div class="nav-buttons">
-    <div class="nav-btn store" id="openStoreBtn">
-      <div class="icon">🛒</div>
-      <div class="ntext"><div class="ntitle">The Store</div><div class="nsub" id="navStoreSub">keep morale up</div></div>
-    </div>
-    <div class="nav-btn travel" id="openTravelBtn">
+    <div class="nav-btn travel" id="openTravelBtn" style="grid-column:1/-1;">
       <div class="icon">✈️</div>
       <div class="ntext"><div class="ntitle">Travel Agent</div><div class="nsub" id="navTravelSub">currently in London</div></div>
     </div>
@@ -1659,7 +1619,7 @@
 <div class="page" id="page-realestate">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Real Estate</h2>
-  <div class="page-subtitle">Factories produce supplies automatically every 30 minutes — no more buying from the store. They also count toward your net worth.</div>
+  <div class="page-subtitle">Factories produce supplies automatically every 30 minutes — no more buying from the Black Market. They also count toward your net worth.</div>
 
   <div class="factory-timer-bar">
     <span>🏭</span>
@@ -2012,24 +1972,6 @@
   </div>
 </div>
 
-<div class="page" id="page-store">
-  <button class="back-btn" data-back>← Back to the block</button>
-  <h2 class="page-title">The Store</h2>
-  <div class="page-subtitle">Keep the crew happy or they earn nothing. 1 meds kit per hoe and 1 gun per thug keeps morale at 100% — fall short and it drops with the shortfall.</div>
-  <div class="panel">
-    <div class="store-grid">
-      <div class="store-col">
-        <h3>For the hoes</h3>
-        <div id="storeGirls"></div>
-      </div>
-      <div class="store-col">
-        <h3>For the thugs</h3>
-        <div id="storeThugs"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="page" id="page-travel">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Travel Agent</h2>
@@ -2252,9 +2194,9 @@
     <h3>Working the Block</h3>
     <p>Spend turns to earn cash, recruit hoes, and recruit thugs, all at once. Pick a location first: Red Light earns the most but draws the most police attention; Nightclub is the middle ground; Pull Up earns the least but is safest and recruits hoes fastest. Get raided and you'll lose some of that shift's cash and thugs — but never any hoes from a raid, ever.</p>
     <h3>Why did my hoes leave if not from a raid?</h3>
-    <p>Purely happiness, and happiness is purely meds: keep your meds stockpile at least equal to your hoe count and everyone's at 100%. Let it run short and happiness drops with the shortfall — below 40% each hoe has a small, rising chance of quitting every time you work the block. Buy Safety Kits (Store or Black Market) or build a Medical Factory (Real Estate) to keep the stockpile topped up.</p>
+    <p>Purely happiness, and happiness is purely meds: keep your meds stockpile at least equal to your hoe count and everyone's at 100%. Let it run short and happiness drops with the shortfall — below 40% each hoe has a small, rising chance of quitting every time you work the block. Buy Safety Kits (Black Market) or build a Medical Factory (Real Estate) to keep the stockpile topped up.</p>
     <h3>Thug Morale</h3>
-    <p>Same idea as hoe happiness, but guns instead of meds: own at least as many guns as you have thugs and morale sits at 100%, which removes bust risk entirely and boosts your combat power. Fewer guns than thugs and morale drops with the shortfall. Buy guns in the Store or Black Market, or build a Gun Factory.</p>
+    <p>Same idea as hoe happiness, but guns instead of meds: own at least as many guns as you have thugs and morale sits at 100%, which removes bust risk entirely and boosts your combat power. Fewer guns than thugs and morale drops with the shortfall. Buy guns on the Black Market, or build a Gun Factory.</p>
     <h3>Attacking</h3>
     <p>You need to be away from home turf (not London) with 30+ turns, and your target has to be in the same city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
@@ -2305,20 +2247,6 @@
   const STORAGE_KEY = 'pimpempires-save';
 
   let state = null;
-
-  const STORE_ITEMS = {
-    girls: [
-      {id:'condoms', name:'Safety Kits', cost:300, desc:'Adds to your meds stockpile · 1 kit per hoe keeps them at 100% happy'},
-    ],
-    thugs: [
-      {id:'cadillac', name:'Cadillac', cost:15000, desc:'Status symbol · counts toward net worth'},
-    ],
-    weapons: [
-      {id:'pistol9mm', name:'9mm Pistol', cost:800, desc:'Entry-level firearm · least damage · 1 gun per thug keeps them at 100% happy'},
-      {id:'shotgun12gauge', name:'12 Gauge Shotgun', cost:3500, desc:'Medium damage · good spread'},
-      {id:'ak47', name:'AK-47', cost:6000, desc:'High damage'},
-    ],
-  };
 
   function getStock(item){
     // stockKey may be a dotted path like "guns.pistol9mm"
@@ -2973,10 +2901,14 @@
     return betterBots + 1;
   }
 
-  function quickBuyMeds(){
+  async function quickBuyMeds(){
     const slider = document.getElementById('hoMedsSlider');
     const qty = slider ? (parseInt(slider.value) || 1) : 1;
-    buyStoreItem('girls', 'condoms', qty);
+    try{
+      const data = await apiCall('/api/blackmarket/buy', {key: 'meds', qty});
+      showToast(`💊 Bought ${qty}x Safety Kits for ${fmtMoney(data.result.totalCost)}`);
+      render();
+    } catch(e){ /* toast already shown */ }
   }
 
   function updateMedsOverlayQty(){
@@ -2984,19 +2916,19 @@
     const label = document.getElementById('hoMedsQtyLabel');
     const btn = document.getElementById('quickBuyMedsBtn');
     if(!slider || !label || !btn) return;
-    const medsItem = STORE_ITEMS.girls.find(i => i.id === 'condoms');
+    const medsItem = BLACKMARKET_ITEMS.find(i => i.key === 'meds');
     const qty = parseInt(slider.value) || 1;
     label.textContent = qty;
-    btn.textContent = `Quick Buy Meds — ${fmtMoney(medsItem.cost * qty)}`;
-    btn.disabled = state.cash < medsItem.cost * qty;
+    btn.textContent = `Quick Buy Meds — ${fmtMoney(medsItem.price * qty)}`;
+    btn.disabled = state.cash < medsItem.price * qty;
   }
 
   function renderHappinessOverlay(){
     const slider = document.getElementById('hoMedsSlider');
     if(!slider) return;
 
-    const medsItem = STORE_ITEMS.girls.find(i => i.id === 'condoms');
-    const afford = Math.max(1, Math.floor(state.cash / medsItem.cost));
+    const medsItem = BLACKMARKET_ITEMS.find(i => i.key === 'meds');
+    const afford = Math.max(1, Math.floor(state.cash / medsItem.price));
     slider.max = afford;
     if(parseInt(slider.value) > afford) slider.value = afford;
     updateMedsOverlayQty();
@@ -3899,13 +3831,10 @@
 
     updateBribeUI();
 
-    renderStore();
     renderLocation();
     renderLog();
     renderInventory();
 
-    document.getElementById('navStoreSub').textContent =
-      `hoes ${Math.round(state.hoeMorale)}% · thugs ${Math.round(state.thugMorale)}%`;
     document.getElementById('navTravelSub').textContent = `currently in ${state.location}`;
     document.getElementById('navBlackMarketSub').textContent =
       `${Math.floor(state.gunsOwned||0)} guns · ${Math.floor(state.medsStock||0)} meds · ${Math.floor(state.cadillacs||0)} cars`;
@@ -3935,73 +3864,6 @@
     } else {
       badge.style.display = 'none';
     }
-  }
-
-  function renderStore(){
-    const girlsBox = document.getElementById('storeGirls');
-    const thugsBox = document.getElementById('storeThugs');
-    girlsBox.innerHTML = STORE_ITEMS.girls.map(item => storeItemHtml(item, 'girls')).join('');
-    thugsBox.innerHTML = STORE_ITEMS.thugs.map(item => storeItemHtml(item, 'thugs')).join('');
-    wireStoreItems(girlsBox, STORE_ITEMS.girls, 'girls');
-    wireStoreItems(thugsBox, STORE_ITEMS.thugs, 'thugs');
-  }
-
-  function storeItemHtml(item, group){
-    const key = `${group}-${item.id}`;
-    const afford = Math.floor(state.cash / item.cost);
-    const max = Math.max(1, afford);
-    return `
-      <div class="store-item">
-        <div class="info"><div class="name">${item.name}</div><div class="effect">${item.desc}</div></div>
-        <div class="store-qty-row"><span>Quantity</span><b data-qtylabel="${key}">1</b></div>
-        <input type="number" min="1" max="${max}" value="1" data-qtyslider="${key}">
-        <div class="store-quickbtns">
-          <button type="button" data-qbtn="${key}" data-v="1">1</button>
-          <button type="button" data-qbtn="${key}" data-v="10">10</button>
-          <button type="button" data-qbtn="${key}" data-v="max">MAX</button>
-        </div>
-        <div class="store-buy-row">
-          <div class="store-total">Total: <b data-total="${key}">${fmtMoney(item.cost)}</b></div>
-          <button type="button" class="buy-btn" data-buy="${key}" ${afford < 1 ? 'disabled' : ''}>Buy</button>
-        </div>
-      </div>`;
-  }
-
-  function wireStoreItems(box, items, group){
-    items.forEach(item => {
-      const key = `${group}-${item.id}`;
-      const slider = box.querySelector(`[data-qtyslider="${key}"]`);
-      const label = box.querySelector(`[data-qtylabel="${key}"]`);
-      const total = box.querySelector(`[data-total="${key}"]`);
-      const buyBtn = box.querySelector(`[data-buy="${key}"]`);
-      const update = () => {
-        const qty = parseInt(slider.value) || 1;
-        label.textContent = qty;
-        total.textContent = fmtMoney(qty * item.cost);
-      };
-      slider.addEventListener('input', update);
-      update();
-
-      box.querySelectorAll(`[data-qbtn="${key}"]`).forEach(btn => {
-        btn.addEventListener('click', () => {
-          const max = parseInt(slider.max);
-          slider.value = btn.dataset.v === 'max' ? max : Math.min(max, parseInt(btn.dataset.v));
-          update();
-        });
-      });
-
-      buyBtn.addEventListener('click', () => {
-        buyStoreItem(group, item.id, parseInt(slider.value) || 1);
-      });
-    });
-  }
-
-  async function buyStoreItem(group, id, qty){
-    try{
-      const data = await apiCall('/api/store/buy', {group, itemId: id, qty});
-      showToast(`Bought for ${fmtMoney(data.result.totalCost)}.`);
-      render();
-    } catch(e){ /* toast already shown */ }
   }
 
   function renderBMBuyGrid(){
@@ -5697,7 +5559,6 @@
   if(homeLink) homeLink.classList.add('active');
   document.getElementById('topbarLogoBtn').addEventListener('click', () => navigateTo('page-main'));
 
-  document.getElementById('openStoreBtn').addEventListener('click', () => showPage('page-store'));
   document.getElementById('openTravelBtn').addEventListener('click', () => navigateTo('page-travel'));
   document.getElementById('openHeistBtn').addEventListener('click', () => navigateTo('page-heist'));
   document.getElementById('openRealEstateBtn').addEventListener('click', () => navigateTo('page-realestate'));

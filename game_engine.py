@@ -71,20 +71,6 @@ DEALER_RESET_MS = 10 * 60 * 1000
 DEALER_DAILY_CAP = 100
 DEALER_RESALE_COOLDOWN_MS = 10 * 60 * 1000
 
-STORE_ITEMS = {
-    "girls": [
-        {"id": "condoms", "name": "Safety Kits", "cost": 300},
-    ],
-    "thugs": [
-        {"id": "cadillac", "name": "Cadillac", "cost": 15000},
-    ],
-    "weapons": [
-        {"id": "pistol9mm", "name": "9mm Pistol", "cost": 800},
-        {"id": "shotgun12gauge", "name": "12 Gauge Shotgun", "cost": 3500},
-        {"id": "ak47", "name": "AK-47", "cost": 6000},
-    ],
-}
-
 BLACKMARKET_ITEMS = [
     {"key": "pistol9mm", "name": "9mm Pistols", "price": 240, "gun": "pistol9mm"},
     {"key": "shotgun12gauge", "name": "12 Gauge Shotguns", "price": 1050, "gun": "shotgun12gauge"},
@@ -1984,41 +1970,8 @@ def sell_drugs(state, drug_id, qty):
 
 
 # ---------------------------------------------------------------------------
-# Store / black market
+# Black market
 # ---------------------------------------------------------------------------
-
-def _find_store_item(group, item_id):
-    for item in STORE_ITEMS.get(group, []):
-        if item["id"] == item_id:
-            return item
-    return None
-
-
-def buy_store_item(state, group, item_id, qty):
-    item = _find_store_item(group, item_id)
-    if not item:
-        raise GameError("Invalid item")
-    afford = state["cash"] // item["cost"]
-    qty = max(0, min(qty, afford))
-    if qty < 1:
-        raise GameError("Can't afford that")
-
-    total_cost = qty * item["cost"]
-    state["cash"] -= total_cost
-
-    if group == "girls" and item_id == "condoms":
-        state["medsStock"] += qty
-    elif group == "thugs" and item_id == "cadillac":
-        state["cadillacs"] += qty
-    elif group == "weapons":
-        state["guns"][item_id] = state["guns"].get(item_id, 0) + qty
-        state["gunsOwned"] = state.get("gunsOwned", 0) + qty
-    else:
-        raise GameError("Invalid item")
-
-    recalc_morale(state)
-    return {"totalCost": total_cost}
-
 
 def _market_current_price(state, item):
     if item["key"] == "thugs":
