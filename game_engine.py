@@ -100,14 +100,14 @@ TRAVEL_COST_PER_THUG = 50
 TRAVEL_BASE_FEE = 100
 
 CITIES = [
-    {"name": "London", "home": True},
+    {"name": "London"},
     {"name": "Bristol"},
     {"name": "Birmingham"},
     {"name": "Manchester"},
     {"name": "Leeds"},
     {"name": "Liverpool"},
 ]
-AWAY_CITIES = [c["name"] for c in CITIES if not c.get("home")]
+CITY_NAMES = [c["name"] for c in CITIES]
 
 # Bots are split across 4 shared crews (not one unique gang name each) -
 # multiple bots belong to the same crew, distributed randomly.
@@ -295,7 +295,7 @@ def default_state(pimp_name="Big Boss"):
         "hoeMorale": 50,
         "thugMorale": 50,
         "workLocation": "redlight",
-        "location": random.choice(AWAY_CITIES),
+        "location": random.choice(CITY_NAMES),
         "gunsStock": 0,
         "gunsOwned": 0,
         "guns": {"pistol9mm": 0, "shotgun12gauge": 0, "ak47": 0, "m249": 0},
@@ -590,7 +590,7 @@ def make_bot(bot_id, used_bosses, gang):
         "boss": boss,
         "gang": gang,
         "archetype": random.choice(list(BOT_ARCHETYPES.keys())),
-        "city": random.choice(AWAY_CITIES),
+        "city": random.choice(CITY_NAMES),
         "thugs": thugs,
         "thugNames": thug_names,
         "cash": 4000 + random.randint(0, 15999),
@@ -1040,8 +1040,6 @@ def check_attack_rate_limit(state, target_id, target_name=None):
 
 
 def fight_bot(state, bot_id, world):
-    if state["location"] == "London":
-        raise GameError("You can't attack anyone at home turf")
     if state["turns"] < 30:
         raise GameError("Not enough turns (need 30)")
     bot = next((b for b in world["bots"] if b["id"] == bot_id and b["city"] == state["location"]), None)
@@ -1219,8 +1217,6 @@ def fight_human(state, defender, world, defender_target_id=None):
     raidable pot is the defender's liquid `cash` (their `bank` stays
     protected, same as a bot's `cash` staying untouched while `hoeCash`
     gets raided)."""
-    if state["location"] == "London":
-        raise GameError("You can't attack anyone at home turf")
     if state["turns"] < 30:
         raise GameError("Not enough turns (need 30)")
     if defender["location"] != state["location"]:
@@ -2295,8 +2291,6 @@ def buy_turns_with_real_money(state):
 
 
 def travel_cost(state, city):
-    if city.get("home"):
-        return 0
     return max(TRAVEL_BASE_FEE, jround(TRAVEL_COST_PER_THUG * state["thugs"]))
 
 

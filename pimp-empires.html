@@ -1415,7 +1415,7 @@
   <div class="nav-buttons">
     <div class="nav-btn travel" id="openTravelBtn" style="grid-column:1/-1;">
       <div class="icon">✈️</div>
-      <div class="ntext"><div class="ntitle">Travel Agent</div><div class="nsub" id="navTravelSub">currently in London</div></div>
+      <div class="ntext"><div class="ntitle">Travel Agent</div><div class="nsub" id="navTravelSub">loading…</div></div>
     </div>
     <div class="nav-btn heist" id="openHeistBtn" style="grid-column:1/-1;">
       <div class="icon">🔫</div>
@@ -1966,7 +1966,7 @@
 <div class="page" id="page-dealer">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Dope Dealer</h2>
-  <div class="page-subtitle" id="dealerCity">London dealer · Prices change every 10 minutes</div>
+  <div class="page-subtitle" id="dealerCity">Local dealer · Prices change every 10 minutes</div>
 
   <div id="dealerDrugs" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:16px;">
     <!-- Filled by JS -->
@@ -1979,8 +1979,8 @@
   <div class="page-subtitle">Move the crew to a new city.</div>
   <div class="panel location-panel">
     <div class="cur">
-      <div class="where"><span>Current turf</span><span id="curLocation">London</span></div>
-      <div class="hint" id="travelHint" style="margin:0;">home base — work the block freely</div>
+      <div class="where"><span>Current turf</span><span id="curLocation">—</span></div>
+      <div class="hint" id="travelHint" style="margin:0;">work the block freely</div>
     </div>
 
     <div class="uk-map-wrap">
@@ -2176,7 +2176,7 @@
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">About The Hustle</h2>
   <div class="panel">
-    <p>The Hustle is a browser-based crime empire management game. You run a gang out of London, building up hoes to earn you money, thugs to protect it, and a criminal business empire — while every other account playing right now, plus a roster of AI-controlled rival bosses, shares the exact same world you do.</p>
+    <p>The Hustle is a browser-based crime empire management game. Every account starts out dropped into a random UK city — no home turf, nowhere safe — building up hoes to earn you money, thugs to protect it, and a criminal business empire, with your crew deciding together where to actually set up shop. Every other account playing right now, plus a roster of AI-controlled rival bosses, shares the exact same world you do.</p>
     <p>There's no combat you watch play out — every action is a single click and an instant result. The depth is in the economy and the risk/reward calls: how hard you push your hoes before happiness collapses, how much cash you leave lying around versus banked away, who's worth attacking, and what you're willing to spend to find out what a rival is actually sitting on.</p>
     <h3>The core loop</h3>
     <p><b>Work the Block</b> is your main income — it turns your turns into cash, new hoes, and new thugs, with a chance of getting raided by police along the way. From there, cash gets put to work: banked for safety (at a fee), spent on real estate (factories that passively produce goods and count toward net worth), spent recruiting muscle and weapons for protection, or gambled on heists and the Casino for a bigger payout.</p>
@@ -2200,7 +2200,7 @@
     <h3>Thug Morale</h3>
     <p>Same idea as hoe happiness, but guns instead of meds: own at least as many guns as you have thugs and morale sits at 100%, which removes bust risk entirely and boosts your combat power. Fewer guns than thugs and morale drops with the shortfall. Buy guns on the Black Market, or build a Gun Factory.</p>
     <h3>Attacking</h3>
-    <p>You need to be away from home turf (not London) with 30+ turns, and your target has to be in the same city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
+    <p>You need 30+ turns, and your target has to be in the same city — there's no home turf, so you're fair game anywhere, including your starting city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
     <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, or Counterfeit) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive). Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
     <h3>The Informer</h3>
@@ -2279,7 +2279,7 @@
   ];
 
   function defaultState(){
-    const randomCity = CITIES.filter(c => !c.home)[Math.floor(Math.random() * 4)];
+    const randomCity = CITIES[Math.floor(Math.random() * CITIES.length)];
     return {
       name: 'Big Boss',
       gang: '',
@@ -2766,7 +2766,7 @@
   const TRAVEL_BASE_FEE = 100;
 
   const CITIES = [
-    {name:'London', home:true},
+    {name:'London'},
     {name:'Bristol'},
     {name:'Birmingham'},
     {name:'Manchester'},
@@ -2973,7 +2973,6 @@
   }
 
   function travelCost(city){
-    if(city.home) return 0;
     return Math.max(TRAVEL_BASE_FEE, Math.round(TRAVEL_COST_PER_THUG * state.thugs));
   }
 
@@ -2989,11 +2988,11 @@
       CITIES.forEach(c => {
         const isCurrent = c.name === state.location;
         const cost = travelCost(c);
-        const cantAfford = !isCurrent && !c.home && state.cash < cost;
+        const cantAfford = !isCurrent && state.cash < cost;
         const coord = CITY_COORDS[c.name];
-        const crewCount = c.home ? 0 : botsInCity(c.name).length;
-        const costLabel = isCurrent ? 'here' : (c.home ? 'home' : `${fmtMoney(cost)}${crewCount ? ` · ${crewCount} crew${crewCount === 1 ? '' : 's'}` : ''}`);
-        const color = isCurrent ? '#2fe0c0' : (c.home ? '#f0c419' : (cantAfford ? '#5a5566' : '#ff2f78'));
+        const crewCount = botsInCity(c.name).length;
+        const costLabel = isCurrent ? 'here' : `${fmtMoney(cost)}${crewCount ? ` · ${crewCount} crew${crewCount === 1 ? '' : 's'}` : ''}`;
+        const color = isCurrent ? '#2fe0c0' : (cantAfford ? '#5a5566' : '#ff2f78');
 
         const marker = L.circleMarker([coord.lat, coord.lng], {
           radius: isCurrent ? 9 : 7,
@@ -3014,25 +3013,22 @@
     }
 
     const travelHint = document.getElementById('travelHint');
-    travelHint.textContent = state.location === 'London'
-      ? 'home base — work the block freely'
-      : 'away turf';
+    travelHint.textContent = 'work the block freely';
 
     const cityGrid = document.getElementById('cityGrid');
     if(cityGrid){
       cityGrid.innerHTML = CITIES.map(c => {
         const isCurrent = c.name === state.location;
         const cost = travelCost(c);
-        const cantAfford = !isCurrent && !c.home && state.cash < cost;
-        const crewCount = c.home ? 0 : botsInCity(c.name).length;
-        const costLabel = isCurrent ? 'current turf' : (c.home ? 'home turf'
-          : `${fmtMoney(cost)} plane ticket${state.thugs === 1 ? '' : 's'}`);
+        const cantAfford = !isCurrent && state.cash < cost;
+        const crewCount = botsInCity(c.name).length;
+        const costLabel = isCurrent ? 'current turf' : `${fmtMoney(cost)} plane ticket${state.thugs === 1 ? '' : 's'}`;
         return `
           <button type="button" class="city-card${isCurrent ? ' current' : ''}${cantAfford ? ' disabled' : ''}"
             data-travel-city="${escapeHtml(c.name)}" ${isCurrent || cantAfford ? 'disabled' : ''}>
             <div class="cname">${escapeHtml(c.name)}</div>
             <div class="ccost">${costLabel}</div>
-            ${!c.home ? `<div class="cflag">${crewCount ? `${crewCount} crew${crewCount === 1 ? '' : 's'}` : 'quiet'}</div>` : ''}
+            <div class="cflag">${crewCount ? `${crewCount} crew${crewCount === 1 ? '' : 's'}` : 'quiet'}</div>
           </button>`;
       }).join('');
       cityGrid.querySelectorAll('[data-travel-city]:not(:disabled)').forEach(btn => {
@@ -3308,7 +3304,7 @@
   async function travelTo(name){
     try{
       const data = await apiCall('/api/travel', {city: name});
-      showToast(data.result.cost > 0 ? `Traveled to ${name} for ${fmtMoney(data.result.cost)}.` : `Back on home turf in ${name}.`);
+      showToast(`Traveled to ${name} for ${fmtMoney(data.result.cost)}.`);
       render(); renderLocation();
     } catch(e){ /* toast already shown */ }
   }
