@@ -563,7 +563,7 @@ BOT_REINVEST_GUN_PRICES = {"pistol9mm": 240, "shotgun12gauge": 1050, "ak47": 180
 BOT_REINVEST_CAR_PRICE = 9600
 
 
-def make_bot(bot_id, used_bosses, gang):
+def make_bot(bot_id, used_bosses, gang, city):
     boss = next((b for b in BOSS_NICKNAMES if b not in used_bosses), None) or random.choice(BOSS_NICKNAMES)
     used_bosses.add(boss)
 
@@ -592,7 +592,7 @@ def make_bot(bot_id, used_bosses, gang):
         "boss": boss,
         "gang": gang,
         "archetype": random.choice(list(BOT_ARCHETYPES.keys())),
-        "city": random.choice(CITY_NAMES),
+        "city": city,
         "thugs": thugs,
         "thugNames": thug_names,
         "cash": 4000 + random.randint(0, 15999),
@@ -640,10 +640,14 @@ def ensure_bots(world):
     `world` is the single shared world dict ({"bots": [...], "botCrewEmblems":
     {...}}) - bots are global, not per-player, so every human player competes
     against and can see the exact same roster."""
+    ensure_bot_crew_cities(world)
     if not world.get("bots"):
         used_bosses = set()
         crew_assignments = even_crew_assignments(BOT_COUNT)
-        world["bots"] = [make_bot(i + 1, used_bosses, crew_assignments[i]) for i in range(BOT_COUNT)]
+        world["bots"] = [
+            make_bot(i + 1, used_bosses, crew_assignments[i], world["botCrewCities"][crew_assignments[i]])
+            for i in range(BOT_COUNT)
+        ]
     ensure_bot_crew_emblems(world)
     for b in world["bots"]:
         if "guns" not in b:
@@ -663,6 +667,16 @@ def ensure_bot_crew_emblems(world):
         return
     available = random.sample(CREW_EMBLEMS, len(GANG_NAMES))
     world["botCrewEmblems"] = dict(zip(GANG_NAMES, available))
+
+
+def ensure_bot_crew_cities(world):
+    """Each of the 4 street crews lives in one shared city, assigned once -
+    gang-mates actually crew up in person instead of being scattered
+    randomly across the map despite supposedly running together."""
+    if world.get("botCrewCities"):
+        return
+    cities = random.sample(CITY_NAMES, len(GANG_NAMES))
+    world["botCrewCities"] = dict(zip(GANG_NAMES, cities))
 
 
 def bots_in_city(world, city_name):
@@ -2394,6 +2408,14 @@ def apply_world_catchup(world):
         crew_assignments = even_crew_assignments(len(world["bots"]))
         for b, gang in zip(world["bots"], crew_assignments):
             b["gang"] = gang
+    # Bots used to spawn in a random city independent of their crew. Keep
+    # every bot snapped to its crew's shared city so gang-mates actually
+    # live together - cheap to re-check every request, and self-heals any
+    # bot left over from before this existed.
+    for b in world["bots"]:
+        crew_city = world["botCrewCities"].get(b["gang"])
+        if crew_city and b["city"] != crew_city:
+            b["city"] = crew_city
     regen_bots(world, now)
     process_bot_hospitals(world, now)
     return world
