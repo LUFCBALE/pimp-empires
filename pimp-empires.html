@@ -425,7 +425,8 @@
   .lb-rank.lb-gold{color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.5);}
   .lb-rank.lb-silver{color:#d8d8e0; text-shadow:0 0 6px rgba(216,216,224,0.4);}
   .lb-rank.lb-bronze{color:#cd7f32; text-shadow:0 0 6px rgba(205,127,50,0.4);}
-  .lb-name{color:#fff; font-weight:600;}
+  .lb-name{color:#fff; font-weight:600; display:flex; align-items:center;}
+  .lb-crosshair-slot{display:inline-flex; align-items:center; justify-content:center; width:22px; flex-shrink:0;}
   .lb-presence-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:2px; vertical-align:middle;}
   .lb-presence-dot.online{background:#2fe08a; box-shadow:0 0 6px rgba(47,224,138,0.8);}
   .lb-presence-dot.offline{background:var(--text-dim); opacity:0.5;}
@@ -2004,7 +2005,8 @@
     <span style="display:flex; align-items:center; gap:6px;"><span class="lb-presence-dot offline"></span>Real player, offline</span>
     <span style="display:flex; align-items:center; gap:6px;">No dot = AI bot</span>
     <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:rgba(139,0,0,0.4); border:1px solid rgba(139,0,0,0.7); display:inline-block;"></span>In your crew</span>
-    <span style="display:flex; align-items:center; gap:6px;"><span style="color:var(--red); font-weight:700; font-size:0.95rem;">⌖</span>Attackable — click to quick attack</span>
+    <span style="display:flex; align-items:center; gap:6px;"><span style="color:var(--red); font-weight:700; font-size:0.95rem;">⌖</span>In range, same city — click to quick attack</span>
+    <span style="display:flex; align-items:center; gap:6px;"><span style="color:var(--text-dim); font-weight:700; font-size:0.95rem;">⌖</span>In range, different city</span>
   </div>
   <div class="panel">
     <div class="lb-wrap">
@@ -3135,7 +3137,7 @@
     const rows = bots.map(b => {
       const inYourCrew = rosterIds.has(b.id);
       const botNW = botNetWorth(b);
-      const isInRange = b.city === state.location && botNW >= minAttackNW && botNW <= maxAttackNW;
+      const isInRange = botNW >= minAttackNW && botNW <= maxAttackNW;
       return {
         isYou: false,
         isHuman: !!b.isHuman,
@@ -3152,6 +3154,7 @@
         cars: b.cadillacs || 0,
         netWorth: botNW,
         isInRange: isInRange,
+        sameCity: b.city === state.location,
       };
     });
     // You're always "in" your own city, so you belong on both tabs
@@ -3193,11 +3196,18 @@
 
     const rankTier = i => i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
     const rankMedal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+    const crosshairHtml = r => {
+      if(r.isYou || r.inYourCrew || !r.isInRange) return '<span class="lb-crosshair-slot"></span>';
+      return r.sameCity
+        ? `<span class="lb-crosshair-slot"><button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button></span>`
+        : `<span class="lb-crosshair-slot"><button class="lb-quick-attack-btn" data-travel-hint-city="${escapeHtml(r.city)}" data-travel-hint-name="${escapeHtml(r.name)}" title="In attack range — travel to ${escapeHtml(r.city)} to hit them" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--text-dim); font-weight:700;">⌖</button></span>`;
+    };
     list.innerHTML = rows.map((r,i) => `
       <div class="lb-row ${r.isYou ? 'lb-you' : (r.inYourCrew ? 'lb-crewmate' : '')}">
         <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)} ${r.rankArrow}</div>
         <div class="lb-name">
-          <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.isInRange && !r.isYou && !r.inYourCrew ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
+          ${crosshairHtml(r)}
+          <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
         </div>
         <div class="lb-gang">${r.gang ? `${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
@@ -3214,11 +3224,19 @@
       btn.addEventListener('click', () => openDMModal(parseInt(btn.dataset.dmId)));
     });
 
-    // Wire up quick-attack (target icon only renders when in range)
+    // Wire up quick-attack (target icon only renders when in range and in your city)
     list.querySelectorAll('[data-quick-attack-id]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         fightBot(parseInt(btn.dataset.quickAttackId));
+      });
+    });
+
+    // Grey crosshair = in attack range but a different city - not clickable to attack yet
+    list.querySelectorAll('[data-travel-hint-city]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showToast(`✈️ ${btn.dataset.travelHintName} is in range but in ${btn.dataset.travelHintCity} — travel there to attack`);
       });
     });
 
