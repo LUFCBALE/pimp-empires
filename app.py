@@ -311,6 +311,7 @@ def attach_world_view(state, world, user_id):
     state['bots'] = world.get('bots', []) + build_human_targets(user_id)
     state['botCrewEmblems'] = world.get('botCrewEmblems', {})
     state['globalAttackLog'] = world.get('globalAttackLog', [])
+    state['worldRecords'] = world.get('records', {})
     state['crewRoster'] = build_crew_roster(user_id, state, world)
     state['rankInfo'] = ge.rank_info(state.get('xp', 0))
 

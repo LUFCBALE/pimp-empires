@@ -319,6 +319,9 @@ def default_state(pimp_name="Big Boss"):
         "lifetimeEarnings": 0,
         "xp": 0,
         "achievements": [],
+        "statsThugsKilled": 0,
+        "statsFactoriesDestroyed": 0,
+        "statsMoneyStolen": 0,
         "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
         "carFactoryRatio": 1.0,
@@ -1110,6 +1113,8 @@ def fight_bot(state, bot_id, world):
         your_thugs_lost_pct = 0.85 + random.random() * 0.08
         your_thugs_lost = min(state["thugs"], jround(thugs_wiped * your_thugs_lost_pct))
         state["thugs"] = max(0, state["thugs"] - your_thugs_lost)
+        state["statsThugsKilled"] = state.get("statsThugsKilled", 0) + thugs_wiped
+        state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + cash_won
 
         add_log(state, f"You hit {bot['boss']} of \"{bot['gang']}\" for £{cash_won} and wiped out {thugs_wiped} thugs ({thugs_hospitalized} hospitalized, the rest gone for good). Their crew fired back before going down, killing {your_thugs_lost} of your thugs.", "good")
         recalc_morale(state)
@@ -1161,6 +1166,7 @@ def bomb_bot(state, bot_id, factory_type, world):
     state["bombs"] -= cost
     bot["factories"][factory_type] -= destroyed
     wiped_out = bot["factories"][factory_type] <= 0
+    state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else f" ({bot['factories'][factory_type]} left standing)") + ".", "good")
     add_xp(state, BOMB_XP)
@@ -1205,6 +1211,9 @@ def human_as_bot(user_id, pimp_name, s):
         "factories": s.get("factories", {}),
         "thugsInHospital": s.get("thugsInHospital", 0),
         "thugsHospitalReadyAt": s.get("thugsHospitalReadyAt", 0),
+        "statsThugsKilled": s.get("statsThugsKilled", 0),
+        "statsFactoriesDestroyed": s.get("statsFactoriesDestroyed", 0),
+        "statsMoneyStolen": s.get("statsMoneyStolen", 0),
     }
 
 
@@ -1262,6 +1271,18 @@ def fight_human(state, defender, world, defender_target_id=None):
         your_thugs_lost_pct = 0.85 + random.random() * 0.08
         your_thugs_lost = min(state["thugs"], jround(thugs_wiped * your_thugs_lost_pct))
         state["thugs"] = max(0, state["thugs"] - your_thugs_lost)
+        state["statsThugsKilled"] = state.get("statsThugsKilled", 0) + thugs_wiped
+        state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + cash_won
+
+        # Home invasion record - biggest single hit ever landed on a real
+        # player's crew, tracked world-wide so it survives whoever holds it.
+        records = world.setdefault("records", {})
+        best = records.get("biggestHomeInvasion")
+        if not best or thugs_wiped > best.get("thugsKilled", 0):
+            records["biggestHomeInvasion"] = {
+                "attacker": state["name"], "defender": defender["name"],
+                "thugsKilled": thugs_wiped, "cashWon": cash_won, "t": now,
+            }
 
         add_log(state, f"You hit {defender['name']} for £{cash_won} and wiped out {thugs_wiped} thugs ({thugs_hospitalized} hospitalized, the rest gone for good). They fired back before going down, killing {your_thugs_lost} of your thugs.", "good")
         add_log(defender, f"{state['name']} hit you for £{cash_won} and wiped out {thugs_wiped} of your thugs ({thugs_hospitalized} hospitalized).", "bad")
@@ -1302,6 +1323,7 @@ def bomb_human(state, defender, factory_type):
     state["bombs"] -= cost
     defender["factories"][factory_type] -= destroyed
     wiped_out = defender["factories"][factory_type] <= 0
+    state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
 
     # Blow up someone's explosive factories and a matching share of their
     # bomb stockpile goes with it - there's nowhere else those bombs were
@@ -1815,6 +1837,7 @@ def run_heist(state, job_id):
         thugs_lost = max(0, jround(state["thugs"] * pct))
         state["cash"] += cash_won
         state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_won
+        state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + cash_won
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
         recalc_morale(state)
@@ -1859,6 +1882,7 @@ def run_casino_heist(state, world):
         crew_share_per_member = jround(total_cash * 0.40 / crew_size)
         state["cash"] += player_share
         state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + player_share
+        state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + player_share
         lo, hi = job["casualtyPct"]
         pct = lo + random.random() * (hi - lo)
         thugs_lost = jround(thugs_needed * pct)
@@ -2382,6 +2406,12 @@ def apply_catchup(state):
         state["xp"] = 0
     if "achievements" not in state:
         state["achievements"] = []
+    if "statsThugsKilled" not in state:
+        state["statsThugsKilled"] = 0
+    if "statsFactoriesDestroyed" not in state:
+        state["statsFactoriesDestroyed"] = 0
+    if "statsMoneyStolen" not in state:
+        state["statsMoneyStolen"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     tick_regen(state, now)
@@ -2404,6 +2434,8 @@ def apply_world_catchup(world):
     ensure_bots(world)
     if "globalAttackLog" not in world:
         world["globalAttackLog"] = []
+    if "records" not in world:
+        world["records"] = {}
     # One-time migration: bots created before the 4-crew system had unique
     # per-bot gang names. Reassign everyone into the new shared crews
     # without touching any other bot progress.

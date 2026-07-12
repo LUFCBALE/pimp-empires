@@ -2077,6 +2077,11 @@
   <div class="panel">
     <div id="achievementsGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;"></div>
   </div>
+  <div class="panel" style="margin-top:16px;">
+    <h3 style="margin-top:0;">🏛️ Hall of Fame</h3>
+    <div id="hofRecord" style="margin-bottom:16px;"></div>
+    <div id="hofLeaderboards" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;"></div>
+  </div>
 </div>
 
 <div class="page" id="page-crew">
@@ -3534,6 +3539,64 @@
         </div>
       `;
     }).join('');
+    renderHallOfFame();
+  }
+
+  function renderHallOfFame(){
+    const container = document.getElementById('hofLeaderboards');
+    const recordEl = document.getElementById('hofRecord');
+    if(!container || !recordEl) return;
+
+    const rec = (state.worldRecords && state.worldRecords.biggestHomeInvasion) || null;
+    recordEl.innerHTML = rec
+      ? `<div style="border:1px solid var(--gold); border-radius:10px; padding:14px; background:rgba(255,200,0,0.08); text-align:center;">
+           <div style="font-size:0.72rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">💥 Biggest Home Invasion Ever</div>
+           <div style="font-weight:700;">${escapeHtml(rec.attacker)} killed ${rec.thugsKilled.toLocaleString()} of ${escapeHtml(rec.defender)}'s thugs</div>
+           <div style="font-size:0.78rem; color:var(--text-dim); margin-top:4px;">£${rec.cashWon.toLocaleString()} taken in the raid</div>
+         </div>`
+      : `<div class="hint" style="text-align:center;">No home invasion record set yet — be the first to wipe out a rival's crew.</div>`;
+
+    const entries = [{
+      id: null, name: state.name || 'Big Boss', isYou: true,
+      statsThugsKilled: state.statsThugsKilled || 0,
+      statsFactoriesDestroyed: state.statsFactoriesDestroyed || 0,
+      statsMoneyStolen: state.statsMoneyStolen || 0,
+    }];
+    (state.bots || []).forEach(b => {
+      if(!b.isHuman) return;
+      entries.push({
+        id: b.id, name: b.boss, isYou: false,
+        statsThugsKilled: b.statsThugsKilled || 0,
+        statsFactoriesDestroyed: b.statsFactoriesDestroyed || 0,
+        statsMoneyStolen: b.statsMoneyStolen || 0,
+      });
+    });
+
+    const boards = [
+      {key:'statsThugsKilled', title:'💀 Most Thugs Killed', fmt: v => v.toLocaleString()},
+      {key:'statsFactoriesDestroyed', title:'🧨 Most Factories Destroyed', fmt: v => v.toLocaleString()},
+      {key:'statsMoneyStolen', title:'💰 Most Money Stolen', fmt: v => fmtMoney(v)},
+    ];
+
+    container.innerHTML = boards.map(board => {
+      const top = entries.filter(e => e[board.key] > 0).sort((a,b) => b[board.key] - a[board.key]).slice(0, 5);
+      const rows = top.length ? top.map((e, i) => `
+        <div style="display:flex; justify-content:space-between; padding:4px 0; ${e.isYou ? 'color:var(--gold); font-weight:700;' : ''}">
+          <span>${i+1}. ${!e.isYou ? `<span data-profile-id="${e.id}" style="cursor:pointer; text-decoration:underline dotted;">${escapeHtml(e.name)}</span>` : escapeHtml(e.name)}</span>
+          <span>${board.fmt(e[board.key])}</span>
+        </div>
+      `).join('') : `<div class="hint">No records yet.</div>`;
+      return `
+        <div style="border:1px solid var(--panel-line); border-radius:10px; padding:12px; background:var(--bg-2);">
+          <div style="font-weight:700; margin-bottom:8px; font-size:0.85rem;">${board.title}</div>
+          ${rows}
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('[data-profile-id]').forEach(el => {
+      el.addEventListener('click', () => openProfile(parseInt(el.dataset.profileId)));
+    });
   }
 
   const HEIST_JOBS = {
