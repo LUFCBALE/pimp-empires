@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>THE HUSTLE // a street hustle sim</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
@@ -420,7 +420,7 @@
   .lb-row{border-bottom:1px solid var(--panel-line);}
   .lb-row:last-child{border-bottom:none;}
   .lb-row.lb-you{background:rgba(255,47,120,0.1); border-radius:8px;}
-  .lb-rank{font-family:'Playfair Display',serif; font-style:italic; font-weight:700; font-size:1.05rem; letter-spacing:0.02em; color:var(--text-dim); display:flex; align-items:center; gap:5px;}
+  .lb-rank{font-family:'Comic Neue',cursive; font-weight:700; font-size:1.05rem; letter-spacing:0.02em; color:var(--text-dim); display:flex; align-items:center; gap:5px;}
   .lb-rank.lb-gold{color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.5);}
   .lb-rank.lb-silver{color:#d8d8e0; text-shadow:0 0 6px rgba(216,216,224,0.4);}
   .lb-rank.lb-bronze{color:#cd7f32; text-shadow:0 0 6px rgba(205,127,50,0.4);}
@@ -3261,7 +3261,7 @@
     const rankMedal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
     list.innerHTML = rows.map((r,i) => `
       <div class="lb-row ${r.isYou ? 'lb-you' : ''}">
-        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}#${String(i + 1).padStart(2, '0')} ${r.rankArrow}</div>
+        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)} ${r.rankArrow}</div>
         <div class="lb-name">
           <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}${r.inYourCrew ? ' <span style="color:var(--teal); font-size:0.75rem;" title="In your crew">🤝</span>' : ''}${r.isInRange && !r.isYou && !r.inYourCrew ? ` <button class="lb-quick-attack-btn" data-quick-attack-id="${r.botId}" title="Quick attack — send all thugs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:2px 4px; color:var(--red); font-weight:700;">⌖</button>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
@@ -3342,7 +3342,7 @@
     const rankMedal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
     list.innerHTML = rows.map((r,i) => `
       <div class="lb-row lb-crewview ${r.isYours ? 'lb-you' : ''}">
-        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}#${String(i + 1).padStart(2, '0')}</div>
+        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)}</div>
         <div class="lb-name">${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.name)}${r.isYours ? ' <span style="color:var(--teal); font-size:0.75rem;">(you)</span>' : ''}</div>
         <div class="lb-stat">${r.members}</div>
         <div class="lb-stat">👠 ${r.hoes}</div>
@@ -4259,6 +4259,17 @@
 
   function escapeHtml(s){
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function ordinal(n){
+    const rem100 = n % 100;
+    if(rem100 >= 11 && rem100 <= 13) return `${n}th`;
+    switch(n % 10){
+      case 1: return `${n}st`;
+      case 2: return `${n}nd`;
+      case 3: return `${n}rd`;
+      default: return `${n}th`;
+    }
   }
 
   function playSiren(){
