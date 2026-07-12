@@ -88,6 +88,34 @@
     75%{transform:translateX(-20px) rotate(-5deg);}
     100%{transform:translateX(0) rotate(0);}
   }
+  @keyframes gunfireFlash{
+    0%{background:rgba(255,140,0,0.55); opacity:1;}
+    8%{background:rgba(255,220,120,0.75);}
+    16%{background:rgba(20,0,0,0.35);}
+    24%{background:rgba(255,140,0,0.5);}
+    32%{background:rgba(255,220,120,0.7);}
+    40%{background:rgba(20,0,0,0.3);}
+    100%{background:rgba(0,0,0,0); opacity:0;}
+  }
+  @keyframes gunfireShake{
+    0%{transform:translate(0,0) rotate(0);}
+    10%{transform:translate(-10px,3px) rotate(-2deg);}
+    20%{transform:translate(9px,-4px) rotate(2deg);}
+    30%{transform:translate(-8px,2px) rotate(-1deg);}
+    40%{transform:translate(10px,-3px) rotate(2deg);}
+    50%{transform:translate(-6px,3px) rotate(-1deg);}
+    60%{transform:translate(7px,-2px) rotate(1deg);}
+    70%{transform:translate(-5px,2px) rotate(-1deg);}
+    100%{transform:translate(0,0) rotate(0);}
+  }
+  @keyframes muzzleFlashPop{
+    0%{opacity:0; transform:scale(0.4);}
+    10%{opacity:1; transform:scale(1.15);}
+    20%{opacity:0.7; transform:scale(0.9);}
+    30%{opacity:1; transform:scale(1.1);}
+    45%{opacity:0; transform:scale(0.7);}
+    100%{opacity:0; transform:scale(0.7);}
+  }
   .bg-scene svg{width:100%; height:100%; display:none;}
   .bg-scene::before{
     content:''; position:absolute; inset:0;
@@ -3598,6 +3626,8 @@
     try{
       const data = await apiCall('/api/attack', {botId});
       const r = data.result;
+      showGunfireAnimation();
+      playAttackAlert();
       showAttackResultModal(r);
       render(); renderLocation(); renderAttacks();
     } catch(e){ /* toast already shown */ }
@@ -4478,6 +4508,24 @@
     } catch(e) {
       // Audio not supported, silent fail
     }
+  }
+
+  function showGunfireAnimation(){
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.3);
+      display:flex; align-items:center; justify-content:center;
+      animation:gunfireFlash 0.8s ease-out; pointer-events:none;
+    `;
+    overlay.innerHTML = `
+      <div style="display:flex; gap:14px; animation:gunfireShake 0.7s ease-in-out;">
+        <span style="font-size:4.5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0s;">💥🔫</span>
+        <span style="font-size:4.5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0.08s;">🔫💥</span>
+        <span style="font-size:4.5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0.16s;">💥🔫</span>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 800);
   }
 
   function showPoliceAnimation(){
