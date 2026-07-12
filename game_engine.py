@@ -681,34 +681,16 @@ def factory_sell_value(factories):
     )
 
 
-def produce_sell_value(guns, cadillacs, armored_trucks, meds_stock, coke):
-    """Sell value of everything factories actually produce - guns, cars/
-    trucks, safety kits and cocaine, all at their real dealer/black-market
-    sell prices. Bombs (explosive factory output) and counterfeit's raw
-    cash aren't sellable inventory, so those factory types only contribute
-    via factory_sell_value above."""
-    guns_value = sum(
-        (guns or {}).get(gun_key, 0) * price
-        for gun_key, price in BOT_REINVEST_GUN_PRICES.items()
-    )
-    vehicles_value = (cadillacs or 0) * BOT_REINVEST_CAR_PRICE + (armored_trucks or 0) * BOT_TRUCK_SELL_PRICE
-    meds_value = (meds_stock or 0) * BLACKMARKET_BY_KEY["meds"]["price"]
-    coke_value = (coke or 0) * DOPE_DEALER_BY_ID["coke"]["baseSellPrice"]
-    return guns_value + vehicles_value + meds_value + coke_value
-
-
 THUG_NET_WORTH_VALUE = 500
 
 
 def bot_net_worth(bot):
-    """Net worth is what everything would actually sell for right now -
-    factories at their sell/refund price, plus produce (guns, cars/trucks,
-    meds) at market sell price, plus each thug's muscle value. Bots don't
-    have drug factories, so no cocaine term here."""
+    """Net worth is what your factories would actually sell for right now,
+    plus each thug's muscle value. Produce sitting in storage (guns,
+    cars/trucks, meds, coke) doesn't count - it's inventory, not assets."""
     f = bot.get("factories", {})
     return (
         factory_sell_value(f)
-        + produce_sell_value(bot.get("guns"), bot.get("cadillacs"), bot.get("armoredTrucks"), None, None)
         + bot.get("thugs", 0) * THUG_NET_WORTH_VALUE
     )
 
@@ -1397,17 +1379,13 @@ def informer_report_human(state, defender):
 # ---------------------------------------------------------------------------
 
 def calc_net_worth(state):
-    """Net worth is what everything would actually sell for right now -
-    factories at their sell/refund price, plus produce (guns, cars/trucks,
-    meds, cocaine) at market sell price, plus each thug's muscle value.
-    Cash, hoes and bombs still don't count at all."""
+    """Net worth is what your factories would actually sell for right now,
+    plus each thug's muscle value. Produce sitting in storage (guns, cars/
+    trucks, meds, cocaine) doesn't count - it's inventory, not assets. Cash,
+    hoes and bombs still don't count at all either."""
     f = state["factories"]
     return (
         factory_sell_value(f)
-        + produce_sell_value(
-            state.get("guns"), state.get("cadillacs"), state.get("armoredTrucks"),
-            state.get("medsStock"), (state.get("drugs") or {}).get("coke"),
-        )
         + state.get("thugs", 0) * THUG_NET_WORTH_VALUE
     )
 

@@ -2183,7 +2183,7 @@
     <h3>It's genuinely multiplayer</h3>
     <p>Every bot and every real player you see on the Leaderboard, the Attacks page, or the Informer's dropdown is part of one shared world. Attacking, bombing, and recruiting real players works exactly the same as it does against bots — same rules, same risks, both ways. Nobody's stats are visible for free, though: what you see is name and net worth only. Anything more detailed costs you an Informer's fee.</p>
     <h3>Net worth</h3>
-    <p>Rank is based on factories, what they produce (guns, cars, trucks, meds), and every thug in your crew. Cash and hoes don't count — they're liquid and workforce, not assets. That also means a successful raid on your factories, guns, or thugs will visibly cost you leaderboard position, not just combat stats.</p>
+    <p>Rank is based on factories and every thug in your crew. Guns, cars, trucks, meds and cash sitting in storage don't count — they're inventory and liquid funds, not assets. That also means a successful raid on your factories or thugs will visibly cost you leaderboard position, not just combat stats.</p>
   </div>
 </div>
 
@@ -2804,26 +2804,14 @@
     return (state.bots || []).filter(b => b.city === cityName);
   }
 
-  const PRODUCE_SELL_PRICES = {pistol9mm: 240, shotgun12gauge: 1050, ak47: 1800, m249: 8000, cadillac: 9600, truck: 18000, meds: 15, coke: 170};
-
   function factorySellValue(f){
     f = f || {};
     return (f.medical||0)*FACTORY_SELL_PRICES.medical + (f.gun||0)*FACTORY_SELL_PRICES.gun + (f.car||0)*FACTORY_SELL_PRICES.car
       + (f.drug||0)*FACTORY_SELL_PRICES.drug + (f.explosive||0)*FACTORY_SELL_PRICES.explosive + (f.counterfeit||0)*FACTORY_SELL_PRICES.counterfeit;
   }
 
-  function produceSellValue(guns, cadillacs, armoredTrucks, medsStock, coke){
-    const g = guns || {};
-    const gunsValue = (g.pistol9mm||0)*PRODUCE_SELL_PRICES.pistol9mm + (g.shotgun12gauge||0)*PRODUCE_SELL_PRICES.shotgun12gauge
-      + (g.ak47||0)*PRODUCE_SELL_PRICES.ak47 + (g.m249||0)*PRODUCE_SELL_PRICES.m249;
-    const vehiclesValue = (cadillacs||0)*PRODUCE_SELL_PRICES.cadillac + (armoredTrucks||0)*PRODUCE_SELL_PRICES.truck;
-    const medsValue = (medsStock||0)*PRODUCE_SELL_PRICES.meds;
-    const cokeValue = (coke||0)*PRODUCE_SELL_PRICES.coke;
-    return gunsValue + vehiclesValue + medsValue + cokeValue;
-  }
-
   function botNetWorth(b){
-    return factorySellValue(b.factories) + produceSellValue(b.guns, b.cadillacs, b.armoredTrucks, null, null) + (b.thugs || 0) * THUG_NET_WORTH_VALUE;
+    return factorySellValue(b.factories) + (b.thugs || 0) * THUG_NET_WORTH_VALUE;
   }
 
   function crewRosterIds(){
@@ -3678,14 +3666,13 @@
   const EXPLOSIVE_BOMB_RATE = 65; // bombs per factory per 30 mins
   const COUNTERFEIT_CASH_RATE = 48750; // cash printed per factory per 30 mins
 
-  // Net worth is what everything would actually sell for right now -
-  // factories at their sell/refund price, plus produce (guns, cars/trucks,
-  // meds, cocaine) at market sell price, plus every thug's muscle value.
-  // Cash, hoes and bombs still don't count at all.
+  // Net worth is what your factories would actually sell for right now,
+  // plus every thug's muscle value. Produce sitting in storage (guns,
+  // cars/trucks, meds, cocaine) doesn't count - cash, hoes and bombs don't
+  // count either.
   const THUG_NET_WORTH_VALUE = 500;
   function calcNetWorth(){
     return factorySellValue(state.factories)
-      + produceSellValue(state.guns, state.cadillacs, state.armoredTrucks, state.medsStock, (state.drugs || {}).coke)
       + (state.thugs || 0) * THUG_NET_WORTH_VALUE;
   }
 
@@ -4801,7 +4788,7 @@
     {
       target: '.player-networth',
       title: '📈 Building Net Worth',
-      body: "Cash and hoes don't count toward net worth, but factories, guns, cars, and every thug in your crew do. Buy factories on the Real Estate page for passive production, and keep recruiting muscle — that's what climbs the Leaderboard.",
+      body: "Cash and hoes don't count toward net worth, but factories and every thug in your crew do. Buy factories on the Real Estate page for passive production, and keep recruiting muscle — that's what climbs the Leaderboard.",
     },
     {
       target: '[data-page="page-settings"]',
