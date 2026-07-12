@@ -810,6 +810,8 @@
   .cta.bribe:hover{box-shadow:0 6px 22px rgba(61,90,153,0.55);}
   .cta.extreme{background:linear-gradient(90deg, #7a0012, #ff1744); color:#fff; box-shadow:0 0 20px rgba(255,23,68,0.5); font-weight:700; letter-spacing:0.05em;}
   .cta.extreme:hover{box-shadow:0 0 30px rgba(255,23,68,0.8);}
+  .cta.attack{background:linear-gradient(90deg, #7a0012, #ff1744); color:#fff; box-shadow:0 4px 18px rgba(255,23,68,0.4);}
+  .cta.attack:hover{box-shadow:0 6px 22px rgba(255,23,68,0.6);}
   /* Traffic-light risk buttons for the heist jobs: low = green, mid = yellow, high = red. */
   .cta.risk-low{background:linear-gradient(90deg, #1e9e5a, #2fe08a); color:#04160c;}
   .cta.risk-mid{background:linear-gradient(90deg, #b3960a, #ffd700); color:#1a1305;}
@@ -4719,7 +4721,7 @@
             ? `<div style="font-size:0.8rem; color:var(--teal); text-align:center; padding:8px;">🤝 In your crew — can't be attacked</div>`
             : banned
             ? `<div style="font-size:0.8rem; color:var(--danger); text-align:center; padding:8px;">🛡️ Recently dropped from your crew — attackable again in ${banMinsLeft} min</div>`
-            : `<button class="cta" data-attack-bot="${b.id}" ${state.thugs < 1 ? 'disabled' : ''}>⚔️ Attack — Send all thugs</button>`}
+            : `<button class="cta attack" data-attack-bot="${b.id}" ${state.thugs < 1 ? 'disabled' : ''}>⚔️ Attack — Send all thugs</button>`}
           ${!blocked && b.thugs === 0 ? `
             <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type and how many to hit — you won't see what they actually have until you commit.</div>
             <div class="bomb-controls" style="display:flex; gap:6px;">
