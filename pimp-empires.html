@@ -480,6 +480,15 @@
   .crew-card-action{display:flex; gap:6px;}
   .crew-card-action button{padding:6px 12px; font-size:11px;}
 
+  .crew-member-card{flex-direction:column; align-items:stretch; gap:10px;}
+  .crew-member-top{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .crew-member-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(88px,1fr)); gap:8px;}
+  .cms-tile{background:var(--bg-2); border:1px solid var(--panel-line); border-radius:6px; padding:8px; text-align:center;}
+  .cms-label{font-size:0.6rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-dim); margin-bottom:3px;}
+  .cms-val{font-size:0.82rem; font-weight:700; color:var(--text);}
+  .cms-val.gold{color:var(--gold);}
+  .cms-sub{font-size:0.62rem; color:var(--text-dim); font-weight:400;}
+
   /* ---- Crew Leaderboard ---- */
   .crew-stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:20px;}
   .crew-stat-card{padding:14px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:6px; text-align:center;}
@@ -2936,6 +2945,14 @@
     return factorySellValue(b.factories) + (b.thugs || 0) * THUG_NET_WORTH_VALUE;
   }
 
+  function botTotalGuns(b){
+    return Object.values(b.guns || {}).reduce((a, c) => a + c, 0);
+  }
+
+  function botTotalFactories(b){
+    return Object.values(b.factories || {}).reduce((a, c) => a + c, 0);
+  }
+
   function crewRosterIds(){
     return new Set(((state.crewRoster && state.crewRoster.members) || []).map(m => m.botId));
   }
@@ -5131,24 +5148,46 @@
     } else {
       members.innerHTML = state.crewMembers.map(m => {
         const bot = state.bots.find(b => b.id === m.botId);
-        const bombs = bot?.bombs || 0;
-        const cars = bot?.cadillacs || 0;
-        const guns = bot?.gunsOwned || 0;
         const isHuman = bot?.isHuman || m.botId >= 1000000;
-        return `
-          <div class="crew-card">
-            <div class="crew-card-info">
-              <div class="crew-card-id">${isHuman ? '🧑' : '#' + String(m.botId + 1).padStart(2, '0')}</div>
-              <div class="crew-card-name">${isHuman ? `<span data-profile-id="${m.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(m.boss)}</span>` : escapeHtml(m.boss)}</div>
-              <div class="crew-card-gang">"${escapeHtml(m.gang)}"</div>
-              <div style="font-size:0.85rem; color:var(--text-dim); margin-top:6px; display:flex; gap:12px;">
-                <span>💣 ${bombs} bomb${bombs !== 1 ? 's' : ''}</span>
-                <span>🚗 ${cars} car${cars !== 1 ? 's' : ''}</span>
-                <span>🔫 ${guns} gun${guns !== 1 ? 's' : ''}</span>
+        if(!bot){
+          // Bot data hasn't loaded yet (or the member vanished from the
+          // shared roster) - show the basic invite-time info rather than
+          // a broken stat grid of undefineds.
+          return `
+            <div class="crew-card">
+              <div class="crew-card-info">
+                <div class="crew-card-id">${isHuman ? '🧑' : '#' + String(m.botId + 1).padStart(2, '0')}</div>
+                <div class="crew-card-name">${escapeHtml(m.boss)}</div>
+                <div class="crew-card-gang">"${escapeHtml(m.gang)}"</div>
+              </div>
+              <div class="crew-card-action">
+                <button class="cta danger" data-remove="${m.botId}">Remove</button>
               </div>
             </div>
-            <div class="crew-card-action">
-              <button class="cta danger" data-remove="${m.botId}">Remove</button>
+          `;
+        }
+        const nw = botNetWorth(bot);
+        const guns = botTotalGuns(bot);
+        const factories = botTotalFactories(bot);
+        return `
+          <div class="crew-card crew-member-card">
+            <div class="crew-member-top">
+              <div class="crew-card-info">
+                <div class="crew-card-id">${isHuman ? '🧑' : '#' + String(m.botId + 1).padStart(2, '0')}</div>
+                <div class="crew-card-name">${isHuman ? `<span data-profile-id="${m.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(m.boss)}</span>` : escapeHtml(m.boss)}</div>
+                <div class="crew-card-gang">"${escapeHtml(m.gang)}" · ${escapeHtml(bot.city || '—')}</div>
+              </div>
+              <div class="crew-card-action">
+                <button class="cta danger" data-remove="${m.botId}">Remove</button>
+              </div>
+            </div>
+            <div class="crew-member-stats">
+              <div class="cms-tile"><div class="cms-label">Net Worth</div><div class="cms-val gold">${fmtMoney(nw)}</div></div>
+              <div class="cms-tile"><div class="cms-label">Thugs</div><div class="cms-val">${bot.thugs || 0}</div><div class="cms-sub">${Math.round(bot.thugMorale || 0)}% morale</div></div>
+              <div class="cms-tile"><div class="cms-label">Hoes</div><div class="cms-val">${bot.hoes || 0}</div><div class="cms-sub">${Math.round(bot.hoeMorale || 0)}% happy</div></div>
+              <div class="cms-tile"><div class="cms-label">Guns</div><div class="cms-val">🔫 ${guns}</div></div>
+              <div class="cms-tile"><div class="cms-label">Cars</div><div class="cms-val">🚗 ${Math.floor(bot.cadillacs || 0)}</div></div>
+              <div class="cms-tile"><div class="cms-label">Factories</div><div class="cms-val">🏭 ${factories}</div></div>
             </div>
           </div>
         `;
