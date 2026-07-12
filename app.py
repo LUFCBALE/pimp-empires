@@ -872,9 +872,10 @@ def api_informer():
 @app.route('/api/profile/<int:target_id>', methods=['GET'])
 @login_required
 def api_profile(target_id):
-    """Public profile for a real player - name, crew, net worth, rank, and
-    join date only. No combat stats here; that's still what the Informer
-    fee is for. Bots don't have accounts/profiles, so only human IDs
+    """Public profile for a real player - name, crew, net worth, rank, join
+    date, and who last attacked them. No detailed combat stats (cash,
+    thugs, factories) here; that's still what the Informer fee is for.
+    Bots don't have accounts/profiles, so only human IDs
     (target_id >= HUMAN_ID_OFFSET) resolve."""
     if target_id < ge.HUMAN_ID_OFFSET:
         return jsonify({'error': 'No profile for this target'}), 404
@@ -902,8 +903,7 @@ def api_profile(target_id):
             'rank': ge.rank_info(target_state.get('xp', 0)),
             'achievements': target_state.get('achievements', []),
             'isSelf': is_self,
-            # Who's been hitting you is private - only ever sent back on your own profile.
-            'lastAttackedBy': target_state.get('lastAttackedBy') if is_self else None,
+            'lastAttackedBy': target_state.get('lastAttackedBy'),
         },
     })
 
