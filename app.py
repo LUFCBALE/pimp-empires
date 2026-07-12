@@ -674,6 +674,13 @@ def api_bribe():
     return handle_action(ge.bribe_cops)
 
 
+@app.route('/api/slots', methods=['POST'])
+@login_required
+def api_slots():
+    data = request.get_json() or {}
+    return handle_action(ge.play_slots, data.get('tier', ''))
+
+
 @app.route('/api/attack', methods=['POST'])
 @login_required
 def api_attack():

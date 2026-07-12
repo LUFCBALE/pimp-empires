@@ -654,6 +654,29 @@
   .nav-btn.blackmarket{border-color:rgba(240,196,25,0.25); background:linear-gradient(180deg, rgba(240,196,25,0.06), var(--bg-2));}
   .nav-btn.blackmarket:hover{border-color:var(--gold);}
 
+  /* ---- Slot Machine ---- */
+  .nav-btn.slots .icon{color:var(--purple);}
+  .nav-btn.slots{border-color:rgba(123,79,214,0.3); background:linear-gradient(180deg, rgba(123,79,214,0.08), var(--bg-2));}
+  .nav-btn.slots:hover{border-color:var(--purple);}
+
+  .slot-display{
+    background:linear-gradient(180deg, rgba(123,79,214,0.12), var(--bg-2));
+    border:1px solid rgba(123,79,214,0.35); border-radius:14px;
+    padding:22px 16px; text-align:center; margin-bottom:16px;
+  }
+  .slot-reels{
+    display:flex; justify-content:center; gap:10px; font-size:2.8rem;
+    margin-bottom:10px;
+  }
+  .slot-reels span{
+    background:var(--bg); border:1px solid var(--panel-line); border-radius:10px;
+    width:64px; height:64px; display:flex; align-items:center; justify-content:center;
+  }
+  .slot-reels.spinning span{animation:slot-flicker 0.12s linear infinite;}
+  @keyframes slot-flicker{ 0%{opacity:1;} 50%{opacity:0.5;} 100%{opacity:1;} }
+  .slot-result{font-family:'IBM Plex Mono',monospace; font-size:0.85rem; color:var(--text-dim);}
+  .slot-result.win{color:var(--gold); font-weight:700;}
+
   .bm-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
   .bm-buy-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
   @media(max-width:760px){.bm-grid{grid-template-columns:1fr;} .bm-buy-grid{grid-template-columns:1fr;}}
@@ -1215,6 +1238,7 @@
         <button class="sidebar-link" data-page="page-bank">🏦<span>Bank</span></button>
         <button class="sidebar-link" data-page="page-travel">✈️<span>Travel Agent</span></button>
         <button class="sidebar-link" data-page="page-heist">🔫<span>Pull a Job</span></button>
+        <button class="sidebar-link" data-page="page-slots">🎰<span>Slot Machine</span></button>
         <button class="sidebar-link" data-page="page-realestate">🏭<span>Real Estate</span></button>
         <button class="sidebar-link" data-page="page-production">🔧<span>Production</span></button>
         <button class="sidebar-link" data-page="page-blackmarket">🕶️<span>Black Market</span></button>
@@ -1421,6 +1445,10 @@
       <div class="icon">🔫</div>
       <div class="ntext"><div class="ntitle">Pull a Job</div><div class="nsub" id="navHeistSub">corner shop · jewellery store · bank</div></div>
     </div>
+    <div class="nav-btn slots" id="openSlotsBtn" style="grid-column:1/-1;">
+      <div class="icon">🎰</div>
+      <div class="ntext"><div class="ntitle">Slot Machine</div><div class="nsub">something to do while your turns regen</div></div>
+    </div>
     <div class="nav-btn realestate" id="openRealEstateBtn" style="grid-column:1/-1;">
       <div class="icon">🏭</div>
       <div class="ntext"><div class="ntitle">Real Estate</div><div class="nsub" id="navRealEstateSub">buy factories · produce supplies automatically</div></div>
@@ -1614,6 +1642,57 @@
     </div>
     <div class="results-event" id="heistResultEvent"></div>
     <button class="cta" id="heistResultBackBtn">Back to the block</button>
+  </div>
+</div>
+
+<div class="page" id="page-slots">
+  <button class="back-btn" data-back>← Back to the block</button>
+  <h2 class="page-title">Slot Machine</h2>
+  <div class="page-subtitle">Feed it cash, pull the lever, maybe walk away with extra turns instead of waiting on regen. The house keeps the edge — don't feed it what you can't lose.</div>
+
+  <div class="slot-display">
+    <div class="slot-reels" id="slotReels"><span>🍒</span><span>🍋</span><span>🔔</span></div>
+    <div class="slot-result" id="slotResult">Pull the lever to spin.</div>
+  </div>
+
+  <div class="heist-cards" id="slotCards">
+
+    <div class="heist-card low">
+      <div class="heist-art"><div style="font-size:2.4rem; text-align:center;">🎰</div></div>
+      <div class="heist-info">
+        <div class="heist-name">Low Stakes</div>
+        <div class="heist-tier low-label">£100 A SPIN</div>
+        <div class="heist-stat">🍒🍒 Pair (20%): <span>+6 turns</span></div>
+        <div class="heist-stat">🍀🍀🍀 Triple (8%): <span>+24 turns</span></div>
+        <div class="heist-stat">7️⃣7️⃣7️⃣ Jackpot (2%): <span>+100 turns</span></div>
+      </div>
+      <button class="cta risk-low" data-slot-spin="low" id="slotSpinLow">🎰 Spin — £100</button>
+    </div>
+
+    <div class="heist-card mid">
+      <div class="heist-art"><div style="font-size:2.4rem; text-align:center;">🎰</div></div>
+      <div class="heist-info">
+        <div class="heist-name">Mid Stakes</div>
+        <div class="heist-tier mid-label">£500 A SPIN</div>
+        <div class="heist-stat">🍒🍒 Pair (20%): <span>+30 turns</span></div>
+        <div class="heist-stat">🍀🍀🍀 Triple (8%): <span>+120 turns</span></div>
+        <div class="heist-stat">7️⃣7️⃣7️⃣ Jackpot (2%): <span>+500 turns</span></div>
+      </div>
+      <button class="cta risk-mid" data-slot-spin="mid" id="slotSpinMid">🎰 Spin — £500</button>
+    </div>
+
+    <div class="heist-card high">
+      <div class="heist-art"><div style="font-size:2.4rem; text-align:center;">🎰</div></div>
+      <div class="heist-info">
+        <div class="heist-name">High Stakes</div>
+        <div class="heist-tier high-label">£2,000 A SPIN</div>
+        <div class="heist-stat">🍒🍒 Pair (20%): <span>+120 turns</span></div>
+        <div class="heist-stat">🍀🍀🍀 Triple (8%): <span>+480 turns</span></div>
+        <div class="heist-stat">7️⃣7️⃣7️⃣ Jackpot (2%): <span>+2,000 turns</span></div>
+      </div>
+      <button class="cta risk-high" data-slot-spin="high" id="slotSpinHigh">🎰 Spin — £2,000</button>
+    </div>
+
   </div>
 </div>
 
@@ -2192,7 +2271,9 @@
   <h2 class="page-title">FAQ</h2>
   <div class="panel">
     <h3>Turns</h3>
-    <p>Turns are your energy — almost everything costs them. They regenerate on their own over time and cap out at your max. Out of turns and impatient? There's a real-money option to top up on the Settings page.</p>
+    <p>Turns are your energy — almost everything costs them. They regenerate on their own over time and cap out at your max. Out of turns and impatient? There's a real-money option to top up on the Settings page, or try your luck on the Slot Machine — it pays out in turns instead of cash.</p>
+    <h3>Slot Machine</h3>
+    <p>Pick a stake (£100/£500/£2,000 a spin) and pull the lever — every tier has the same odds (70% nothing, 20% a small pair, 8% a triple, 2% jackpot), just bigger numbers at higher stakes. Payouts are turns, not cash, and the house keeps the edge on average, so don't feed it money you need for anything else. Winnings still can't push you past your turn cap — anything over the top is lost.</p>
     <h3>Working the Block</h3>
     <p>Spend turns to earn cash, recruit hoes, and recruit thugs, all at once. Pick a location first: Red Light earns the most but draws the most police attention; Nightclub is the middle ground; Pull Up earns the least but is safest and recruits hoes fastest. Get raided and you'll lose some of that shift's cash and thugs — but never any hoes from a raid, ever.</p>
     <h3>Why did my hoes leave if not from a raid?</h3>
@@ -5483,6 +5564,63 @@
     });
   }
 
+  const SLOT_TIERS = {low: {cost: 100, btnId: 'slotSpinLow'}, mid: {cost: 500, btnId: 'slotSpinMid'}, high: {cost: 2000, btnId: 'slotSpinHigh'}};
+  const SLOT_SYMBOLS = ['🍒','🍋','🔔','🍀','7️⃣'];
+  let slotSpinning = false;
+
+  function renderSlots(){
+    Object.entries(SLOT_TIERS).forEach(([key, t]) => {
+      const btn = document.getElementById(t.btnId);
+      if(!btn || slotSpinning) return;
+      btn.disabled = state.cash < t.cost;
+    });
+  }
+
+  async function spinSlots(tier){
+    if(slotSpinning) return;
+    const cost = SLOT_TIERS[tier].cost;
+    if(state.cash < cost){ showToast(`Need £${fmtMoney(cost)} to play that tier`); return; }
+    slotSpinning = true;
+    document.querySelectorAll('[data-slot-spin]').forEach(b => b.disabled = true);
+    const reels = document.getElementById('slotReels');
+    const resultEl = document.getElementById('slotResult');
+    reels.classList.add('spinning');
+    resultEl.textContent = 'Spinning…';
+    resultEl.className = 'slot-result';
+    const flicker = setInterval(() => {
+      reels.innerHTML = Array.from({length:3}, () => `<span>${SLOT_SYMBOLS[Math.floor(Math.random()*SLOT_SYMBOLS.length)]}</span>`).join('');
+    }, 90);
+
+    try{
+      const data = await apiCall('/api/slots', {tier});
+      await new Promise(r => setTimeout(r, 700));
+      clearInterval(flicker);
+      reels.classList.remove('spinning');
+      reels.innerHTML = data.result.symbols.map(s => `<span>${s}</span>`).join('');
+      if(data.result.turnsWon > 0){
+        resultEl.textContent = `🎉 ${data.result.symbols.join('')} — won ${data.result.turnsWon} turns!`
+          + (data.result.turnsWasted ? ` (${data.result.turnsWasted} lost — turns were already maxed)` : '');
+        resultEl.className = 'slot-result win';
+      } else {
+        resultEl.textContent = `${data.result.symbols.join('')} — nothing this time. House wins.`;
+        resultEl.className = 'slot-result';
+      }
+      render(); renderSlots();
+    } catch(e){
+      clearInterval(flicker);
+      reels.classList.remove('spinning');
+      resultEl.textContent = 'Pull the lever to spin.';
+      /* toast already shown */
+    } finally {
+      slotSpinning = false;
+      renderSlots();
+    }
+  }
+
+  document.querySelectorAll('[data-slot-spin]').forEach(btn => {
+    btn.addEventListener('click', () => spinSlots(btn.dataset.slotSpin));
+  });
+
   // ---- Page navigation ----
   function showPage(id){
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5554,6 +5692,7 @@
     'page-leaderboard': renderLeaderboard,
     'page-achievements': renderAchievements,
     'page-settings': renderSettings,
+    'page-slots': renderSlots,
   };
 
   function navigateTo(pageId){
@@ -5599,6 +5738,7 @@
   document.getElementById('openHeistBtn').addEventListener('click', () => navigateTo('page-heist'));
   document.getElementById('openRealEstateBtn').addEventListener('click', () => navigateTo('page-realestate'));
   document.getElementById('openBlackMarketBtn').addEventListener('click', () => navigateTo('page-blackmarket'));
+  document.getElementById('openSlotsBtn').addEventListener('click', () => navigateTo('page-slots'));
   document.getElementById('buyTurnsBtn').addEventListener('click', buyTurnsWithRealMoney);
   // authToggleBtn's click handler is fully managed by updateAuthUI() below
   // (opens the sign-up modal when logged out, signs out when logged in) -

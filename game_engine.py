@@ -1927,6 +1927,81 @@ def run_casino_heist(state, world):
 
 
 # ---------------------------------------------------------------------------
+# Slot Machine (cash in, maybe turns out - something to do while turns regen)
+# ---------------------------------------------------------------------------
+
+SLOT_SYMBOLS = ["🍒", "🍋", "🔔", "🍀", "7️⃣"]
+
+# Every tier shares the same odds and the same house edge - only the stake
+# (and so the size of the win) changes. Expected turns back per £1 staked:
+# 0.20*0.06 + 0.08*0.24 + 0.02*1.0 = 0.0512 - i.e. the house keeps the
+# large majority of the value on average, with rare big swings up.
+SLOT_TIERS = {
+    "low": {"name": "Low Stakes", "cost": 100},
+    "mid": {"name": "Mid Stakes", "cost": 500},
+    "high": {"name": "High Stakes", "cost": 2000},
+}
+# (probability, outcome, turns-won-per-£1-staked)
+SLOT_PAYTABLE = [
+    (0.02, "jackpot", 1.0),
+    (0.08, "triple", 0.24),
+    (0.20, "pair", 0.06),
+    (0.70, "none", 0.0),
+]
+
+
+def play_slots(state, tier_key):
+    tier = SLOT_TIERS.get(tier_key)
+    if not tier:
+        raise GameError("Invalid stake")
+    bet = tier["cost"]
+    if state["cash"] < bet:
+        raise GameError(f"Need £{bet} to play {tier['name']}")
+
+    state["cash"] -= bet
+
+    roll = random.random()
+    cumulative = 0.0
+    outcome, ratio = "none", 0.0
+    for prob, name, r in SLOT_PAYTABLE:
+        cumulative += prob
+        if roll < cumulative:
+            outcome, ratio = name, r
+            break
+
+    if outcome == "jackpot":
+        symbols = ["7️⃣", "7️⃣", "7️⃣"]
+    elif outcome == "triple":
+        sym = random.choice(SLOT_SYMBOLS[:-1])  # never a fake non-jackpot 7️⃣7️⃣7️⃣
+        symbols = [sym, sym, sym]
+    elif outcome == "pair":
+        pair_sym = random.choice(SLOT_SYMBOLS)
+        odd_sym = random.choice([s for s in SLOT_SYMBOLS if s != pair_sym])
+        symbols = [pair_sym, pair_sym, odd_sym]
+        random.shuffle(symbols)
+    else:
+        symbols = random.sample(SLOT_SYMBOLS, 3)
+
+    turns_won = jround(bet * ratio)
+    turns_wasted = 0
+    if turns_won > 0:
+        room = state["maxTurns"] - state["turns"]
+        turns_wasted = max(0, turns_won - room)
+        state["turns"] = min(state["maxTurns"], state["turns"] + turns_won)
+
+    if turns_won > 0:
+        add_log(state, f"🎰 {tier['name']} spin: {''.join(symbols)} — won {turns_won} turns!"
+                       + (" (some lost - turns were already maxed)" if turns_wasted else ""), "good")
+    else:
+        add_log(state, f"🎰 {tier['name']} spin: {''.join(symbols)} — nothing, house wins.", "bad")
+
+    return {
+        "tier": tier_key, "bet": bet, "symbols": symbols,
+        "outcome": outcome, "turnsWon": turns_won, "turnsWasted": turns_wasted,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Drugs
 # ---------------------------------------------------------------------------
 
