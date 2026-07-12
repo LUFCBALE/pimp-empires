@@ -312,6 +312,7 @@ def attach_world_view(state, world, user_id):
     state['botCrewEmblems'] = world.get('botCrewEmblems', {})
     state['globalAttackLog'] = world.get('globalAttackLog', [])
     state['worldRecords'] = world.get('records', {})
+    state['selfProfileId'] = ge.HUMAN_ID_OFFSET + user_id
     state['crewRoster'] = build_crew_roster(user_id, state, world)
     state['rankInfo'] = ge.rank_info(state.get('xp', 0))
 
@@ -792,6 +793,7 @@ def api_profile(target_id):
             'joinDate': row['created_at'],
             'rank': ge.rank_info(target_state.get('xp', 0)),
             'achievements': target_state.get('achievements', []),
+            'isSelf': target_user_id == session['user_id'],
         },
     })
 

@@ -2179,7 +2179,7 @@
 <div class="page" id="page-profile">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Player Profile</h2>
-  <div class="page-subtitle">Public info only — no combat stats. Pay an Informer for the real numbers.</div>
+  <div class="page-subtitle" id="profileSubtitle">Public info only — no combat stats. Pay an Informer for the real numbers.</div>
   <div class="panel" id="profileContent"><div class="hint">Loading...</div></div>
 </div>
 
@@ -2196,6 +2196,7 @@
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Settings</h2>
   <div class="panel">
+    <button class="cta gold" id="viewOwnProfileBtn" style="width:100%; margin-bottom:20px;">👤 View My Profile</button>
     <h3>Pimp Name</h3>
     <div style="display:flex; gap:10px; margin-bottom:20px;">
       <input type="text" id="pimpNameInput" placeholder="Enter your pimp name" maxlength="30" style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px;">
@@ -2516,6 +2517,9 @@
 
       authDisplay.textContent = `Logged in: ${currentUser.pimpName}`;
       authDisplay.style.color = 'var(--teal)';
+      authDisplay.style.cursor = 'pointer';
+      authDisplay.title = 'View your profile';
+      authDisplay.onclick = openOwnProfile;
       authToggleBtn.textContent = '🔑 Sign Out';
       authToggleBtn.onclick = signOut;
       connectLiveSocket();
@@ -4505,6 +4509,12 @@
     loadProfile(botId);
   }
 
+  function openOwnProfile(){
+    if(!state || !state.selfProfileId) return;
+    navigateTo('page-profile');
+    loadProfile(state.selfProfileId);
+  }
+
   async function loadProfile(botId){
     const container = document.getElementById('profileContent');
     container.innerHTML = '<div class="hint">Loading...</div>';
@@ -4516,6 +4526,9 @@
         return;
       }
       const p = data.profile;
+      document.getElementById('profileSubtitle').textContent = p.isSelf
+        ? 'This is what everyone else sees when they click your name.'
+        : 'Public info only — no combat stats. Pay an Informer for the real numbers.';
       const joinDate = new Date(p.joinDate).toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
       container.innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
@@ -4550,9 +4563,19 @@
             }).join('')}
           </div>
         </div>` : ''}
-        <button class="cta gold" id="profileMsgBtn" style="width:100%;">✉️ Message ${escapeHtml(p.name)}</button>
+        ${p.isSelf
+          ? `<div style="display:flex; gap:10px;">
+               <button class="cta gold" id="profileEditNameBtn" style="flex:1;">✏️ Edit Name</button>
+               <button class="cta gold" id="profileEditCrewBtn" style="flex:1;">🤝 Edit Crew</button>
+             </div>`
+          : `<button class="cta gold" id="profileMsgBtn" style="width:100%;">✉️ Message ${escapeHtml(p.name)}</button>`}
       `;
-      document.getElementById('profileMsgBtn').addEventListener('click', () => openDMModal(p.botId));
+      if(p.isSelf){
+        document.getElementById('profileEditNameBtn').addEventListener('click', () => navigateTo('page-settings'));
+        document.getElementById('profileEditCrewBtn').addEventListener('click', () => navigateTo('page-crew'));
+      } else {
+        document.getElementById('profileMsgBtn').addEventListener('click', () => openDMModal(p.botId));
+      }
     } catch(e){
       container.innerHTML = '<div class="hint">Could not load profile.</div>';
     }
@@ -5802,6 +5825,7 @@
   document.getElementById('bribeBtn').addEventListener('click', bribeCops);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('savePimpNameBtn').addEventListener('click', savePimpName);
+  document.getElementById('viewOwnProfileBtn').addEventListener('click', openOwnProfile);
   document.getElementById('saveCrewNameBtn').addEventListener('click', saveCrewName);
   document.getElementById('workResultsToggle').addEventListener('change', (e) => {
     state.showWorkResults = e.target.checked;
