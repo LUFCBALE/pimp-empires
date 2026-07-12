@@ -113,6 +113,16 @@
     display:flex; align-items:center; justify-content:center; padding:0 5px; flex-shrink:0;
   }
   .sidebar-link.active{color:#fff; background:rgba(255,47,120,0.1); border-left-color:var(--hot);}
+  .sidebar-badge-free{
+    margin-left:auto; background:linear-gradient(90deg, #b3960a, #f0c419);
+    color:#1a1305; font-size:0.58rem; font-weight:700; letter-spacing:0.03em;
+    padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap;
+    animation:free-turns-glow 1.8s ease-in-out infinite;
+  }
+  @keyframes free-turns-glow{
+    0%,100%{box-shadow:0 0 3px rgba(240,196,25,0.5);}
+    50%{box-shadow:0 0 10px rgba(240,196,25,0.95);}
+  }
 
   /* ---- Slim top strip: world time / game countdown / account (row 1),
      core stats (row 2) ---- */
@@ -281,6 +291,7 @@
     .sidebar-link{flex-shrink:0; padding:10px 12px; border-left:none; border-bottom:3px solid transparent;}
     .sidebar-link.active{border-left-color:transparent; border-bottom-color:var(--hot);}
     .sidebar-link span{display:none;}
+    .sidebar-badge-free{display:none;}
     .topbar{flex-direction:column; align-items:stretch;}
     .topbar-left{max-width:100%;}
     .topbar .work-panel{max-width:100%;}
@@ -1251,7 +1262,7 @@
         <button class="sidebar-link" data-page="page-attacks">⚔️<span>Attacks</span></button>
         <button class="sidebar-link" data-page="page-informer">🕵️<span>Informer</span></button>
         <button class="sidebar-link" data-page="page-leaderboard">🏆<span>Leaderboard</span></button>
-        <button class="sidebar-link" data-page="page-slots">🎰<span>Slot Machine</span></button>
+        <button class="sidebar-link" data-page="page-slots">🎰<span>Slot Machine</span><span class="sidebar-badge-free">FREE TURNS</span></button>
         <button class="sidebar-link" data-page="page-achievements">🎖️<span>Achievements</span></button>
         <button class="sidebar-link" data-page="page-settings">⚙️<span>Settings</span></button>
         <button class="sidebar-link" data-page="page-about">ℹ️<span>About</span></button>
