@@ -1497,7 +1497,7 @@
 <div class="page" id="page-heist">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Pull a Job</h2>
-  <div class="page-subtitle">Send the thugs in. Bigger scores need more bodies — and more bodies means more funerals if it goes wrong.</div>
+  <div class="page-subtitle">Send the thugs in. Bigger scores need more bodies — and more bodies means more funerals if it goes wrong. Pulling any job (shop, jewellery, or bank) puts all three on a shared 6 hour cooldown.</div>
 
   <div class="heist-cards" id="heistCards">
 
@@ -2316,6 +2316,7 @@
       lastBankFeeUpdate: Date.now(),
       bankLockedUntil: 0,
       lastCasinoHeist: 0,
+      lastJobHeist: 0,
       bribeActiveUntil: 0,
       bribeCooldownUntil: 0,
       bots: [],
@@ -3558,6 +3559,7 @@
     });
   }
 
+  const HEIST_JOB_COOLDOWN_HOURS = 6;
   const HEIST_JOBS = {
     shop: {
       name:'Corner Shop', emoji:'🏪',
@@ -5454,17 +5456,28 @@
     }
   }
 
+  function fmtHM(ms){
+    const totalMin = Math.max(0, Math.ceil(ms / 60000));
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
   function renderHeistPage(){
     const jobs = {shop: HEIST_JOBS.shop, jewellery: HEIST_JOBS.jewellery, bank: HEIST_JOBS.bank};
     const btns = {shop:'doShopBtn', jewellery:'doJewBtn', bank:'doBankBtn'};
     const cashSpans = {shop:'shopCash', jewellery:'jewCash', bank:'bankCash'};
     const nw = totalNetWorth();
+    const cooldownRemaining = (HEIST_JOB_COOLDOWN_HOURS * 3600000) - (Date.now() - (state.lastJobHeist || 0));
+    const onCooldown = cooldownRemaining > 0;
     Object.entries(jobs).forEach(([id, job]) => {
       const btn = document.getElementById(btns[id]);
       const hasThugs = state.thugs >= job.minThugs;
       const hasTurns = state.turns >= job.turnCost;
-      btn.disabled = !(hasThugs && hasTurns);
-      if(!hasThugs){
+      btn.disabled = !(hasThugs && hasTurns) || onCooldown;
+      if(onCooldown){
+        btn.textContent = `On cooldown — ${fmtHM(cooldownRemaining)}`;
+      } else if(!hasThugs){
         btn.textContent = `Need ${job.minThugs} thugs (you have ${state.thugs})`;
       } else if(!hasTurns){
         btn.textContent = `Need ${job.turnCost} turns (you have ${state.turns})`;

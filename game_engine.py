@@ -185,6 +185,7 @@ HEIST_JOBS = {
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
              "netWorthPct": (0.04, 0.125)},
 }
+HEIST_JOB_COOLDOWN_MS = 6 * 3600 * 1000
 CASINO_JOB = {
     "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 500000, "maxCash": 2000000,
     "successChance": 0.35, "casualtyPct": (0.15, 0.30), "failCasualtyPct": (0.50, 0.90),
@@ -320,6 +321,7 @@ def default_state(pimp_name="Big Boss"):
         "lastBankFeeUpdate": now,
         "bankLockedUntil": 0,
         "lastCasinoHeist": 0,
+        "lastJobHeist": 0,
         "bribeActiveUntil": 0,
         "bribeCooldownUntil": 0,
         "crewMembers": [],
@@ -1822,6 +1824,11 @@ def run_heist(state, job_id):
         raise GameError(f"Need at least {job['minThugs']} thugs")
     if state["turns"] < job["turnCost"]:
         raise GameError("Not enough turns")
+    now = now_ms()
+    if now - state["lastJobHeist"] < HEIST_JOB_COOLDOWN_MS:
+        wait_min = math.ceil((HEIST_JOB_COOLDOWN_MS - (now - state["lastJobHeist"])) / 60000)
+        raise GameError(f"Pull a Job is on cooldown — try again in {wait_min} min")
+    state["lastJobHeist"] = now
 
     state["turns"] -= job["turnCost"]
     won = random.random() < (job["successChance"] + (state["thugMorale"] / 100) * 0.08)
@@ -2376,6 +2383,8 @@ def apply_catchup(state):
         state["statsFactoriesDestroyed"] = 0
     if "statsMoneyStolen" not in state:
         state["statsMoneyStolen"] = 0
+    if "lastJobHeist" not in state:
+        state["lastJobHeist"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     tick_regen(state, now)
