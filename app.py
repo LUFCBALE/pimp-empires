@@ -716,6 +716,10 @@ def api_bomb():
     data = request.get_json() or {}
     target_id = data.get('botId')
     factory_type = data.get('factoryType')
+    try:
+        qty = int(data['qty']) if data.get('qty') is not None else None
+    except (TypeError, ValueError):
+        qty = None
     user = get_current_user()
     state = load_state(user['id'], user['pimp_name'])
     world = load_world()
@@ -727,11 +731,11 @@ def api_bomb():
             if defender_id == user['id']:
                 raise ge.GameError("You can't bomb yourself")
             defender_state = load_state(defender_id)
-            result = ge.bomb_human(state, defender_state, factory_type)
+            result = ge.bomb_human(state, defender_state, factory_type, qty)
             save_state(defender_id, defender_state)
             notify_user(defender_id, 'attacked', {'text': f"{state['name']} just bombed your {factory_type} factories!"})
         else:
-            result = ge.bomb_bot(state, target_id, factory_type, world)
+            result = ge.bomb_bot(state, target_id, factory_type, world, qty)
     except ge.GameError as e:
         return jsonify({'error': str(e)}), 400
     return action_response(user['id'], state, world, {'result': result})

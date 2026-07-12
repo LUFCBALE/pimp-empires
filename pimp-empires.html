@@ -3429,10 +3429,12 @@
   }
 
   const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit'};
+  // Must match BOMB_COST_BY_FACTORY in game_engine.py - only used here for the client-side MAX-qty estimate.
+  const BOMB_COST_BY_FACTORY = {medical: 30, gun: 75, car: 120, drug: 135, explosive: 150, counterfeit: 450};
 
-  async function bombBot(botId, factoryType){
+  async function bombBot(botId, factoryType, qty){
     try{
-      const data = await apiCall('/api/bomb', {botId, factoryType});
+      const data = await apiCall('/api/bomb', {botId, factoryType, qty});
       const bonus = data.result.bombsDestroyed ? ` and torched their ${data.result.bombsDestroyed} stockpiled bombs` : '';
       const verb = data.result.wipedOut ? `Wiped out every` : `Destroyed ${data.result.destroyed} of`;
       showToast(`💣 ${verb} ${data.result.target} factory ${data.result.boss} owned${bonus} (-${data.result.bombsSpent} bombs)!`);
@@ -4719,20 +4721,39 @@
             ? `<div style="font-size:0.8rem; color:var(--danger); text-align:center; padding:8px;">🛡️ Recently dropped from your crew — attackable again in ${banMinsLeft} min</div>`
             : `<button class="cta" data-attack-bot="${b.id}" ${state.thugs < 1 ? 'disabled' : ''}>⚔️ Attack — Send all thugs</button>`}
           ${!blocked && b.thugs === 0 ? `
-            <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type to wipe out — you won't see what they actually have until you commit.</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-              ${Object.entries(FACTORY_TYPE_LABELS).map(([type, label]) => `
-                <button class="cta cta-sm" data-bomb="${b.id}" data-bomb-type="${type}" style="background:var(--red); width:100%;">💣 ${label}</button>
-              `).join('')}
-            </div>` : ''}
+            <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type and how many to hit — you won't see what they actually have until you commit.</div>
+            <div class="bomb-controls" style="display:flex; gap:6px;">
+              <select data-bomb-factory="${b.id}" style="flex:1.3; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
+                ${Object.entries(FACTORY_TYPE_LABELS).map(([type, label]) => `<option value="${type}">${label}</option>`).join('')}
+              </select>
+              <input type="number" data-bomb-qty="${b.id}" min="1" value="1" style="width:56px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
+              <button class="cta cta-sm" data-bomb-max="${b.id}" style="padding:7px 8px; font-size:0.7rem;">MAX</button>
+            </div>
+            <button class="cta cta-sm" data-bomb-submit="${b.id}" style="background:var(--red); width:100%; margin-top:6px;">💣 Bomb</button>` : ''}
           ${!blocked && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories</div>` : ''}
         </div>`;
       }).join('');
       validContainer.querySelectorAll('[data-attack-bot]').forEach(btn => {
         btn.addEventListener('click', () => fightBot(parseInt(btn.dataset.attackBot)));
       });
-      validContainer.querySelectorAll('[data-bomb]').forEach(btn => {
-        btn.addEventListener('click', () => bombBot(parseInt(btn.dataset.bomb), btn.dataset.bombType));
+      validContainer.querySelectorAll('[data-bomb-max]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.bombMax;
+          const select = validContainer.querySelector(`[data-bomb-factory="${id}"]`);
+          const input = validContainer.querySelector(`[data-bomb-qty="${id}"]`);
+          const perUnit = BOMB_COST_BY_FACTORY[select.value];
+          input.value = Math.max(1, Math.floor((state.bombs || 0) / perUnit));
+        });
+      });
+      validContainer.querySelectorAll('[data-bomb-submit]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.bombSubmit;
+          const select = validContainer.querySelector(`[data-bomb-factory="${id}"]`);
+          const input = validContainer.querySelector(`[data-bomb-qty="${id}"]`);
+          const qty = parseInt(input.value, 10);
+          if(!qty || qty < 1){ showToast('Enter a valid quantity to bomb'); return; }
+          bombBot(parseInt(id), select.value, qty);
+        });
       });
       validContainer.querySelectorAll('[data-profile-id]').forEach(el => {
         el.addEventListener('click', () => openProfile(parseInt(el.dataset.profileId)));

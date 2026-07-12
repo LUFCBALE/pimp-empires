@@ -1144,13 +1144,16 @@ def fight_bot(state, bot_id, world):
 BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450}
 
 
-def bomb_bot(state, bot_id, factory_type, world):
+def bomb_bot(state, bot_id, factory_type, world, qty=None):
     """Blind by holdings, not by type: you pick which kind of factory to
     hit (medical/gun/car/etc) without ever being shown how many of anything
-    they actually own. You throw your whole bomb stockpile at it - that
-    buys you as many kills of that factory type as it can afford, capped at
-    however many they actually own. Doesn't need to be enough to wipe them
-    out entirely; any bomb is better than none."""
+    they actually own. By default you throw your whole bomb stockpile at
+    it - that buys you as many kills of that factory type as it can
+    afford, capped at however many they actually own. Pass `qty` to cap
+    how many you're willing to spend bombs on instead of going all-in -
+    still capped by what you can afford and what they actually own.
+    Doesn't need to be enough to wipe them out entirely; any bomb is
+    better than none."""
     if factory_type not in BOMB_COST_BY_FACTORY:
         raise GameError("Invalid factory type")
     bot = next((b for b in world["bots"] if b["id"] == bot_id), None)
@@ -1163,6 +1166,10 @@ def bomb_bot(state, bot_id, factory_type, world):
         raise GameError(f"They have no {factory_type} factories")
     per_unit = BOMB_COST_BY_FACTORY[factory_type]
     destroyed = min(owned, state["bombs"] // per_unit)
+    if qty is not None:
+        if qty <= 0:
+            raise GameError("Enter how many factories to hit")
+        destroyed = min(destroyed, qty)
     if destroyed <= 0:
         raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
     cost = destroyed * per_unit
@@ -1307,10 +1314,11 @@ def fight_human(state, defender, world, defender_target_id=None):
         return {"won": False, "cashLost": cash_lost_amt, "thugsLost": thugs_lost, "boss": defender["name"], "gang": defender.get("gang", "")}
 
 
-def bomb_human(state, defender, factory_type):
-    """Same partial-strike logic as bomb_bot, for a real player: your bomb
-    stockpile buys as many kills of that factory type as it can afford,
-    capped at however many they actually own."""
+def bomb_human(state, defender, factory_type, qty=None):
+    """Same partial-strike logic as bomb_bot, for a real player: by default
+    your bomb stockpile buys as many kills of that factory type as it can
+    afford, capped at however many they actually own. Pass `qty` to cap
+    how many you're willing to spend bombs on instead of going all-in."""
     if factory_type not in BOMB_COST_BY_FACTORY:
         raise GameError("Invalid factory type")
     if defender["thugs"] > 0:
@@ -1320,6 +1328,10 @@ def bomb_human(state, defender, factory_type):
         raise GameError(f"They have no {factory_type} factories")
     per_unit = BOMB_COST_BY_FACTORY[factory_type]
     destroyed = min(owned, state["bombs"] // per_unit)
+    if qty is not None:
+        if qty <= 0:
+            raise GameError("Enter how many factories to hit")
+        destroyed = min(destroyed, qty)
     if destroyed <= 0:
         raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
     cost = destroyed * per_unit
