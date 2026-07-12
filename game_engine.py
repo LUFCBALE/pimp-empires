@@ -1125,6 +1125,7 @@ def fight_bot(state, bot_id, world):
 # whole factory portfolio in one sitting. "drug" only ever shows up on real
 # player targets - bots never build drug factories.
 BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450}
+BOMB_TURN_COST = 20
 
 
 def bomb_bot(state, bot_id, factory_type, world, qty=None):
@@ -1136,7 +1137,9 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
     how many you're willing to spend bombs on instead of going all-in -
     still capped by what you can afford and what they actually own.
     Doesn't need to be enough to wipe them out entirely; any bomb is
-    better than none."""
+    better than none. Sending your thugs in always costs turns, whether
+    or not the target actually has any of that factory type - otherwise
+    there'd be no reason to ever pay an Informer first."""
     if factory_type not in BOMB_COST_BY_FACTORY:
         raise GameError("Invalid factory type")
     bot = next((b for b in world["bots"] if b["id"] == bot_id), None)
@@ -1144,25 +1147,33 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
         raise GameError("Target not found")
     if bot["thugs"] > 0:
         raise GameError("Target still has thugs guarding it")
-    owned = bot["factories"].get(factory_type, 0)
-    if owned <= 0:
-        raise GameError(f"They have no {factory_type} factories")
     per_unit = BOMB_COST_BY_FACTORY[factory_type]
+    if state["bombs"] < per_unit:
+        raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
+    if state["turns"] < BOMB_TURN_COST:
+        raise GameError(f"Not enough turns (need {BOMB_TURN_COST})")
+    if qty is not None and qty <= 0:
+        raise GameError("Enter how many factories to hit")
+
+    owned = bot["factories"].get(factory_type, 0)
     destroyed = min(owned, state["bombs"] // per_unit)
     if qty is not None:
-        if qty <= 0:
-            raise GameError("Enter how many factories to hit")
         destroyed = min(destroyed, qty)
-    if destroyed <= 0:
-        raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
+
+    state["turns"] -= BOMB_TURN_COST
     cost = destroyed * per_unit
     state["bombs"] -= cost
+    add_xp(state, BOMB_XP)
+
+    if destroyed <= 0:
+        add_log(state, f"Your thugs went in and hit 0 of {bot['boss']}'s {factory_type} factories — they don't have any.", "bad")
+        return {"boss": bot["boss"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False}
+
     bot["factories"][factory_type] -= destroyed
     wiped_out = bot["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else f" ({bot['factories'][factory_type]} left standing)") + ".", "good")
-    add_xp(state, BOMB_XP)
     award_achievement(state, "demolition_man")
     return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out}
 
@@ -1300,24 +1311,35 @@ def bomb_human(state, defender, factory_type, qty=None):
     """Same partial-strike logic as bomb_bot, for a real player: by default
     your bomb stockpile buys as many kills of that factory type as it can
     afford, capped at however many they actually own. Pass `qty` to cap
-    how many you're willing to spend bombs on instead of going all-in."""
+    how many you're willing to spend bombs on instead of going all-in.
+    Sending your thugs in always costs turns, whether or not the target
+    actually has any of that factory type."""
     if factory_type not in BOMB_COST_BY_FACTORY:
         raise GameError("Invalid factory type")
     if defender["thugs"] > 0:
         raise GameError("Target still has thugs guarding it")
-    owned = defender["factories"].get(factory_type, 0)
-    if owned <= 0:
-        raise GameError(f"They have no {factory_type} factories")
     per_unit = BOMB_COST_BY_FACTORY[factory_type]
+    if state["bombs"] < per_unit:
+        raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
+    if state["turns"] < BOMB_TURN_COST:
+        raise GameError(f"Not enough turns (need {BOMB_TURN_COST})")
+    if qty is not None and qty <= 0:
+        raise GameError("Enter how many factories to hit")
+
+    owned = defender["factories"].get(factory_type, 0)
     destroyed = min(owned, state["bombs"] // per_unit)
     if qty is not None:
-        if qty <= 0:
-            raise GameError("Enter how many factories to hit")
         destroyed = min(destroyed, qty)
-    if destroyed <= 0:
-        raise GameError(f"Need at least {per_unit} bombs to hit their {factory_type} factories")
+
+    state["turns"] -= BOMB_TURN_COST
     cost = destroyed * per_unit
     state["bombs"] -= cost
+    add_xp(state, BOMB_XP)
+
+    if destroyed <= 0:
+        add_log(state, f"Your thugs went in and hit 0 of {defender['name']}'s {factory_type} factories — they don't have any.", "bad")
+        return {"boss": defender["name"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "bombsDestroyed": 0}
+
     defender["factories"][factory_type] -= destroyed
     wiped_out = defender["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
@@ -1336,7 +1358,6 @@ def bomb_human(state, defender, factory_type, qty=None):
     add_log(defender, f"{state['name']} destroyed {destroyed} of your {factory_type} factories with a bombing run"
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
                        + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
-    add_xp(state, BOMB_XP)
     award_achievement(state, "demolition_man")
     return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed}
 

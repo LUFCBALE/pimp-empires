@@ -2202,7 +2202,7 @@
     <h3>Attacking</h3>
     <p>You need 30+ turns, and your target has to be in the same city — there's no home turf, so you're fair game anywhere, including your starting city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
-    <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, or Counterfeit) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive). Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
+    <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, or Counterfeit) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
     <h3>The Informer</h3>
     <p>The only way to see someone's actual numbers — cash, factories, guns, everything. Costs 12% of their known net worth, paid straight to the informer.</p>
     <h3>The Bank</h3>
@@ -3368,15 +3368,20 @@
   }
 
   const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit'};
-  // Must match BOMB_COST_BY_FACTORY in game_engine.py - only used here for the client-side MAX-qty estimate.
+  // Must match BOMB_COST_BY_FACTORY / BOMB_TURN_COST in game_engine.py - only used here for the client-side MAX-qty estimate and button disabling.
   const BOMB_COST_BY_FACTORY = {medical: 30, gun: 75, car: 120, drug: 135, explosive: 150, counterfeit: 450};
+  const BOMB_TURN_COST = 20;
 
   async function bombBot(botId, factoryType, qty){
     try{
       const data = await apiCall('/api/bomb', {botId, factoryType, qty});
-      const bonus = data.result.bombsDestroyed ? ` and torched their ${data.result.bombsDestroyed} stockpiled bombs` : '';
-      const verb = data.result.wipedOut ? `Wiped out every` : `Destroyed ${data.result.destroyed} of`;
-      showToast(`💣 ${verb} ${data.result.target} factory ${data.result.boss} owned${bonus} (-${data.result.bombsSpent} bombs)!`);
+      if(data.result.destroyed <= 0){
+        showToast(`💣 Your thugs went in and hit 0 of ${data.result.boss}'s ${data.result.target} factories — they don't have any.`);
+      } else {
+        const bonus = data.result.bombsDestroyed ? ` and torched their ${data.result.bombsDestroyed} stockpiled bombs` : '';
+        const verb = data.result.wipedOut ? `Wiped out every` : `Destroyed ${data.result.destroyed} of`;
+        showToast(`💣 ${verb} ${data.result.target} factory ${data.result.boss} owned${bonus} (-${data.result.bombsSpent} bombs)!`);
+      }
       render(); renderLocation(); renderAttacks();
     } catch(e){ /* toast already shown */ }
   }
@@ -4618,7 +4623,7 @@
             ? `<div style="font-size:0.8rem; color:var(--danger); text-align:center; padding:8px;">🛡️ Recently dropped from your crew — attackable again in ${banMinsLeft} min</div>`
             : `<button class="cta attack" data-attack-bot="${b.id}" ${state.thugs < 1 ? 'disabled' : ''}>⚔️ Attack — Send all thugs</button>`}
           ${!blocked && b.thugs === 0 ? `
-            <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type and how many to hit — you won't see what they actually have until you commit.</div>
+            <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type and how many to hit — you won't see what they actually have until you commit. Costs ${BOMB_TURN_COST} turns even if they own none of it.</div>
             <div class="bomb-controls" style="display:flex; gap:6px;">
               <select data-bomb-factory="${b.id}" style="flex:1.3; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
                 ${Object.entries(FACTORY_TYPE_LABELS).map(([type, label]) => `<option value="${type}">${label}</option>`).join('')}
@@ -4626,7 +4631,7 @@
               <input type="number" data-bomb-qty="${b.id}" min="1" value="1" style="width:56px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
               <button class="cta cta-sm" data-bomb-max="${b.id}" style="padding:7px 8px; font-size:0.7rem;">MAX</button>
             </div>
-            <button class="cta cta-sm" data-bomb-submit="${b.id}" style="background:var(--red); width:100%; margin-top:6px;">💣 Bomb</button>` : ''}
+            <button class="cta cta-sm" data-bomb-submit="${b.id}" style="background:var(--red); width:100%; margin-top:6px;" ${state.turns < BOMB_TURN_COST ? 'disabled' : ''}>💣 Bomb${state.turns < BOMB_TURN_COST ? ` (need ${BOMB_TURN_COST} turns)` : ''}</button>` : ''}
           ${!blocked && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories</div>` : ''}
         </div>`;
       }).join('');

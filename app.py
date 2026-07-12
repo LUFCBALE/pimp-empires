@@ -723,7 +723,8 @@ def api_bomb():
             defender_state = load_state(defender_id)
             result = ge.bomb_human(state, defender_state, factory_type, qty)
             save_state(defender_id, defender_state)
-            notify_user(defender_id, 'attacked', {'text': f"{state['name']} just bombed your {factory_type} factories!"})
+            if result['destroyed'] > 0:
+                notify_user(defender_id, 'attacked', {'text': f"{state['name']} just bombed your {factory_type} factories!"})
         else:
             result = ge.bomb_bot(state, target_id, factory_type, world, qty)
     except ge.GameError as e:
