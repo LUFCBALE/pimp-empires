@@ -3176,7 +3176,29 @@
   // Image-based emblems - id -> file under ./crew_emblems/. Stored ids are
   // just the emoji glyph itself for the emoji set (so old saved values keep
   // resolving with zero migration), or one of these keys for an image.
-  const IMAGE_EMBLEMS = {};
+  const IMAGE_EMBLEMS = {
+    the_pride: 'crew_emblems/the_pride.png',
+    the_forge: 'crew_emblems/the_forge.png',
+    the_serpents_fang: 'crew_emblems/the_serpents_fang.png',
+    the_royal_dead: 'crew_emblems/the_royal_dead.png',
+    the_stormbringers: 'crew_emblems/the_stormbringers.png',
+    the_stormbringers_2: 'crew_emblems/the_stormbringers_2.png',
+    the_watchers: 'crew_emblems/the_watchers.png',
+    the_nightfall_crew: 'crew_emblems/the_nightfall_crew.png',
+    the_ironclad: 'crew_emblems/the_ironclad.png',
+    the_reborn: 'crew_emblems/the_reborn.png',
+    the_riptide: 'crew_emblems/the_riptide.png',
+    the_contagion: 'crew_emblems/the_contagion.png',
+    the_pathfinders: 'crew_emblems/the_pathfinders.png',
+    the_maulers: 'crew_emblems/the_maulers.png',
+    the_breakers: 'crew_emblems/the_breakers.png',
+    the_stargazers: 'crew_emblems/the_stargazers.png',
+    the_wyverns: 'crew_emblems/the_wyverns.png',
+    the_rustlers: 'crew_emblems/the_rustlers.png',
+    the_metropolitans: 'crew_emblems/the_metropolitans.png',
+    the_chroniclers: 'crew_emblems/the_chroniclers.png',
+    the_lone_wolves: 'crew_emblems/the_lone_wolves.png',
+  };
   const ALL_EMBLEM_IDS = () => CREW_EMBLEMS.concat(Object.keys(IMAGE_EMBLEMS));
 
   // Small inline glyph for names/rows (leaderboard, profile, etc).
@@ -3208,14 +3230,19 @@
     const takenBy = {};
     Object.entries(botEmblems).forEach(([crew, e]) => { takenBy[e] = crew; });
 
+    const emblemLabel = id => IMAGE_EMBLEMS[id]
+      ? id.replace(/^the_/, 'The ').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : '';
+
     picker.innerHTML = ALL_EMBLEM_IDS().map(id => {
       const mine = state.crewEmblem === id;
       const taken = takenBy[id] && !mine;
       const inner = IMAGE_EMBLEMS[id]
         ? `<img src="${IMAGE_EMBLEMS[id]}" alt="" style="width:100%; height:100%; object-fit:contain;">`
         : id;
+      const label = taken ? `Taken by ${takenBy[id]}` : emblemLabel(id);
       return `<button class="crew-emblem-btn" data-emblem="${id}" ${taken ? 'disabled' : ''}
-        title="${taken ? `Taken by ${escapeHtml(takenBy[id])}` : ''}"
+        title="${escapeHtml(label)}"
         style="font-size:1.6rem; width:48px; height:48px; border-radius:8px; background:var(--bg-2); padding:4px;
         border:2px solid ${mine ? 'var(--gold)' : 'var(--panel-line)'};
         cursor:${taken ? 'not-allowed' : 'pointer'}; opacity:${taken ? '0.3' : '1'};">${inner}</button>`;

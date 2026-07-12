@@ -2194,7 +2194,29 @@ CREW_EMBLEMS = ["🐍", "🦂", "🐺", "💀", "🔥", "👑", "🗡️", "🦅
 # real image assets get added (processed the same way as achievement
 # badges: cropped/transparent-background PNGs supplied by the admin, not
 # an open player upload).
-CREW_EMBLEM_IMAGES = {}
+CREW_EMBLEM_IMAGES = {
+    "the_pride": "crew_emblems/the_pride.png",
+    "the_forge": "crew_emblems/the_forge.png",
+    "the_serpents_fang": "crew_emblems/the_serpents_fang.png",
+    "the_royal_dead": "crew_emblems/the_royal_dead.png",
+    "the_stormbringers": "crew_emblems/the_stormbringers.png",
+    "the_stormbringers_2": "crew_emblems/the_stormbringers_2.png",
+    "the_watchers": "crew_emblems/the_watchers.png",
+    "the_nightfall_crew": "crew_emblems/the_nightfall_crew.png",
+    "the_ironclad": "crew_emblems/the_ironclad.png",
+    "the_reborn": "crew_emblems/the_reborn.png",
+    "the_riptide": "crew_emblems/the_riptide.png",
+    "the_contagion": "crew_emblems/the_contagion.png",
+    "the_pathfinders": "crew_emblems/the_pathfinders.png",
+    "the_maulers": "crew_emblems/the_maulers.png",
+    "the_breakers": "crew_emblems/the_breakers.png",
+    "the_stargazers": "crew_emblems/the_stargazers.png",
+    "the_wyverns": "crew_emblems/the_wyverns.png",
+    "the_rustlers": "crew_emblems/the_rustlers.png",
+    "the_metropolitans": "crew_emblems/the_metropolitans.png",
+    "the_chroniclers": "crew_emblems/the_chroniclers.png",
+    "the_lone_wolves": "crew_emblems/the_lone_wolves.png",
+}
 
 
 def set_crew_emblem(state, emblem, world):
