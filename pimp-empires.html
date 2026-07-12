@@ -834,17 +834,20 @@
 
   /* ---- Terminal log ---- */
   .terminal{
-    background:#050408; border:3px solid #8B0000; border-radius:8px;
-    padding:10px 12px; height:200px; overflow-y:auto;
-    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; line-height:1.5;
-    box-shadow:0 0 15px rgba(139,0,0,0.3), inset 0 0 8px rgba(139,0,0,0.1);
+    background:var(--bg-2); border:1px solid var(--panel-line); border-radius:12px;
+    padding:12px 14px; height:200px; overflow-y:auto;
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem; line-height:1.6;
+    box-shadow:0 4px 14px rgba(0,0,0,0.3);
   }
   .topbar-left .terminal{
-    height:180px; padding:8px 10px;
+    height:180px; padding:10px 12px;
   }
-  .terminal .title-row{display:flex; align-items:center; gap:8px; margin-bottom:10px; color:var(--text-dim); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase;}
-  .dot{width:8px;height:8px;border-radius:50%; display:inline-block;}
-  .dot.r{background:#ff5f57;} .dot.y{background:#febc2e;} .dot.g{background:#28c840;}
+  .terminal .title-row{
+    display:flex; align-items:center; gap:7px; margin-bottom:10px; padding-bottom:9px;
+    border-bottom:1px solid var(--panel-line);
+    color:var(--text-dim); font-size:0.68rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+  }
+  .terminal .title-row .feed-icon{font-size:0.85rem; filter:grayscale(0.15);}
   .logline{margin-bottom:6px; opacity:0; animation:fadein .4s forwards;}
   @keyframes fadein{to{opacity:1;}}
   .logline .ts{color:#4a4458; margin-right:6px;}
@@ -856,8 +859,6 @@
   .inv-row .inv-val{color:var(--teal); font-weight:700;}
   .inv-row.inv-total{margin-top:8px; padding-top:8px; border-top:1px solid var(--panel-line);}
   .inv-row.inv-total .inv-val{color:var(--gold);}
-  .cursor{display:inline-block; width:7px; height:14px; background:var(--teal); vertical-align:middle; animation:blink 1s step-start infinite;}
-  @keyframes blink{50%{opacity:0;}}
 
   #dmModal.hidden{display:none !important;}
   #dmModal:not(.hidden){display:flex !important;}
@@ -1329,12 +1330,12 @@
     <div class="topbar">
       <div class="topbar-left">
         <div class="terminal" id="terminal">
-          <div class="title-row"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;Street Actions</div>
+          <div class="title-row"><span class="feed-icon">📰</span>Street Actions</div>
           <div id="logBody"></div>
         </div>
 
         <div class="terminal" id="inventoryBox" style="margin-top:8px;">
-          <div class="title-row"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;Inventory</div>
+          <div class="title-row"><span class="feed-icon">📦</span>Inventory</div>
           <div id="inventoryList"></div>
         </div>
       </div>
@@ -4223,7 +4224,7 @@
     const body = document.getElementById('logBody');
     body.innerHTML = state.log.map(l =>
       `<div class="logline ${l.cls}"><span class="ts">[${fmtLogTime(l.t)}]</span>${escapeHtml(l.msg)}</div>`
-    ).join('') + `<span class="cursor"></span>`;
+    ).join('');
     const term = document.getElementById('terminal');
     term.scrollTop = term.scrollHeight;
   }
