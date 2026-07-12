@@ -2190,12 +2190,17 @@ def save_crew_name(state, name):
 
 
 CREW_EMBLEMS = ["🐍", "🦂", "🐺", "💀", "🔥", "👑", "🗡️", "🦅", "🐉", "⚡", "🎩", "♠️"]
+# Image-based emblems - id -> filename under crew_emblems/. Populated as
+# real image assets get added (processed the same way as achievement
+# badges: cropped/transparent-background PNGs supplied by the admin, not
+# an open player upload).
+CREW_EMBLEM_IMAGES = {}
 
 
 def set_crew_emblem(state, emblem, world):
     if state.get("crewLeaderUserId"):
         raise GameError("Only the crew leader can set the emblem")
-    if emblem not in CREW_EMBLEMS:
+    if emblem not in CREW_EMBLEMS and emblem not in CREW_EMBLEM_IMAGES:
         raise GameError("Invalid emblem")
     taken_by = next((crew for crew, e in world.get("botCrewEmblems", {}).items() if e == emblem), None)
     if taken_by:

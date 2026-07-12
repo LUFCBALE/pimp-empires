@@ -3173,6 +3173,18 @@
   };
 
   const CREW_EMBLEMS = ['🐍', '🦂', '🐺', '💀', '🔥', '👑', '🗡️', '🦅', '🐉', '⚡', '🎩', '♠️'];
+  // Image-based emblems - id -> file under ./crew_emblems/. Stored ids are
+  // just the emoji glyph itself for the emoji set (so old saved values keep
+  // resolving with zero migration), or one of these keys for an image.
+  const IMAGE_EMBLEMS = {};
+  const ALL_EMBLEM_IDS = () => CREW_EMBLEMS.concat(Object.keys(IMAGE_EMBLEMS));
+
+  // Small inline glyph for names/rows (leaderboard, profile, etc).
+  function emblemInlineHtml(id){
+    if(!id) return '';
+    if(IMAGE_EMBLEMS[id]) return `<img src="${IMAGE_EMBLEMS[id]}" alt="" style="height:1em; width:1em; object-fit:contain; vertical-align:-0.15em;">`;
+    return escapeHtml(id);
+  }
 
   function renderCrewEmblemPicker(){
     const picker = document.getElementById('crewEmblemPicker');
@@ -3196,14 +3208,17 @@
     const takenBy = {};
     Object.entries(botEmblems).forEach(([crew, e]) => { takenBy[e] = crew; });
 
-    picker.innerHTML = CREW_EMBLEMS.map(e => {
-      const mine = state.crewEmblem === e;
-      const taken = takenBy[e] && !mine;
-      return `<button class="crew-emblem-btn" data-emblem="${e}" ${taken ? 'disabled' : ''}
-        title="${taken ? `Taken by ${escapeHtml(takenBy[e])}` : ''}"
-        style="font-size:1.6rem; width:48px; height:48px; border-radius:8px; background:var(--bg-2);
+    picker.innerHTML = ALL_EMBLEM_IDS().map(id => {
+      const mine = state.crewEmblem === id;
+      const taken = takenBy[id] && !mine;
+      const inner = IMAGE_EMBLEMS[id]
+        ? `<img src="${IMAGE_EMBLEMS[id]}" alt="" style="width:100%; height:100%; object-fit:contain;">`
+        : id;
+      return `<button class="crew-emblem-btn" data-emblem="${id}" ${taken ? 'disabled' : ''}
+        title="${taken ? `Taken by ${escapeHtml(takenBy[id])}` : ''}"
+        style="font-size:1.6rem; width:48px; height:48px; border-radius:8px; background:var(--bg-2); padding:4px;
         border:2px solid ${mine ? 'var(--gold)' : 'var(--panel-line)'};
-        cursor:${taken ? 'not-allowed' : 'pointer'}; opacity:${taken ? '0.3' : '1'};">${e}</button>`;
+        cursor:${taken ? 'not-allowed' : 'pointer'}; opacity:${taken ? '0.3' : '1'};">${inner}</button>`;
     }).join('');
     picker.querySelectorAll('[data-emblem]:not(:disabled)').forEach(btn => {
       btn.addEventListener('click', () => setCrewEmblem(btn.dataset.emblem));
@@ -3334,7 +3349,7 @@
           <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
         </div>
-        <div class="lb-gang">${r.gang ? `${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
+        <div class="lb-gang">${r.gang ? `${r.emblem ? emblemInlineHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
         <div class="lb-city">${escapeHtml(r.city)}</div>
         <div class="lb-stat">👠 ${r.hoes}</div>
         <div class="lb-stat">💪 ${r.thugs}</div>
@@ -3419,7 +3434,7 @@
     list.innerHTML = rows.map((r,i) => `
       <div class="lb-row lb-crewview ${r.isYours ? 'lb-you' : ''}">
         <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)}</div>
-        <div class="lb-name">${r.emblem ? escapeHtml(r.emblem) + ' ' : ''}${escapeHtml(r.name)}${r.isYours ? ' <span style="color:var(--teal); font-size:0.75rem;">(you)</span>' : ''}</div>
+        <div class="lb-name">${r.emblem ? emblemInlineHtml(r.emblem) + ' ' : ''}${escapeHtml(r.name)}${r.isYours ? ' <span style="color:var(--teal); font-size:0.75rem;">(you)</span>' : ''}</div>
         <div class="lb-stat">${r.members}</div>
         <div class="lb-stat">👠 ${r.hoes}</div>
         <div class="lb-stat">💪 ${r.thugs}</div>
@@ -4575,7 +4590,7 @@
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:16px;">
           <div style="background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px; padding:12px;">
             <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Crew</div>
-            <div style="font-weight:700;">${p.gang ? `${p.emblem ? escapeHtml(p.emblem) + ' ' : ''}${escapeHtml(p.gang)}` : '—'}</div>
+            <div style="font-weight:700;">${p.gang ? `${p.emblem ? emblemInlineHtml(p.emblem) + ' ' : ''}${escapeHtml(p.gang)}` : '—'}</div>
           </div>
           <div style="background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px; padding:12px;">
             <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Net Worth</div>
