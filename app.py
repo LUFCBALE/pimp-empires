@@ -775,6 +775,7 @@ def api_profile(target_id):
 
     target_state = load_state(target_user_id, row['pimp_name'])
     save_state(target_user_id, target_state)
+    is_self = target_user_id == session['user_id']
 
     return jsonify({
         'success': True,
@@ -787,7 +788,9 @@ def api_profile(target_id):
             'joinDate': row['created_at'],
             'rank': ge.rank_info(target_state.get('xp', 0)),
             'achievements': target_state.get('achievements', []),
-            'isSelf': target_user_id == session['user_id'],
+            'isSelf': is_self,
+            # Who's been hitting you is private - only ever sent back on your own profile.
+            'lastAttackedBy': target_state.get('lastAttackedBy') if is_self else None,
         },
     })
 

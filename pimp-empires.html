@@ -4154,6 +4154,17 @@
     }
   }
 
+  function timeAgo(t){
+    const diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if(diffSec < 60) return 'just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if(diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if(diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d ago`;
+  }
+
   function playSiren(){
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -4445,6 +4456,12 @@
             <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Joined</div>
             <div style="font-weight:700;">${joinDate}</div>
           </div>
+          ${p.isSelf ? `
+          <div style="background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px; padding:12px;">
+            <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Last Attacked By</div>
+            <div style="font-weight:700;">${p.lastAttackedBy ? escapeHtml(p.lastAttackedBy.name) : '—'}</div>
+            ${p.lastAttackedBy ? `<div style="font-size:0.7rem; color:${p.lastAttackedBy.won ? 'var(--danger)' : 'var(--teal)'}; margin-top:2px;">${timeAgo(p.lastAttackedBy.t)} · ${p.lastAttackedBy.won ? 'they won' : 'you held them off'}</div>` : `<div style="font-size:0.7rem; color:var(--text-dim); margin-top:2px;">Nobody's tried you yet</div>`}
+          </div>` : ''}
         </div>
         ${(p.achievements || []).length > 0 ? `
         <div style="margin-bottom:16px;">

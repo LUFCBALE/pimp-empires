@@ -308,6 +308,7 @@ def default_state(pimp_name="Big Boss"):
         "statsThugsKilled": 0,
         "statsFactoriesDestroyed": 0,
         "statsMoneyStolen": 0,
+        "lastAttackedBy": None,
         "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
         "carFactoryRatio": 1.0,
@@ -1235,7 +1236,6 @@ def fight_human(state, defender, world, defender_target_id=None):
         state["name"], state.get("gang", ""), state.get("crewEmblem", ""),
         defender["name"], defender.get("gang", ""), defender.get("crewEmblem", ""),
     )
-
     your_gun_score = gun_score(state.get("guns", {}), state["thugs"])
     their_gun_score = gun_score(defender.get("guns", {}), defender["thugs"])
 
@@ -1249,6 +1249,8 @@ def fight_human(state, defender, world, defender_target_id=None):
         your_power = state["thugs"] * your_gun_mult * thug_morale_mult(state) * (0.85 + random.random() * 0.3)
         their_power = defender["thugs"] * their_gun_mult * (0.85 + random.random() * 0.3)
         won = your_power >= their_power
+
+    defender["lastAttackedBy"] = {"name": state["name"], "t": now, "won": won}
 
     if won:
         cash_cut = 0.2 + random.random() * 0.25
