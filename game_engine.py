@@ -1197,8 +1197,11 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
     bot["factories"][factory_type] -= destroyed
     wiped_out = bot["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
+    # Never reveal how many the target has left after a partial hit - that's
+    # exactly what the Informer exists to sell. "Wiped out" is fine to show
+    # since a follow-up bomb run on an empty target would say so anyway.
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
-                   + (" (all of them)" if wiped_out else f" ({bot['factories'][factory_type]} left standing)") + ".", "good")
+                   + (" (all of them)" if wiped_out else "") + ".", "good")
     award_achievement(state, "demolition_man")
     return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out}
 
@@ -1377,8 +1380,11 @@ def bomb_human(state, defender, factory_type, qty=None):
         bombs_destroyed = defender.get("bombs", 0)
         defender["bombs"] = 0
 
+    # Never reveal how many the target has left after a partial hit to the
+    # attacker - that's exactly what the Informer exists to sell. The
+    # defender's own log below is unaffected, since it's their own factories.
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {defender['name']}'s {factory_type} factories"
-                   + (" (all of them)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
+                   + (" (all of them)" if wiped_out else "")
                    + (f", destroying their {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "good")
     add_log(defender, f"{state['name']} destroyed {destroyed} of your {factory_type} factories with a bombing run"
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
