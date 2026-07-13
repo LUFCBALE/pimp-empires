@@ -2223,6 +2223,11 @@
     <div id="achievementsGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;"></div>
   </div>
   <div class="panel" style="margin-top:16px;">
+    <h3 style="margin-top:0;">🎖️ Rank Rewards</h3>
+    <div class="page-subtitle" style="margin:0 0 12px;">One-time cash prize every time you rank up — the big one's waiting at THE DON.</div>
+    <div id="rankRewardsGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;"></div>
+  </div>
+  <div class="panel" style="margin-top:16px;">
     <h3 style="margin-top:0;">🏛️ Hall of Fame</h3>
     <div id="hofRecord" style="margin-bottom:16px;"></div>
     <div id="hofLeaderboards" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;"></div>
@@ -3513,6 +3518,7 @@
         isYou: false,
         isHuman: !!b.isHuman,
         isOnline: !!b.isOnline,
+        isDon: !!b.isHuman && (b.rankLevel || 1) >= 8,
         botId: b.id,
         name: b.boss,
         // Recruited bots fly your crew's colors, not their old street gang
@@ -3531,6 +3537,7 @@
     // You're always "in" your own city, so you belong on both tabs
     rows.push({
       isYou: true,
+      isDon: (state.rankInfo?.level || 1) >= 8,
       botId: null,
       name: state.name || 'Big Boss',
       gang: state.gang || '',
@@ -3578,7 +3585,7 @@
         <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)} ${r.rankArrow}</div>
         <div class="lb-name">
           ${crosshairHtml(r)}
-          <span>${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}</span>
+          <span>${r.isDon ? '<span title="THE DON — reached the top of the game">👑</span> ' : ''}${r.isHuman && !r.isYou ? `<span data-profile-id="${r.botId}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}${r.isHuman ? ` <span class="lb-presence-dot ${r.isOnline ? 'online' : 'offline'}" title="Real player — ${r.isOnline ? 'online now' : 'offline'}"></span>` : ''}</span>
           ${!r.isYou ? `<button class="dm-btn" data-dm-id="${r.botId}" style="margin-left:8px; background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px;">✉️</button>` : ''}
         </div>
         <div class="lb-gang">${r.gang ? `${r.emblem ? emblemInlineHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
@@ -3951,6 +3958,9 @@
   ];
   const ACHIEVEMENTS_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
 
+  // Must match RANK_UP_CASH_REWARDS / RANKS in game_engine.py.
+  const RANK_UP_CASH_REWARDS = {2: 5000, 3: 25000, 4: 100000, 5: 500000, 6: 2000000, 7: 10000000, 8: 100000000};
+
   function renderAchievements(){
     const earned = new Set(state.achievements || []);
     const grid = document.getElementById('achievementsGrid');
@@ -3969,7 +3979,29 @@
         </div>
       `;
     }).join('');
+    renderRankRewards();
     renderHallOfFame();
+  }
+
+  function renderRankRewards(){
+    const grid = document.getElementById('rankRewardsGrid');
+    if(!grid) return;
+    const claimed = new Set(state.rankRewardsClaimed || []);
+    const myLevel = state.rankInfo?.level || 1;
+    grid.innerHTML = Object.entries(RANK_UP_CASH_REWARDS).map(([levelStr, reward]) => {
+      const level = parseInt(levelStr, 10);
+      const rankName = RANK_NAMES[level] || `Rank ${level}`;
+      const got = claimed.has(level) || myLevel > level;
+      const isFinal = level === 8;
+      return `
+        <div style="border:1px solid ${got ? 'var(--gold)' : 'var(--panel-line)'}; border-radius:10px; padding:14px; background:${got ? 'rgba(255,200,0,0.08)' : 'var(--bg-2)'}; opacity:${got ? '1' : '0.55'}; text-align:center;">
+          <div style="font-size:2rem; margin-bottom:6px;">${isFinal ? '👑' : '🎖️'}</div>
+          <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(rankName)}${isFinal ? ' (Endgame)' : ''}</div>
+          <div style="font-size:0.78rem; color:var(--text-dim); margin-bottom:6px;">Reach Rank ${level}</div>
+          <div style="font-size:0.72rem; color:var(--gold);">${got ? `✅ Collected £${reward.toLocaleString()}` : `🔒 £${reward.toLocaleString()} prize`}</div>
+        </div>
+      `;
+    }).join('');
   }
 
   function renderHallOfFame(){
@@ -4925,7 +4957,13 @@
         ? 'This is what everyone else sees when they click your name.'
         : 'Public info only — no combat stats. Pay an Informer for the real numbers.';
       const joinDate = new Date(p.joinDate).toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+      const isDon = p.rank.level >= 8;
       container.innerHTML = `
+        ${isDon ? `
+        <div style="text-align:center; margin-bottom:16px; padding:14px; border:2px solid var(--gold); border-radius:12px; background:linear-gradient(135deg, rgba(255,200,0,0.15), rgba(255,200,0,0.03)); box-shadow:0 0 20px rgba(255,200,0,0.35);">
+          <div style="font-family:'Anton',sans-serif; font-size:1.3rem; letter-spacing:0.08em; color:var(--gold);">👑 THE DON 👑</div>
+          <div style="font-size:0.72rem; color:var(--text-dim); margin-top:4px;">Reached the top of the game — a title only THE DON gets to wear.</div>
+        </div>` : ''}
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
           <h3 style="margin:0;">${escapeHtml(p.name)}</h3>
           <div style="font-family:'Anton',sans-serif; color:var(--gold); font-size:0.9rem;">Lv.${p.rank.level} ${escapeHtml(p.rank.name)}</div>

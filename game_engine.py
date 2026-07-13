@@ -471,6 +471,37 @@ def rank_info(xp):
     }
 
 
+# Rank-up rewards: crossing into a new rank pays out a one-time cash prize
+# on top of any XP from achievements, culminating in a big payout for
+# reaching THE DON. Tracked in state["rankRewardsClaimed"] rather than
+# recomputed fresh like rank itself, since a reward must never be paid out
+# twice - even a big XP jump that skips straight past several ranks at once
+# (a heist, an admin credit) still pays every rank crossed, one by one.
+RANK_UP_CASH_REWARDS = {
+    2: 5_000,
+    3: 25_000,
+    4: 100_000,
+    5: 500_000,
+    6: 2_000_000,
+    7: 10_000_000,
+    8: 100_000_000,
+}
+
+
+def check_rank_rewards(state):
+    """Called unconditionally from apply_catchup, same 'recompute, don't
+    drift' entry point as check_milestone_achievements - safe to call on
+    every load since already-claimed rewards are skipped."""
+    rank = rank_info(state.get("xp", 0))
+    claimed = state.setdefault("rankRewardsClaimed", [])
+    for level, reward in RANK_UP_CASH_REWARDS.items():
+        if rank["level"] >= level and level not in claimed:
+            claimed.append(level)
+            state["cash"] += reward
+            rank_name = RANKS[level - 1][1]
+            add_log(state, f"🎖️ Ranked up to {rank_name}! Bonus: £{reward}.", "good")
+
+
 # ---------------------------------------------------------------------------
 # Achievements
 # ---------------------------------------------------------------------------
@@ -1249,6 +1280,7 @@ def human_as_bot(user_id, pimp_name, s):
         "cadillacs": s.get("cadillacs", 0),
         "armoredTrucks": s.get("armoredTrucks", 0),
         "factories": s.get("factories", {}),
+        "rankLevel": rank_info(s.get("xp", 0))["level"],
         "thugsInHospital": s.get("thugsInHospital", 0),
         "thugsHospitalReadyAt": s.get("thugsHospitalReadyAt", 0),
         "statsThugsKilled": s.get("statsThugsKilled", 0),
@@ -2739,6 +2771,7 @@ def apply_catchup(state):
     check_slot_reset(state, now)
     recalc_morale(state)
     check_milestone_achievements(state)
+    check_rank_rewards(state)
     return state
 
 
