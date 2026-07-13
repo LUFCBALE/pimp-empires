@@ -1141,6 +1141,17 @@ def fight_bot(state, bot_id, world):
 BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450, "gym": 100}
 BOMB_TURN_COST = 20
 
+# Stealing cars needs bodies on the ground to drive them out, not bombs -
+# every car you want to take costs this many of your own thugs' worth of
+# "capacity" (not consumed, just required), same blind-by-holdings shape as
+# bombing: pick a car type without knowing how many the target actually
+# owns, and sending your thugs in always costs turns even if they own none.
+STEAL_CARS_THUGS_PER_CAR = 4
+STEAL_CARS_TURN_COST = 20
+STEAL_CARS_XP = 30
+CAR_TYPE_FIELD = {"cadillac": "cadillacs", "armoredTruck": "armoredTrucks"}
+CAR_TYPE_LABELS = {"cadillac": "Cadillac", "armoredTruck": "Armored Truck"}
+
 
 def bomb_bot(state, bot_id, factory_type, world, qty=None):
     """Blind by holdings, not by type: you pick which kind of factory to
@@ -1374,6 +1385,89 @@ def bomb_human(state, defender, factory_type, qty=None):
                        + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
     award_achievement(state, "demolition_man")
     return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed}
+
+
+def steal_cars_from_bot(state, bot_id, car_type, world, qty=None):
+    """Blind by holdings, not by type: pick Cadillac or Armored Truck
+    without ever being shown how many the target actually owns. Stolen
+    cars land straight in your own garage. Capped by both what they
+    actually own and how many you can haul out - STEAL_CARS_THUGS_PER_CAR
+    thugs per car, required but not spent, since it's muscle to drive them
+    away, not a resource that gets consumed. Sending your thugs in always
+    costs turns, whether or not the target has any of that car type."""
+    if car_type not in CAR_TYPE_FIELD:
+        raise GameError("Invalid car type")
+    bot = next((b for b in world["bots"] if b["id"] == bot_id), None)
+    if not bot:
+        raise GameError("Target not found")
+    if bot["thugs"] > 0:
+        raise GameError("Target still has thugs guarding their garage")
+    if state["turns"] < STEAL_CARS_TURN_COST:
+        raise GameError(f"Not enough turns (need {STEAL_CARS_TURN_COST})")
+    if state["thugs"] < STEAL_CARS_THUGS_PER_CAR:
+        raise GameError(f"Need at least {STEAL_CARS_THUGS_PER_CAR} thugs to steal any cars")
+    if qty is not None and qty <= 0:
+        raise GameError("Enter how many cars to steal")
+
+    field = CAR_TYPE_FIELD[car_type]
+    label = CAR_TYPE_LABELS[car_type]
+    owned = bot.get(field, 0)
+    capacity = state["thugs"] // STEAL_CARS_THUGS_PER_CAR
+    stolen = min(owned, capacity)
+    if qty is not None:
+        stolen = min(stolen, qty)
+
+    state["turns"] -= STEAL_CARS_TURN_COST
+    add_xp(state, STEAL_CARS_XP)
+
+    if stolen <= 0:
+        add_log(state, f"Your thugs raided {bot['boss']}'s garage but found 0 {label}s to take.", "bad")
+        return {"boss": bot["boss"], "target": car_type, "stolen": 0, "wipedOut": False}
+
+    bot[field] -= stolen
+    state[field] = state.get(field, 0) + stolen
+    wiped_out = bot[field] <= 0
+    add_log(state, f"Your thugs stole {stolen} {label}s from {bot['boss']}'s garage"
+                   + (" (all of them)" if wiped_out else f" ({bot[field]} left)") + ".", "good")
+    return {"boss": bot["boss"], "target": car_type, "stolen": stolen, "wipedOut": wiped_out}
+
+
+def steal_cars_from_human(state, defender, car_type, qty=None):
+    """Same partial-haul logic as steal_cars_from_bot, for a real player."""
+    if car_type not in CAR_TYPE_FIELD:
+        raise GameError("Invalid car type")
+    if defender["thugs"] > 0:
+        raise GameError("Target still has thugs guarding their garage")
+    if state["turns"] < STEAL_CARS_TURN_COST:
+        raise GameError(f"Not enough turns (need {STEAL_CARS_TURN_COST})")
+    if state["thugs"] < STEAL_CARS_THUGS_PER_CAR:
+        raise GameError(f"Need at least {STEAL_CARS_THUGS_PER_CAR} thugs to steal any cars")
+    if qty is not None and qty <= 0:
+        raise GameError("Enter how many cars to steal")
+
+    field = CAR_TYPE_FIELD[car_type]
+    label = CAR_TYPE_LABELS[car_type]
+    owned = defender.get(field, 0)
+    capacity = state["thugs"] // STEAL_CARS_THUGS_PER_CAR
+    stolen = min(owned, capacity)
+    if qty is not None:
+        stolen = min(stolen, qty)
+
+    state["turns"] -= STEAL_CARS_TURN_COST
+    add_xp(state, STEAL_CARS_XP)
+
+    if stolen <= 0:
+        add_log(state, f"Your thugs raided {defender['name']}'s garage but found 0 {label}s to take.", "bad")
+        return {"boss": defender["name"], "target": car_type, "stolen": 0, "wipedOut": False}
+
+    defender[field] -= stolen
+    state[field] = state.get(field, 0) + stolen
+    wiped_out = defender[field] <= 0
+    add_log(state, f"Your thugs stole {stolen} {label}s from {defender['name']}'s garage"
+                   + (" (all of them)" if wiped_out else f" ({defender[field]} left)") + ".", "good")
+    add_log(defender, f"{state['name']} raided your garage and stole {stolen} of your {label}s"
+                       + (" (all of them)" if wiped_out else f" ({defender[field]} left)") + ".", "bad")
+    return {"boss": defender["name"], "target": car_type, "stolen": stolen, "wipedOut": wiped_out}
 
 
 # ---------------------------------------------------------------------------

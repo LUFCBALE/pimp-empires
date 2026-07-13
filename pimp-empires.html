@@ -2401,6 +2401,8 @@
     <p>You need 30+ turns, and your target has to be in the same city — there's no home turf, so you're fair game anywhere, including your starting city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
     <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, Counterfeit, or Gym) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
+    <h3>Stealing Cars</h3>
+    <p>Also only once a target's thugs are at zero. You pick Cadillacs or Armored Trucks blind — you won't know if they even own any until you commit — and hauling cars out costs 4 of your own thugs' worth of muscle per car (not consumed, just required to have on hand), plus 20 turns for sending them in. Guess wrong and they own none, and you still burn the 20 turns for nothing. Whatever you steal lands straight in your own garage.</p>
     <h3>The Informer</h3>
     <p>The only way to see someone's actual numbers — cash, factories, guns, everything. Costs 12% of their known net worth, paid straight to the informer.</p>
     <h3>The Bank</h3>
@@ -3743,6 +3745,24 @@
     } catch(e){ /* toast already shown */ }
   }
 
+  const CAR_TYPE_LABELS = {cadillac: 'Cadillac', armoredTruck: 'Armored Truck'};
+  // Must match STEAL_CARS_THUGS_PER_CAR / STEAL_CARS_TURN_COST in game_engine.py.
+  const STEAL_CARS_THUGS_PER_CAR = 4;
+  const STEAL_CARS_TURN_COST = 20;
+
+  async function stealCars(botId, carType, qty){
+    try{
+      const data = await apiCall('/api/stealcars', {botId, carType, qty});
+      if(data.result.stolen <= 0){
+        showToast(`🚗 Your thugs raided ${data.result.boss}'s garage but found 0 ${CAR_TYPE_LABELS[data.result.target]}s to take.`);
+      } else {
+        const verb = data.result.wipedOut ? `Stole every` : `Stole ${data.result.stolen} of`;
+        showToast(`🚗 ${verb} ${CAR_TYPE_LABELS[data.result.target]} ${data.result.boss} owned!`);
+      }
+      render(); renderLocation(); renderAttacks();
+    } catch(e){ /* toast already shown */ }
+  }
+
   const INFORMER_COST_PCT = 0.12;
   const GUN_LABELS = {pistol9mm: '9mm', shotgun12gauge: 'Shotgun', ak47: 'AK-47', m249: 'M249'};
 
@@ -5018,8 +5038,17 @@
               <input type="number" data-bomb-qty="${b.id}" min="1" value="1" style="width:56px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
               <button class="cta cta-sm" data-bomb-max="${b.id}" style="padding:7px 8px; font-size:0.7rem;">MAX</button>
             </div>
-            <button class="cta cta-sm" data-bomb-submit="${b.id}" style="background:var(--red); width:100%; margin-top:6px;" ${state.turns < BOMB_TURN_COST ? 'disabled' : ''}>💣 Bomb${state.turns < BOMB_TURN_COST ? ` (need ${BOMB_TURN_COST} turns)` : ''}</button>` : ''}
-          ${!blocked && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories</div>` : ''}
+            <button class="cta cta-sm" data-bomb-submit="${b.id}" style="background:var(--red); width:100%; margin-top:6px;" ${state.turns < BOMB_TURN_COST ? 'disabled' : ''}>💣 Bomb${state.turns < BOMB_TURN_COST ? ` (need ${BOMB_TURN_COST} turns)` : ''}</button>
+            <div class="hint" style="text-align:center; margin:10px 0 4px;">Pick which cars to take — you won't see what they actually have until you commit. Needs ${STEAL_CARS_THUGS_PER_CAR} thugs per car and costs ${STEAL_CARS_TURN_COST} turns even if they own none.</div>
+            <div class="steal-car-controls" style="display:flex; gap:6px;">
+              <select data-steal-car-type="${b.id}" style="flex:1.3; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
+                ${Object.entries(CAR_TYPE_LABELS).map(([type, label]) => `<option value="${type}">${label}</option>`).join('')}
+              </select>
+              <input type="number" data-steal-car-qty="${b.id}" min="1" value="1" style="width:56px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
+              <button class="cta cta-sm" data-steal-car-max="${b.id}" style="padding:7px 8px; font-size:0.7rem;">MAX</button>
+            </div>
+            <button class="cta cta-sm" data-steal-car-submit="${b.id}" style="background:var(--gold); width:100%; margin-top:6px;" ${(state.turns < STEAL_CARS_TURN_COST || state.thugs < STEAL_CARS_THUGS_PER_CAR) ? 'disabled' : ''}>🚗 Steal Cars${state.turns < STEAL_CARS_TURN_COST ? ` (need ${STEAL_CARS_TURN_COST} turns)` : (state.thugs < STEAL_CARS_THUGS_PER_CAR ? ` (need ${STEAL_CARS_THUGS_PER_CAR} thugs)` : '')}</button>` : ''}
+          ${!blocked && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories or steal their cars</div>` : ''}
         </div>`;
       }).join('');
       validContainer.querySelectorAll('[data-attack-bot]').forEach(btn => {
@@ -5042,6 +5071,23 @@
           const qty = parseInt(input.value, 10);
           if(!qty || qty < 1){ showToast('Enter a valid quantity to bomb'); return; }
           bombBot(parseInt(id), select.value, qty);
+        });
+      });
+      validContainer.querySelectorAll('[data-steal-car-max]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.stealCarMax;
+          const input = validContainer.querySelector(`[data-steal-car-qty="${id}"]`);
+          input.value = Math.max(1, Math.floor((state.thugs || 0) / STEAL_CARS_THUGS_PER_CAR));
+        });
+      });
+      validContainer.querySelectorAll('[data-steal-car-submit]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.stealCarSubmit;
+          const select = validContainer.querySelector(`[data-steal-car-type="${id}"]`);
+          const input = validContainer.querySelector(`[data-steal-car-qty="${id}"]`);
+          const qty = parseInt(input.value, 10);
+          if(!qty || qty < 1){ showToast('Enter a valid quantity of cars to steal'); return; }
+          stealCars(parseInt(id), select.value, qty);
         });
       });
       validContainer.querySelectorAll('[data-profile-id]').forEach(el => {

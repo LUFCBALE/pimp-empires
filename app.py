@@ -844,6 +844,46 @@ def api_bomb():
     return action_response(user['id'], state, world, {'result': result})
 
 
+@app.route('/api/stealcars', methods=['POST'])
+@login_required
+def api_stealcars():
+    data = request.get_json() or {}
+    target_id = data.get('botId')
+    car_type = data.get('carType')
+    try:
+        qty = int(data['qty']) if data.get('qty') is not None else None
+    except (TypeError, ValueError):
+        qty = None
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        if target_id in crew_protected_ids(user['id'], state, world):
+            raise ge.GameError("You can't steal from your own crew")
+        if target_id is not None and target_id >= ge.HUMAN_ID_OFFSET:
+            defender_id = target_id - ge.HUMAN_ID_OFFSET
+            if defender_id == user['id']:
+                raise ge.GameError("You can't steal from yourself")
+            defender_state = load_state(defender_id)
+            result = ge.steal_cars_from_human(state, defender_state, car_type, qty)
+            if result['stolen'] > 0:
+                steal_text = f"{state['name']} raided your garage and stole {result['stolen']} of your {ge.CAR_TYPE_LABELS.get(car_type, car_type)}s!"
+                defender_state.setdefault('messages', []).append({
+                    'from': ge.HUMAN_ID_OFFSET + user['id'], 'to': 'player',
+                    'text': steal_text, 'timestamp': ge.now_ms(), 'read': False, 'kind': 'attack',
+                })
+                save_state(defender_id, defender_state)
+                notify_user(defender_id, 'attacked', {'text': steal_text})
+                send_push_notification(defender_id, "You're under attack!", steal_text)
+            else:
+                save_state(defender_id, defender_state)
+        else:
+            result = ge.steal_cars_from_bot(state, target_id, car_type, world, qty)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world, {'result': result})
+
+
 @app.route('/api/informer', methods=['POST'])
 @login_required
 def api_informer():
