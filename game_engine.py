@@ -204,6 +204,14 @@ FACTORY_SELL_PRICES = {
     "explosive": 9000000, "counterfeit": 6000000, "gym": 5000000,
 }
 
+# Real Estate is a progression ladder, not a shopping list you can max out
+# on day one - each rank-up unlocks exactly one new factory type, roughly in
+# order of tier/cost. Matches the `RANKS` levels defined further down.
+FACTORY_UNLOCK_RANK = {
+    "medical": 1, "gym": 2, "gun": 3, "car": 4,
+    "drug": 5, "explosive": 6, "counterfeit": 7,
+}
+
 # All factory output rates below are boosted 30% over their original values,
 # since a single factory's produce was worth very little next to what it
 # actually costs.
@@ -1819,6 +1827,11 @@ def buy_factory(state, ftype, qty=1):
         raise GameError("Invalid quantity")
     if qty < 1:
         raise GameError("Invalid quantity")
+    required_rank = FACTORY_UNLOCK_RANK[ftype]
+    current_rank = rank_info(state.get("xp", 0))["level"]
+    if current_rank < required_rank:
+        rank_name = RANKS[required_rank - 1][1]
+        raise GameError(f"Unlocks at Rank {required_rank} ({rank_name}) - you're Rank {current_rank}")
     cost = FACTORY_COSTS[ftype] * qty
     if state["cash"] < cost:
         raise GameError("Not enough cash")

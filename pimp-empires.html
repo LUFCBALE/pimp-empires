@@ -690,6 +690,7 @@
     background:var(--card-bg); border:2px solid var(--card-border); border-radius:14px;
     padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:0 0 12px rgba(91,15,15,0.25);
   }
+  .re-card.locked{opacity:0.55; filter:grayscale(0.4);}
   .re-art svg{width:100%; height:90px; display:block;}
   .re-name{font-family:'Anton',sans-serif; font-size:1.2rem; color:#fff; letter-spacing:0.02em;}
   .re-tier{font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.1em; font-weight:700;}
@@ -1794,7 +1795,7 @@
 
   <div class="re-cards">
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="medical">
       <div class="re-art">
         <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
           <rect x="5" y="35" width="90" height="40" rx="2" fill="#1e1a2e"/>
@@ -1833,7 +1834,7 @@
       <button class="cta cta-sm cta-red" id="sellMedicalBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="gun">
       <div class="re-art">
         <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="30" width="94" height="46" rx="2" fill="#1a1428"/>
@@ -1862,6 +1863,7 @@
         <div class="re-stat">🔫 Output: <b>9mms + Shotguns + AKs + M249s / 30 mins</b></div>
         <div class="re-stat">📈 Net worth: <b>+£14,000,000 each</b></div>
         <div class="re-stat">🔧 Set the production mix on the Production page</div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 3 (Foot Soldier)</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGun">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGunQtyLabel">1</b></div>
@@ -1872,7 +1874,7 @@
       <button class="cta cta-sm cta-red" id="sellGunBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="car">
       <div class="re-art">
         <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
           <rect x="2" y="28" width="96" height="48" rx="2" fill="#181230"/>
@@ -1901,6 +1903,7 @@
         <div class="re-stat">🚗 Output: <b>Cadillacs + Armored Trucks / 30 mins</b></div>
         <div class="re-stat">📈 Net worth: <b>+£13,000,000 each</b></div>
         <div class="re-stat">🔧 Set the production mix on the Production page</div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 4 (Associate)</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedCar">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyCarQtyLabel">1</b></div>
@@ -1911,7 +1914,7 @@
       <button class="cta cta-sm cta-red" id="sellCarBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="drug">
       <div class="re-art">
         <div style="font-size:3rem; text-align:center; padding:20px;">❄️</div>
       </div>
@@ -1922,6 +1925,7 @@
         <div class="re-stat">❄️ Output: <b>2,079 Cocaine / 30 mins</b></div>
         <div class="re-stat">📈 Net worth: <b>+£3,000,000 each</b></div>
         <div class="re-stat">💊 Cocaine feeds straight into your stash — sell it to the dealer whenever</div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 5 (Gang Member)</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedDrug">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyDrugQtyLabel">1</b></div>
@@ -1932,7 +1936,7 @@
       <button class="cta cta-sm cta-red" id="sellDrugBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="explosive">
       <div class="re-art">
         <div style="font-size:3rem; text-align:center; padding:20px;">💣</div>
       </div>
@@ -1943,6 +1947,7 @@
         <div class="re-stat">🧨 Output: <b>65 Bombs / 30 mins</b></div>
         <div class="re-stat">📈 Net worth: <b>+£9,000,000 each</b></div>
         <div class="re-stat">💣 Bombs: <b id="bombsOwned">0</b></div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 6 (Gang Leader)</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedExplosive">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyExplosiveQtyLabel">1</b></div>
@@ -1953,7 +1958,7 @@
       <button class="cta cta-sm cta-red" id="sellExplosiveBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="counterfeit">
       <div class="re-art">
         <div style="font-size:3rem; text-align:center; padding:20px;">💰</div>
       </div>
@@ -1965,6 +1970,7 @@
         <div class="re-stat">📈 Net worth: <b>+£6,000,000 each</b></div>
         <div class="re-stat">⚠️ High risk, high reward</div>
         <div class="re-stat">🚨 Illegal operation</div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 7 (Mob Boss)</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedCounterfeit">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyCounterfeitQtyLabel">1</b></div>
@@ -1975,7 +1981,7 @@
       <button class="cta cta-sm cta-red" id="sellCounterfeitBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
-    <div class="re-card">
+    <div class="re-card" data-factory-card="gym">
       <div class="re-art">
         <div style="font-size:3rem; text-align:center; padding:20px;">🏋️</div>
       </div>
@@ -1986,6 +1992,7 @@
         <div class="re-stat">💪 Output: <b>10 Thugs / 30 mins</b></div>
         <div class="re-stat">📈 Net worth: <b>+£5,000,000 each</b></div>
         <div class="re-stat">👊 Recruits and trains new thugs for your crew automatically</div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 2 (Street Rat)</div>
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGym">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGymQtyLabel">1</b></div>
@@ -5706,6 +5713,14 @@
   const FACTORY_COSTS = {medical: 940000, gun: 25000000, car: 30000000, drug: 14000000, explosive: 32000000, counterfeit: 23000000, gym: 10000000};
   const FACTORY_SELL_PRICES = {medical: 170000, gun: 14000000, car: 13000000, drug: 3000000, explosive: 9000000, counterfeit: 6000000, gym: 5000000};
   const FACTORY_ID_SUFFIX = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
+  // Must match FACTORY_UNLOCK_RANK / RANKS in game_engine.py - Real Estate is
+  // a progression ladder, not a shopping list you can max out from Rank 1.
+  const FACTORY_UNLOCK_RANK = {medical: 1, gym: 2, gun: 3, car: 4, drug: 5, explosive: 6, counterfeit: 7};
+  const RANK_NAMES = ['', 'Junkie', 'Street Rat', 'Foot Soldier', 'Associate', 'Gang Member', 'Gang Leader', 'Mob Boss', 'THE DON'];
+
+  function isFactoryUnlocked(type){
+    return (state.rankInfo?.level || 1) >= FACTORY_UNLOCK_RANK[type];
+  }
 
   function updateSellFactoryLabel(type){
     const suffix = FACTORY_ID_SUFFIX[type];
@@ -5726,6 +5741,15 @@
     const label = document.getElementById(`buy${suffix}QtyLabel`);
     const btn = document.getElementById(`buy${suffix}Btn`);
     if(!input || !label || !btn) return;
+    if(!isFactoryUnlocked(type)){
+      const requiredRank = FACTORY_UNLOCK_RANK[type];
+      label.textContent = '—';
+      btn.textContent = `🔒 Unlocks at Rank ${requiredRank} (${RANK_NAMES[requiredRank]})`;
+      btn.disabled = true;
+      input.disabled = true;
+      return;
+    }
+    input.disabled = false;
     const qty = Math.max(1, parseInt(input.value) || 1);
     label.textContent = qty;
     const cost = FACTORY_COSTS[type] * qty;
@@ -5943,6 +5967,10 @@
     updateBuyFactoryLabel('explosive');
     updateBuyFactoryLabel('counterfeit');
     updateBuyFactoryLabel('gym');
+    Object.keys(FACTORY_UNLOCK_RANK).forEach(type => {
+      const card = document.querySelector(`[data-factory-card="${type}"]`);
+      if(card) card.classList.toggle('locked', !isFactoryUnlocked(type));
+    });
     setupSellSlider('medical', f.medical);
     setupSellSlider('gun', f.gun);
     setupSellSlider('car', f.car);
