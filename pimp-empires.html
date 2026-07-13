@@ -3957,6 +3957,7 @@
     {id:'most_thugs_killed', name:'Body Count King', emoji:'💀', img:'badges/most_thugs_killed.png', desc:'Hold the #1 spot for Most Thugs Killed', xp:400},
     {id:'most_money_stolen', name:'Grand Larcenist', emoji:'💸', img:'badges/most_money_stolen.png', desc:'Hold the #1 spot for Most Money Stolen', xp:400},
     {id:'most_factories_destroyed', name:'Wrecking Ball', emoji:'🧨', img:'badges/most_factories_destroyed.png', desc:'Hold the #1 spot for Most Factories Destroyed', xp:400},
+    {id:'most_hoes', name:'Easy Money', emoji:'👠', desc:'Hold the #1 spot for Most Hoes', xp:400},
   ];
   const ACHIEVEMENTS_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
 
@@ -4028,6 +4029,7 @@
       statsThugsKilled: state.statsThugsKilled || 0,
       statsFactoriesDestroyed: state.statsFactoriesDestroyed || 0,
       statsMoneyStolen: state.statsMoneyStolen || 0,
+      hoes: state.hoes || 0,
     }];
     (state.bots || []).forEach(b => {
       if(!b.isHuman) return;
@@ -4036,6 +4038,7 @@
         statsThugsKilled: b.statsThugsKilled || 0,
         statsFactoriesDestroyed: b.statsFactoriesDestroyed || 0,
         statsMoneyStolen: b.statsMoneyStolen || 0,
+        hoes: b.hoes || 0,
       });
     });
 
@@ -4043,6 +4046,7 @@
       {key:'statsThugsKilled', title:'💀 Most Thugs Killed', fmt: v => v.toLocaleString(), banner:'./hof-most-thugs-killed.jpg'},
       {key:'statsFactoriesDestroyed', title:'🧨 Most Factories Destroyed', fmt: v => v.toLocaleString(), banner:'./hof-most-factories-destroyed.jpg'},
       {key:'statsMoneyStolen', title:'💰 Most Money Stolen', fmt: v => fmtMoney(v), banner:'./hof-most-money-stolen.jpg'},
+      {key:'hoes', title:'👠 Most Hoes', fmt: v => Math.floor(v).toLocaleString(), banner:'./hof-most-hoes.jpg'},
     ];
 
     container.innerHTML = boards.map(board => {
