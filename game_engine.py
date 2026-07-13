@@ -1477,6 +1477,81 @@ def steal_cars_from_human(state, defender, car_type, qty=None):
 
 
 # ---------------------------------------------------------------------------
+# Bounties (world-shared: any real player can put their own cash on
+# someone's head - bot or human - and whoever is the first to wipe that
+# target's thugs to zero collects the lot, stacked across every bounty
+# posted on that same target)
+# ---------------------------------------------------------------------------
+
+BOUNTY_MIN_AMOUNT = 1
+
+
+def place_bounty(state, world, target_id, target_name, amount, poster_id, poster_name):
+    """Escrows `amount` out of the poster's own cash the moment it's
+    posted - it's gone whether or not anyone ever claims it, same as a
+    real bounty. Multiple bounties can stack on one target; whoever
+    actually lands the kill collects every bounty on that head at once."""
+    try:
+        target_id = int(target_id)
+    except (TypeError, ValueError):
+        raise GameError("Invalid target")
+    try:
+        amount = int(amount)
+    except (TypeError, ValueError):
+        raise GameError("Invalid bounty amount")
+    if amount < BOUNTY_MIN_AMOUNT:
+        raise GameError(f"Bounty must be at least £{BOUNTY_MIN_AMOUNT}")
+    if state["cash"] < amount:
+        raise GameError("Not enough cash to post that bounty")
+    if target_id == HUMAN_ID_OFFSET + poster_id:
+        raise GameError("You can't put a bounty on your own head")
+
+    state["cash"] -= amount
+    bounties = world.setdefault("bounties", [])
+    next_id = world.get("nextBountyId", 1)
+    world["nextBountyId"] = next_id + 1
+    bounty = {
+        "id": next_id, "targetId": target_id, "targetName": target_name,
+        "posterId": poster_id, "posterName": poster_name,
+        "amount": amount, "postedAt": now_ms(),
+    }
+    bounties.append(bounty)
+    add_log(state, f"Put a £{amount} bounty on {target_name}'s head.", "info")
+    return bounty
+
+
+def cancel_bounty(state, world, bounty_id, poster_id):
+    """Refunds the poster in full. Only the original poster can pull it."""
+    try:
+        bounty_id = int(bounty_id)
+    except (TypeError, ValueError):
+        raise GameError("Invalid bounty")
+    bounties = world.setdefault("bounties", [])
+    bounty = next((b for b in bounties if b["id"] == bounty_id), None)
+    if not bounty:
+        raise GameError("Bounty not found (maybe it was already claimed)")
+    if bounty["posterId"] != poster_id:
+        raise GameError("That's not your bounty to cancel")
+    bounties.remove(bounty)
+    state["cash"] += bounty["amount"]
+    add_log(state, f"Pulled your £{bounty['amount']} bounty on {bounty['targetName']} — refunded.", "info")
+    return bounty
+
+
+def claim_bounties(world, target_id):
+    """Called right after a successful attack wipes a target's thugs to
+    zero. Every bounty posted on that target's head pays out at once,
+    removed from the shared world - the caller credits the total to the
+    winner's own cash."""
+    bounties = world.setdefault("bounties", [])
+    matching = [b for b in bounties if b["targetId"] == target_id]
+    if not matching:
+        return []
+    world["bounties"] = [b for b in bounties if b["targetId"] != target_id]
+    return matching
+
+
+# ---------------------------------------------------------------------------
 # Informer (pay cash for a full stat readout on any bot or real player)
 # ---------------------------------------------------------------------------
 

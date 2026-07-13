@@ -1323,6 +1323,7 @@
         <button class="sidebar-link" data-page="page-dealer">💊<span>Dope Dealer</span></button>
         <button class="sidebar-link" data-page="page-crew">👥<span>Crew</span></button>
         <button class="sidebar-link" data-page="page-attacks">⚔️<span>Attacks</span></button>
+        <button class="sidebar-link" data-page="page-bounties">🎯<span>Bounties</span></button>
         <button class="sidebar-link" data-page="page-informer">🕵️<span>Informer</span></button>
         <button class="sidebar-link" data-page="page-leaderboard">🏆<span>Leaderboard</span></button>
         <button class="sidebar-link" data-page="page-slots">🎰<span>Slot Machine</span><span class="sidebar-badge-free">FREE TURNS</span></button>
@@ -2297,6 +2298,25 @@
   </div>
 </div>
 
+<div class="page" id="page-bounties">
+  <button class="back-btn" data-back>← Back to the block</button>
+  <h2 class="page-title">Bounties</h2>
+  <div class="page-subtitle">Put your own cash on someone's head — bot or real player. First person to wipe out every one of their thugs collects the lot. Stack as many bounties as you like on the same target.</div>
+
+  <div class="panel" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">🎯 Post a Bounty</h3>
+    <select id="bountyTargetSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--bg-2); color:var(--text); border:1px solid var(--panel-line); font-family:'IBM Plex Mono',monospace; margin-bottom:14px;"></select>
+    <div class="store-qty-row" style="margin-top:8px;"><span>Bounty amount</span></div>
+    <input type="number" min="1" value="1000" id="bountyAmountInput" style="width:100%; padding:10px; border-radius:8px; background:var(--bg-2); color:var(--text); border:1px solid var(--panel-line); font-family:'IBM Plex Mono',monospace; margin:6px 0 14px;">
+    <button class="cta cta-buy" id="postBountyBtn" style="width:100%;">🎯 Post Bounty</button>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">💀 Active Bounties</h3>
+    <div id="bountiesList" style="display:flex; flex-direction:column; gap:10px;"></div>
+  </div>
+</div>
+
 <div class="page" id="page-informer">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">The Informer</h2>
@@ -2403,6 +2423,8 @@
     <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, Counterfeit, or Gym) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
     <h3>Stealing Cars</h3>
     <p>Also only once a target's thugs are at zero. You pick Cadillacs or Armored Trucks blind — you won't know if they even own any until you commit — and hauling cars out costs 4 of your own thugs' worth of muscle per car (not consumed, just required to have on hand), plus 20 turns for sending them in. Guess wrong and they own none, and you still burn the 20 turns for nothing. Whatever you steal lands straight in your own garage.</p>
+    <h3>Bounties</h3>
+    <p>Put your own cash on anyone's head — bot or real player, anywhere, any size. Whoever is first to wipe out every one of that target's thugs collects the full amount straight to their cash, no matter who they are. Multiple bounties can stack on the same target and all pay out together to whoever lands the kill. Change your mind before anyone collects and you can pull it for a full refund.</p>
     <h3>The Informer</h3>
     <p>The only way to see someone's actual numbers — cash, factories, guns, everything. Costs 12% of their known net worth, paid straight to the informer.</p>
     <h3>The Bank</h3>
@@ -3690,6 +3712,10 @@
             <span style="color:var(--text-dim);">Cash looted</span>
             <span style="color:var(--gold); font-weight:700;">+${fmtMoney(r.cashWon)}</span>
           </div>
+          ${r.bountyWon ? `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px; border:1px solid var(--gold);">
+            <span style="color:var(--text-dim);">🎯 Bounty collected</span>
+            <span style="color:var(--gold); font-weight:700;">+${fmtMoney(r.bountyWon)}</span>
+          </div>` : ''}
           <div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
             <span style="color:var(--text-dim);">Their thugs wiped</span>
             <span style="color:var(--teal); font-weight:700;">${r.thugsWiped}</span>
@@ -3829,6 +3855,73 @@
       <div style="font-size:0.85rem;"><b>Factories:</b> ${factoryLines || 'none'}</div>
     `;
     panel.style.display = 'block';
+  }
+
+  function myUserId(){
+    return (state.selfProfileId || 0) - 1000000;
+  }
+
+  function renderBounties(){
+    ensureBots();
+    const select = document.getElementById('bountyTargetSelect');
+    if(!select) return;
+    const targets = (state.bots || []).slice().sort((a,b) => botNetWorth(b) - botNetWorth(a));
+    const prevValue = select.value;
+    select.innerHTML = targets.map(b =>
+      `<option value="${b.id}" data-name="${escapeHtml(b.boss)}">${escapeHtml(b.boss)}${b.isHuman ? ' 🧑' : ''} — "${escapeHtml(b.gang || 'Unaffiliated')}" (${b.city})</option>`
+    ).join('');
+    if(prevValue && targets.find(b => String(b.id) === prevValue)) select.value = prevValue;
+
+    const list = document.getElementById('bountiesList');
+    if(!list) return;
+    const bounties = (state.bounties || []).slice().sort((a,b) => b.amount - a.amount);
+    const myId = myUserId();
+    if(bounties.length === 0){
+      list.innerHTML = '<div class="hint">No active bounties yet. Be the first to put one up.</div>';
+      return;
+    }
+    list.innerHTML = bounties.map(b => {
+      const targetBot = (state.bots || []).find(t => t.id === b.targetId);
+      const defenseless = targetBot && targetBot.thugs === 0;
+      const isMine = b.posterId === myId;
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--bg-2); border-radius:8px; border:1px solid var(--panel-line);">
+          <div>
+            <div style="font-weight:700;">${escapeHtml(b.targetName)}${defenseless ? ' <span style="color:var(--danger);">(defenseless right now!)</span>' : ''}</div>
+            <div style="font-size:0.8rem; color:var(--text-dim);">Posted by ${escapeHtml(b.posterName)}${isMine ? ' (you)' : ''}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-weight:700; color:var(--gold);">${fmtMoney(b.amount)}</div>
+            ${isMine ? `<button class="cta cta-sm cta-red" data-cancel-bounty="${b.id}">Cancel</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    list.querySelectorAll('[data-cancel-bounty]').forEach(btn => {
+      btn.addEventListener('click', () => cancelBounty(parseInt(btn.dataset.cancelBounty)));
+    });
+  }
+
+  async function postBounty(){
+    const select = document.getElementById('bountyTargetSelect');
+    const input = document.getElementById('bountyAmountInput');
+    if(!select || !select.value) return;
+    const amount = parseInt(input.value, 10);
+    if(!amount || amount < 1){ showToast('Enter a valid bounty amount'); return; }
+    const opt = select.options[select.selectedIndex];
+    const targetName = opt ? opt.dataset.name : 'Unknown';
+    try{
+      const data = await apiCall('/api/bounty/place', {targetId: parseInt(select.value), targetName, amount});
+      showToast(`🎯 Posted a ${fmtMoney(data.result.amount)} bounty on ${data.result.targetName}!`);
+      render(); renderBounties();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  async function cancelBounty(bountyId){
+    try{
+      const data = await apiCall('/api/bounty/cancel', {bountyId});
+      showToast(`Pulled your bounty — refunded ${fmtMoney(data.result.amount)}.`);
+      render(); renderBounties();
+    } catch(e){ /* toast already shown */ }
   }
 
   const ACHIEVEMENTS = [
@@ -6087,6 +6180,7 @@
     'page-crew': renderCrew,
     'page-crew-leaderboard': renderCrewLeaderboard,
     'page-attacks': renderAttacks,
+    'page-bounties': renderBounties,
     'page-informer': renderInformer,
     'page-messages': renderMessages,
     'page-leaderboard': renderLeaderboard,
@@ -6333,6 +6427,7 @@
   document.getElementById('playerMsgBtn').addEventListener('click', () => navigateTo('page-messages'));
   document.getElementById('informerTargetSelect').addEventListener('change', updateInformerCostPreview);
   document.getElementById('informerBuyBtn').addEventListener('click', buyInformerReport);
+  document.getElementById('postBountyBtn').addEventListener('click', postBounty);
   document.getElementById('quickBuyMedsBtn').addEventListener('click', quickBuyMeds);
   document.getElementById('hoMedsSlider').addEventListener('input', updateMedsOverlayQty);
 

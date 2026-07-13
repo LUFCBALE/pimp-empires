@@ -403,6 +403,7 @@ def attach_world_view(state, world, user_id):
     state['botCrewEmblems'] = world.get('botCrewEmblems', {})
     state['globalAttackLog'] = world.get('globalAttackLog', [])
     state['worldRecords'] = world.get('records', {})
+    state['bounties'] = world.get('bounties', [])
     state['selfProfileId'] = ge.HUMAN_ID_OFFSET + user_id
     state['crewRoster'] = build_crew_roster(user_id, state, world)
     state['rankInfo'] = ge.rank_info(state.get('xp', 0))
@@ -451,6 +452,33 @@ def action_response(user_id, state, world, extra=None):
     if extra:
         payload.update(extra)
     return jsonify(payload)
+
+
+def award_bounties(state, world, target_id, winner_user_id):
+    """Call right after a successful attack wipes target_id's thugs to
+    zero. Pays every bounty on that head to the winner's own cash at once
+    and notifies each poster (skipping the poster if they're the one who
+    just collected their own bounty)."""
+    claimed = ge.claim_bounties(world, target_id)
+    if not claimed:
+        return 0
+    total = sum(b['amount'] for b in claimed)
+    state['cash'] += total
+    target_name = claimed[0]['targetName']
+    bounty_count = f" ({len(claimed)} bounties)" if len(claimed) > 1 else ""
+    ge.add_log(state, f"Collected £{total} in bounty money{bounty_count} for taking down {target_name}!", "good")
+    for b in claimed:
+        if b['posterId'] == winner_user_id:
+            continue
+        poster_state = load_state(b['posterId'])
+        text = f"{state['name']} collected your £{b['amount']} bounty on {target_name}!"
+        poster_state.setdefault('messages', []).append({
+            'from': ge.HUMAN_ID_OFFSET + winner_user_id, 'to': 'player',
+            'text': text, 'timestamp': ge.now_ms(), 'read': False, 'kind': 'bounty',
+        })
+        save_state(b['posterId'], poster_state)
+        notify_user(b['posterId'], 'bounty', {'text': text})
+    return total
 
 
 def handle_action(fn, *args, needs_world=False, **kwargs):
@@ -799,6 +827,11 @@ def api_attack():
             send_push_notification(defender_id, "You're under attack!", attack_text)
         else:
             result = ge.fight_bot(state, target_id, world)
+
+        if result.get('won'):
+            bounty_total = award_bounties(state, world, target_id, user['id'])
+            if bounty_total:
+                result['bountyWon'] = bounty_total
     except ge.GameError as e:
         return jsonify({'error': str(e)}), 400
     return action_response(user['id'], state, world, {'result': result})
@@ -879,6 +912,38 @@ def api_stealcars():
                 save_state(defender_id, defender_state)
         else:
             result = ge.steal_cars_from_bot(state, target_id, car_type, world, qty)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world, {'result': result})
+
+
+@app.route('/api/bounty/place', methods=['POST'])
+@login_required
+def api_bounty_place():
+    data = request.get_json() or {}
+    target_id = data.get('targetId')
+    target_name = data.get('targetName', 'Unknown')
+    amount = data.get('amount')
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        result = ge.place_bounty(state, world, target_id, target_name, amount, user['id'], state['name'])
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world, {'result': result})
+
+
+@app.route('/api/bounty/cancel', methods=['POST'])
+@login_required
+def api_bounty_cancel():
+    data = request.get_json() or {}
+    bounty_id = data.get('bountyId')
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        result = ge.cancel_bounty(state, world, bounty_id, user['id'])
     except ge.GameError as e:
         return jsonify({'error': str(e)}), 400
     return action_response(user['id'], state, world, {'result': result})
