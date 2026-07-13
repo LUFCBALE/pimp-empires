@@ -530,6 +530,7 @@ ACHIEVEMENTS = [
     {"id": "most_factories_destroyed", "name": "Wrecking Ball", "emoji": "🧨", "desc": "Hold the #1 spot for Most Factories Destroyed", "xp": 400},
     {"id": "most_hoes", "name": "Easy Money", "emoji": "👠", "desc": "Hold the #1 spot for Most Hoes", "xp": 400},
     {"id": "most_cars_stolen", "name": "Chop Shop King", "emoji": "🚗", "desc": "Hold the #1 spot for Most Cars Stolen", "xp": 400},
+    {"id": "top_earner", "name": "Top Earner", "emoji": "📈", "desc": "Hold the #1 spot for All Time Earnings", "xp": 400},
 ]
 ACHIEVEMENTS_BY_ID = {a["id"]: a for a in ACHIEVEMENTS}
 
@@ -1290,6 +1291,7 @@ def human_as_bot(user_id, pimp_name, s):
         "statsFactoriesDestroyed": s.get("statsFactoriesDestroyed", 0),
         "statsMoneyStolen": s.get("statsMoneyStolen", 0),
         "statsCarsStolen": s.get("statsCarsStolen", 0),
+        "lifetimeEarnings": s.get("lifetimeEarnings", 0),
     }
 
 
