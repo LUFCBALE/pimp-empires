@@ -318,6 +318,7 @@ def default_state(pimp_name="Big Boss"):
         "statsThugsKilled": 0,
         "statsFactoriesDestroyed": 0,
         "statsMoneyStolen": 0,
+        "statsCarsStolen": 0,
         "lastAttackedBy": None,
         "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0},
@@ -528,6 +529,7 @@ ACHIEVEMENTS = [
     {"id": "most_money_stolen", "name": "Grand Larcenist", "emoji": "💸", "desc": "Hold the #1 spot for Most Money Stolen", "xp": 400},
     {"id": "most_factories_destroyed", "name": "Wrecking Ball", "emoji": "🧨", "desc": "Hold the #1 spot for Most Factories Destroyed", "xp": 400},
     {"id": "most_hoes", "name": "Easy Money", "emoji": "👠", "desc": "Hold the #1 spot for Most Hoes", "xp": 400},
+    {"id": "most_cars_stolen", "name": "Chop Shop King", "emoji": "🚗", "desc": "Hold the #1 spot for Most Cars Stolen", "xp": 400},
 ]
 ACHIEVEMENTS_BY_ID = {a["id"]: a for a in ACHIEVEMENTS}
 
@@ -1287,6 +1289,7 @@ def human_as_bot(user_id, pimp_name, s):
         "statsThugsKilled": s.get("statsThugsKilled", 0),
         "statsFactoriesDestroyed": s.get("statsFactoriesDestroyed", 0),
         "statsMoneyStolen": s.get("statsMoneyStolen", 0),
+        "statsCarsStolen": s.get("statsCarsStolen", 0),
     }
 
 
@@ -1473,6 +1476,7 @@ def steal_cars_from_bot(state, bot_id, car_type, world, qty=None):
 
     bot[field] -= stolen
     state[field] = state.get(field, 0) + stolen
+    state["statsCarsStolen"] = state.get("statsCarsStolen", 0) + stolen
     wiped_out = bot[field] <= 0
     add_log(state, f"Your thugs stole {stolen} {label}s from {bot['boss']}'s garage"
                    + (" (all of them)" if wiped_out else f" ({bot[field]} left)") + ".", "good")
@@ -1509,6 +1513,7 @@ def steal_cars_from_human(state, defender, car_type, qty=None):
 
     defender[field] -= stolen
     state[field] = state.get(field, 0) + stolen
+    state["statsCarsStolen"] = state.get("statsCarsStolen", 0) + stolen
     wiped_out = defender[field] <= 0
     add_log(state, f"Your thugs stole {stolen} {label}s from {defender['name']}'s garage"
                    + (" (all of them)" if wiped_out else f" ({defender[field]} left)") + ".", "good")
@@ -2754,6 +2759,8 @@ def apply_catchup(state):
         state["statsFactoriesDestroyed"] = 0
     if "statsMoneyStolen" not in state:
         state["statsMoneyStolen"] = 0
+    if "statsCarsStolen" not in state:
+        state["statsCarsStolen"] = 0
     if "lastJobHeist" not in state:
         state["lastJobHeist"] = 0
     if "slotSpinsToday" not in state:
