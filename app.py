@@ -422,21 +422,13 @@ def attach_world_view(state, world, user_id):
     if global_rank <= 10 and ge.award_achievement(state, 'top_ten'):
         unlocked = True
 
-    # Hall of Fame leader badges - holds the #1 spot for a lifetime stat
-    # (thugs killed / money stolen / factories destroyed) against everyone
-    # else currently visible in the world. Sticks forever once earned, even
-    # if someone else takes the top spot later - same "recompute, don't
-    # revoke" rule as the other leaderboard-position badges above.
-    def _leads(stat_key):
-        val = state.get(stat_key, 0)
-        return val > 0 and not any(b.get(stat_key, 0) > val for b in state['bots'])
-
-    if _leads('statsThugsKilled') and ge.award_achievement(state, 'most_thugs_killed'):
-        unlocked = True
-    if _leads('statsMoneyStolen') and ge.award_achievement(state, 'most_money_stolen'):
-        unlocked = True
-    if _leads('statsFactoriesDestroyed') and ge.award_achievement(state, 'most_factories_destroyed'):
-        unlocked = True
+    # Hall of Fame badges (most_thugs_killed / most_money_stolen /
+    # most_factories_destroyed) are deliberately NOT auto-granted here.
+    # They're end-of-game trophies - the live #1 spot is only ever shown on
+    # the Hall of Fame leaderboard itself (computed fresh from state['bots']
+    # client-side), never locked onto a profile mid-game. Whoever's on top
+    # when a game actually ends gets the badge awarded manually at that
+    # point, permanently, before the next game's stats reset.
 
     if unlocked:
         save_state(user_id, state)
