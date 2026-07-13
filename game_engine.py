@@ -194,14 +194,14 @@ CASINO_JOB = {
 
 FACTORY_COSTS = {
     "medical": 940000, "gun": 25000000, "car": 30000000, "drug": 14000000,
-    "explosive": 32000000, "counterfeit": 23000000,
+    "explosive": 32000000, "counterfeit": 23000000, "gym": 10000000,
 }
 
 # Explicit per-factory sell/refund price (not a flat % of cost - each type
 # has its own resale value now).
 FACTORY_SELL_PRICES = {
     "medical": 170000, "gun": 14000000, "car": 13000000, "drug": 3000000,
-    "explosive": 9000000, "counterfeit": 6000000,
+    "explosive": 9000000, "counterfeit": 6000000, "gym": 5000000,
 }
 
 # All factory output rates below are boosted 30% over their original values,
@@ -212,6 +212,7 @@ DRUG_FACTORY_RATE = 2079  # cocaine produced per factory per tick
 MEDICAL_KIT_RATE = 130  # safety kits produced per factory per tick
 EXPLOSIVE_BOMB_RATE = 65  # bombs produced per factory per tick
 COUNTERFEIT_CASH_RATE = 48750  # cash printed per factory per tick
+GYM_THUG_RATE = 10  # thugs recruited per factory per tick
 
 # Car factories split their output between cadillacs (high-volume, more
 # cash, small morale bump) and armored trucks (low-volume, more net worth
@@ -311,7 +312,7 @@ def default_state(pimp_name="Big Boss"):
         "statsMoneyStolen": 0,
         "lastAttackedBy": None,
         "counterfeitEarnings": 0,
-        "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0},
+        "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0},
         "carFactoryRatio": 1.0,
         "gunFactoryRatio": 0.0,
         "bombs": 0,
@@ -555,7 +556,7 @@ BOT_ARCHETYPES = {
     "mogul": {"hoeGrowth": 1.0, "thugGrowth": 0.9, "cashRate": 1.4, "raidChance": 0.0, "reinvestRate": 0.35},
     "shark": {"hoeGrowth": 0.9, "thugGrowth": 1.1, "cashRate": 0.9, "raidChance": 0.25, "reinvestRate": 0.10},
 }
-BOT_FACTORY_TYPES = ("medical", "gun", "car", "explosive", "counterfeit")
+BOT_FACTORY_TYPES = ("medical", "gun", "car", "explosive", "counterfeit", "gym")
 
 # Bots keep this much hoeCash on hand as walking-around money - anything
 # above it gets plowed into guns/cars each tick (see bot_reinvest_hoecash)
@@ -617,6 +618,7 @@ def make_bot(bot_id, used_bosses, gang, city):
             "car": 0,
             "explosive": 0,
             "counterfeit": 0,
+            "gym": 0,
         },
         "lastRegen": now_ms(),
     }
@@ -660,6 +662,8 @@ def ensure_bots(world):
             b["armoredTrucks"] = 0
         if "counterfeit" not in b.get("factories", {}):
             b.setdefault("factories", {})["counterfeit"] = 0
+        if "gym" not in b.get("factories", {}):
+            b.setdefault("factories", {})["gym"] = 0
 
 
 def ensure_bot_crew_emblems(world):
@@ -699,6 +703,7 @@ def factory_sell_value(factories):
         + f.get("drug", 0) * FACTORY_SELL_PRICES["drug"]
         + f.get("explosive", 0) * FACTORY_SELL_PRICES["explosive"]
         + f.get("counterfeit", 0) * FACTORY_SELL_PRICES["counterfeit"]
+        + f.get("gym", 0) * FACTORY_SELL_PRICES["gym"]
     )
 
 
@@ -805,6 +810,8 @@ def run_bot_factories(b, ticks):
         b["hoeMorale"] = min(100, b["hoeMorale"] + morale_gain)
     if f.get("counterfeit", 0) > 0:
         b["cash"] += f["counterfeit"] * COUNTERFEIT_CASH_RATE * ticks
+    if f.get("gym", 0) > 0:
+        b["thugs"] = b.get("thugs", 0) + jround(f["gym"] * GYM_THUG_RATE * ticks)
 
 
 # Bots keep this much cash on hand as walking-around money; the rest gets
@@ -1131,7 +1138,7 @@ def fight_bot(state, bot_id, world):
 # to afford even a single hit, not let one bombing run wipe out a bot's
 # whole factory portfolio in one sitting. "drug" only ever shows up on real
 # player targets - bots never build drug factories.
-BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450}
+BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450, "gym": 100}
 BOMB_TURN_COST = 20
 
 
@@ -1792,7 +1799,7 @@ def run_factories(state, ticks):
     if ticks < 1:
         return
     f = state["factories"]
-    any_factories = any(f.get(k, 0) > 0 for k in ("medical", "gun", "car", "drug", "explosive", "counterfeit"))
+    any_factories = any(f.get(k, 0) > 0 for k in ("medical", "gun", "car", "drug", "explosive", "counterfeit", "gym"))
     if not any_factories:
         return
 
@@ -1809,6 +1816,7 @@ def run_factories(state, ticks):
     coke = jround(f.get("drug", 0) * DRUG_FACTORY_RATE * ticks)
     bombs = jround(f["explosive"] * EXPLOSIVE_BOMB_RATE * ticks)
     counterfeit_cash = jround(f["counterfeit"] * COUNTERFEIT_CASH_RATE * ticks)
+    gym_thugs = jround(f.get("gym", 0) * GYM_THUG_RATE * ticks)
 
     if kits > 0:
         state["medsStock"] += kits
@@ -1830,6 +1838,8 @@ def run_factories(state, ticks):
         state["cash"] += counterfeit_cash
         state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + counterfeit_cash
         state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + counterfeit_cash
+    if gym_thugs > 0:
+        state["thugs"] = state.get("thugs", 0) + gym_thugs
 
 
 # ---------------------------------------------------------------------------
@@ -2505,6 +2515,8 @@ def apply_catchup(state):
         state["crewEmblem"] = ""
     if "drug" not in state["factories"]:
         state["factories"]["drug"] = 0
+    if "gym" not in state["factories"]:
+        state["factories"]["gym"] = 0
     if "thugsInHospital" not in state:
         state["thugsInHospital"] = 0
     if "thugsHospitalReadyAt" not in state:

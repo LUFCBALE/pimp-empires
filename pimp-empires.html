@@ -1974,13 +1974,34 @@
       <button class="cta cta-sm cta-red" id="sellCounterfeitBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
+    <div class="re-card">
+      <div class="re-art">
+        <div style="font-size:3rem; text-align:center; padding:20px;">🏋️</div>
+      </div>
+      <div class="re-info">
+        <div class="re-name">Gym</div>
+        <div class="re-tier" style="color:var(--teal)">TIER 2</div>
+        <div class="re-stat">🏗️ Cost: <b>£10,000,000</b></div>
+        <div class="re-stat">💪 Output: <b>10 Thugs / 30 mins</b></div>
+        <div class="re-stat">📈 Net worth: <b>+£5,000,000 each</b></div>
+        <div class="re-stat">👊 Recruits and trains new thugs for your crew automatically</div>
+      </div>
+      <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGym">0</span></div>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGymQtyLabel">1</b></div>
+      <input type="number" min="1" value="1" id="buyGymQty">
+      <button class="cta cta-buy" id="buyGymBtn" style="margin-top:8px;">Buy 1 — £10,000,000</button>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellGymQtyLabel">0</b></div>
+      <input type="number" min="0" max="0" value="0" id="sellGymSlider">
+      <button class="cta cta-sm cta-red" id="sellGymBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
+    </div>
+
   </div>
 </div>
 
 <div class="page" id="page-production">
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Production</h2>
-  <div class="page-subtitle">Manage what your factories make. Medical, Gun, Drug, Explosive and Counterfeit factories run automatically; Car factories are yours to tune.</div>
+  <div class="page-subtitle">Manage what your factories make. Medical, Gun, Drug, Explosive, Counterfeit and Gym factories run automatically; Car factories are yours to tune.</div>
 
   <div class="panel" style="margin-bottom:16px;">
     <h3 style="margin-top:0;">🏥 Medical Factories</h3>
@@ -2089,13 +2110,22 @@
     <div style="margin-top:8px; font-size:0.85rem;">Producing: <b id="prodExplosiveOutput" style="color:var(--text);">0 Bombs / 30 mins</b> · Stashed: <b id="prodBombsStock">0</b></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" style="margin-bottom:16px;">
     <h3 style="margin-top:0;">💰 Counterfeit Factories</h3>
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div>Owned: <b id="prodCounterfeitOwned">0</b></div>
       <div style="color:var(--text-dim); font-size:0.85rem;">Cash, straight to your pocket.</div>
     </div>
     <div style="margin-top:8px; font-size:0.85rem;">Producing: <b id="prodCounterfeitOutput" style="color:var(--text);">£0 / 30 mins</b> · Stashed: <b id="prodCashStock">£0</b></div>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">🏋️ Gym Factories</h3>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>Owned: <b id="prodGymOwned">0</b></div>
+      <div style="color:var(--text-dim); font-size:0.85rem;">Thugs, recruited straight into your crew.</div>
+    </div>
+    <div style="margin-top:8px; font-size:0.85rem;">Producing: <b id="prodGymOutput" style="color:var(--text);">0 Thugs / 30 mins</b> · Total thugs: <b id="prodThugsStock">0</b></div>
   </div>
 </div>
 
@@ -2370,13 +2400,13 @@
     <h3>Attacking</h3>
     <p>You need 30+ turns, and your target has to be in the same city — there's no home turf, so you're fair game anywhere, including your starting city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
-    <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, or Counterfeit) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
+    <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, Counterfeit, or Gym) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
     <h3>The Informer</h3>
     <p>The only way to see someone's actual numbers — cash, factories, guns, everything. Costs 12% of their known net worth, paid straight to the informer.</p>
     <h3>The Bank</h3>
     <p>Banked cash survives a raid, but the bank skims 5% of your balance every hour, and withdrawing costs a 10% fee. It's a tradeoff between safety and cost, not free insurance.</p>
     <h3>Real Estate / Factories</h3>
-    <p>Six factory types, each producing something automatically every 30 minutes: Medical (safety kits for your hoes), Gun (weapons, mix tunable), Car (Cadillacs/Armored Trucks, mix tunable), Drug (cocaine to sell), Explosive (bombs), and Counterfeit (straight cash — highest risk/reward tier). All factories can be sold back at 50% of build cost, except Explosive.</p>
+    <p>Seven factory types, each producing something automatically every 30 minutes: Medical (safety kits for your hoes), Gun (weapons, mix tunable), Car (Cadillacs/Armored Trucks, mix tunable), Drug (cocaine to sell), Explosive (bombs), Counterfeit (straight cash — highest risk/reward tier), and Gym (recruits thugs straight into your crew). All factories can be sold back at 50% of build cost, except Explosive.</p>
     <h3>Crew</h3>
     <p>Recruit bots into your crew instantly. Recruiting a real player instead sends them a pending invite they have to accept — nobody gets pulled into a crew without agreeing to it. Drop someone from your crew and they're protected from you specifically for an hour before you can attack them again.</p>
     <h3>Leaderboard arrows</h3>
@@ -2472,7 +2502,7 @@
       cadillacs: 0,
       armoredTrucks: 0,
       medsStock: 0,
-      factories: { medical: 0, gun: 0, car: 0, explosive: 0, counterfeit: 0 },
+      factories: { medical: 0, gun: 0, car: 0, drug: 0, explosive: 0, counterfeit: 0, gym: 0 },
       bombs: 0,
       lastFactoryRun: Date.now(),
       market: {
@@ -3078,7 +3108,8 @@
   function factorySellValue(f){
     f = f || {};
     return (f.medical||0)*FACTORY_SELL_PRICES.medical + (f.gun||0)*FACTORY_SELL_PRICES.gun + (f.car||0)*FACTORY_SELL_PRICES.car
-      + (f.drug||0)*FACTORY_SELL_PRICES.drug + (f.explosive||0)*FACTORY_SELL_PRICES.explosive + (f.counterfeit||0)*FACTORY_SELL_PRICES.counterfeit;
+      + (f.drug||0)*FACTORY_SELL_PRICES.drug + (f.explosive||0)*FACTORY_SELL_PRICES.explosive + (f.counterfeit||0)*FACTORY_SELL_PRICES.counterfeit
+      + (f.gym||0)*FACTORY_SELL_PRICES.gym;
   }
 
   function botNetWorth(b){
@@ -3693,9 +3724,9 @@
     modal.classList.remove('hidden');
   }
 
-  const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit'};
+  const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
   // Must match BOMB_COST_BY_FACTORY / BOMB_TURN_COST in game_engine.py - only used here for the client-side MAX-qty estimate and button disabling.
-  const BOMB_COST_BY_FACTORY = {medical: 30, gun: 75, car: 120, drug: 135, explosive: 150, counterfeit: 450};
+  const BOMB_COST_BY_FACTORY = {medical: 30, gun: 75, car: 120, drug: 135, explosive: 150, counterfeit: 450, gym: 100};
   const BOMB_TURN_COST = 20;
 
   async function bombBot(botId, factoryType, qty){
@@ -3996,6 +4027,7 @@
   const MEDICAL_KIT_RATE = 130; // safety kits per factory per 30 mins
   const EXPLOSIVE_BOMB_RATE = 65; // bombs per factory per 30 mins
   const COUNTERFEIT_CASH_RATE = 48750; // cash printed per factory per 30 mins
+  const GYM_THUG_RATE = 10; // thugs recruited per factory per 30 mins
 
   // Net worth is what your factories would actually sell for right now,
   // plus every thug's muscle value. Produce sitting in storage (guns,
@@ -4437,6 +4469,7 @@
       ['Drug Factories', f.drug || 0],
       ['Explosive Factories', f.explosive || 0],
       ['Counterfeit Factories', f.counterfeit || 0],
+      ['Gym Factories', f.gym || 0],
       ['9mm Pistols', g.pistol9mm || 0],
       ['12 Gauge Shotguns', g.shotgun12gauge || 0],
       ['AK-47s', g.ak47 || 0],
@@ -5504,8 +5537,8 @@
     const fSecs = Math.floor((factoryRemainder % 60000) / 1000);
     const timerEl = document.getElementById('factoryTimer');
     if(timerEl){
-      const f = state.factories || {medical:0,gun:0,car:0,drug:0,explosive:0,counterfeit:0};
-      const hasFactories = f.medical > 0 || f.gun > 0 || f.car > 0 || (f.drug||0) > 0 || f.explosive > 0 || f.counterfeit > 0;
+      const f = state.factories || {medical:0,gun:0,car:0,drug:0,explosive:0,counterfeit:0,gym:0};
+      const hasFactories = f.medical > 0 || f.gun > 0 || f.car > 0 || (f.drug||0) > 0 || f.explosive > 0 || f.counterfeit > 0 || (f.gym||0) > 0;
       timerEl.textContent = hasFactories
         ? `Next factory run in ${fMins}:${fSecs.toString().padStart(2,'0')}`
         : 'No factories owned yet';
@@ -5531,9 +5564,9 @@
     } catch(e){ /* toast already shown */ }
   }
 
-  const FACTORY_COSTS = {medical: 940000, gun: 25000000, car: 30000000, drug: 14000000, explosive: 32000000, counterfeit: 23000000};
-  const FACTORY_SELL_PRICES = {medical: 170000, gun: 14000000, car: 13000000, drug: 3000000, explosive: 9000000, counterfeit: 6000000};
-  const FACTORY_ID_SUFFIX = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit'};
+  const FACTORY_COSTS = {medical: 940000, gun: 25000000, car: 30000000, drug: 14000000, explosive: 32000000, counterfeit: 23000000, gym: 10000000};
+  const FACTORY_SELL_PRICES = {medical: 170000, gun: 14000000, car: 13000000, drug: 3000000, explosive: 9000000, counterfeit: 6000000, gym: 5000000};
+  const FACTORY_ID_SUFFIX = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
 
   function updateSellFactoryLabel(type){
     const suffix = FACTORY_ID_SUFFIX[type];
@@ -5632,7 +5665,7 @@
   }
 
   function renderProduction(){
-    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0};
+    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0, gym:0};
     document.getElementById('prodMedicalOwned').textContent = f.medical;
     document.getElementById('prodGunOwned').textContent = f.gun;
     document.getElementById('prodCarOwned').textContent = f.car;
@@ -5657,6 +5690,9 @@
     document.getElementById('prodCounterfeitOwned').textContent = f.counterfeit;
     document.getElementById('prodCounterfeitOutput').textContent = `${fmtMoney((f.counterfeit || 0) * COUNTERFEIT_CASH_RATE)} / 30 mins`;
     document.getElementById('prodCashStock').textContent = fmtMoney(state.cash || 0);
+    document.getElementById('prodGymOwned').textContent = f.gym || 0;
+    document.getElementById('prodGymOutput').textContent = `${((f.gym || 0) * GYM_THUG_RATE).toLocaleString('en-GB')} Thugs / 30 mins`;
+    document.getElementById('prodThugsStock').textContent = Math.floor(state.thugs || 0).toLocaleString('en-GB');
 
     const medsItem = BLACKMARKET_ITEMS.find(i => i.key === 'meds');
     const medsPrice = currentPrice(medsItem);
@@ -5752,13 +5788,14 @@
   }
 
   function renderRealEstate(){
-    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0};
+    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0, gym:0};
     document.getElementById('ownedMedical').textContent = f.medical;
     document.getElementById('ownedGun').textContent = f.gun;
     document.getElementById('ownedCar').textContent = f.car;
     document.getElementById('ownedDrug').textContent = f.drug || 0;
     document.getElementById('ownedExplosive').textContent = f.explosive;
     document.getElementById('ownedCounterfeit').textContent = f.counterfeit;
+    document.getElementById('ownedGym').textContent = f.gym || 0;
     document.getElementById('bombsOwned').textContent = state.bombs;
     updateBuyFactoryLabel('medical');
     updateBuyFactoryLabel('gun');
@@ -5766,16 +5803,18 @@
     updateBuyFactoryLabel('drug');
     updateBuyFactoryLabel('explosive');
     updateBuyFactoryLabel('counterfeit');
+    updateBuyFactoryLabel('gym');
     setupSellSlider('medical', f.medical);
     setupSellSlider('gun', f.gun);
     setupSellSlider('car', f.car);
     setupSellSlider('drug', f.drug || 0);
     setupSellSlider('explosive', f.explosive || 0);
     setupSellSlider('counterfeit', f.counterfeit);
+    setupSellSlider('gym', f.gym || 0);
 
     const carRates = carFactoryOutputRates(state.carFactoryRatio ?? 1.0);
     const gunRates = gunFactoryOutputRates(state.gunFactoryRatio ?? 0.0);
-    const total = f.medical + f.gun + f.car + (f.drug || 0) + f.explosive + f.counterfeit;
+    const total = f.medical + f.gun + f.car + (f.drug || 0) + f.explosive + f.counterfeit + (f.gym || 0);
     const portfolio = document.getElementById('rePortfolio');
     portfolio.style.display = total > 0 ? 'block' : 'none';
     if(total > 0){
@@ -5821,6 +5860,13 @@
           <div class="pcount">${f.counterfeit}</div>
           <div class="poutput">£${fmtMoney(f.counterfeit * COUNTERFEIT_CASH_RATE)}/30min</div>
           <div class="pworth">${fmtMoney(f.counterfeit * FACTORY_SELL_PRICES.counterfeit)}</div>
+        </div>` : ''}
+        ${(f.gym || 0) > 0 ? `<div class="re-pitem">
+          <div class="picon">🏋️</div>
+          <div class="pname">Gym Factories</div>
+          <div class="pcount">${f.gym}</div>
+          <div class="poutput">${f.gym * GYM_THUG_RATE} thugs/30min</div>
+          <div class="pworth">${fmtMoney(f.gym * FACTORY_SELL_PRICES.gym)}</div>
         </div>` : ''}`;
     }
   }
@@ -6128,7 +6174,8 @@
   document.getElementById('sellAllM249sBtn').addEventListener('click', () => sellAllGuns('m249'));
   document.getElementById('buyExplosiveBtn').addEventListener('click', () => buyFactory('explosive'));
   document.getElementById('buyCounterfeitBtn').addEventListener('click', () => buyFactory('counterfeit'));
-  ['medical', 'gun', 'car', 'drug', 'explosive', 'counterfeit'].forEach(type => {
+  document.getElementById('buyGymBtn').addEventListener('click', () => buyFactory('gym'));
+  ['medical', 'gun', 'car', 'drug', 'explosive', 'counterfeit', 'gym'].forEach(type => {
     const suffix = FACTORY_ID_SUFFIX[type];
     document.getElementById(`sell${suffix}Slider`).addEventListener('input', () => updateSellFactoryLabel(type));
     document.getElementById(`sell${suffix}Btn`).addEventListener('click', () => {
