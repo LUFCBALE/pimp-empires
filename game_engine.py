@@ -1824,13 +1824,13 @@ def sell_all_cocaine(state):
     return {"qty": qty, "price": result["price"], "payout": result["totalEarnings"]}
 
 
-COCAINE_OVERSEAS_SUCCESS_CHANCE = 0.65  # 35% bust chance at customs
-COCAINE_OVERSEAS_PREMIUM = 1.30
+COCAINE_OVERSEAS_SUCCESS_CHANCE = 0.72  # 28% bust chance at customs
+COCAINE_OVERSEAS_PREMIUM = 1.35
 
 
 def sell_cocaine_overseas(state):
-    """High risk / high reward: ship the whole cocaine stash overseas. 70%
-    chance of selling at dealer price + 30%; 30% chance customs catches the
+    """High risk / high reward: ship the whole cocaine stash overseas. 72%
+    chance of selling at dealer price + 35%; 28% chance customs catches the
     shipment and you lose everything for nothing."""
     qty = state["drugs"].get("coke", 0)
     if qty < 1:

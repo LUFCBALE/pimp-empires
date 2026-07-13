@@ -2096,7 +2096,7 @@
       <button class="cta cta-sm cta-teal" id="sellAllCokeDealerBtn">Sell All (Dealer)</button>
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border:1px solid var(--danger); border-radius:6px;">
-      <div style="font-size:0.85rem;">Overseas pays <b id="prodCokeOverseasPrice">£0</b> per unit (+30%). 65% chance of a clean sale — 35% chance customs seizes everything and you get <b>£0</b>.</div>
+      <div style="font-size:0.85rem;">Overseas pays <b id="prodCokeOverseasPrice">£0</b> per unit (+35%). 72% chance of a clean sale — 28% chance customs seizes everything and you get <b>£0</b>.</div>
       <button class="cta cta-sm cta-red" id="sellOverseasCokeBtn">Sell Overseas</button>
     </div>
   </div>
@@ -5721,7 +5721,7 @@
     const cokeStock = Math.floor(state.drugs?.coke || 0);
     document.getElementById('prodCokeStock').textContent = cokeStock.toLocaleString('en-GB');
     const dealerPrice = getDealerPrice(state.location, 'coke', true);
-    const overseasPrice = Math.round(dealerPrice * 1.3);
+    const overseasPrice = Math.round(dealerPrice * 1.35);
     document.getElementById('prodCokeDealerPrice').textContent = fmtMoney(dealerPrice);
     document.getElementById('prodCokeOverseasPrice').textContent = fmtMoney(overseasPrice);
     const dealerBtn = document.getElementById('sellAllCokeDealerBtn');
