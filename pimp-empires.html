@@ -4054,7 +4054,7 @@
       {key:'statsMoneyStolen', title:'💰 Most Money Stolen', fmt: v => fmtMoney(v), banner:'./hof-most-money-stolen.jpg'},
       {key:'hoes', title:'👠 Most Hoes', fmt: v => Math.floor(v).toLocaleString(), banner:'./hof-most-hoes.jpg'},
       {key:'statsCarsStolen', title:'🚗 Most Cars Stolen', fmt: v => v.toLocaleString(), banner:'./hof-most-cars-stolen.jpg'},
-      {key:'lifetimeEarnings', title:'📈 All Time Earnings', fmt: v => fmtMoney(v), banner:'./hof-lifetime-earnings.jpg'},
+      {key:'lifetimeEarnings', title:'📈 All Time Earnings', fmt: v => fmtMoney(v), banner:'./hof-lifetime-earnings.jpg', hideValue: true},
     ];
 
     container.innerHTML = boards.map(board => {
@@ -4062,7 +4062,7 @@
       const rows = top.length ? top.map((e, i) => `
         <div style="display:flex; justify-content:space-between; padding:4px 0; ${e.isYou ? 'color:var(--gold); font-weight:700;' : ''}">
           <span>${i+1}. ${!e.isYou ? `<span data-profile-id="${e.id}" style="cursor:pointer; text-decoration:underline dotted;">${escapeHtml(e.name)}</span>` : escapeHtml(e.name)}</span>
-          <span>${board.fmt(e[board.key])}</span>
+          <span>${board.hideValue ? '<span style="color:var(--danger); font-weight:700;">CLASSIFIED</span>' : board.fmt(e[board.key])}</span>
         </div>
       `).join('') : `<div class="hint">No records yet.</div>`;
       return `
