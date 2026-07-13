@@ -2221,6 +2221,7 @@
   <div class="page-subtitle" id="achievementsSubtitle">Badges you've earned show up on your profile.</div>
   <div class="panel">
     <h3 style="margin-top:0;">🏛️ Hall of Fame</h3>
+    <div class="page-subtitle" style="margin:0 0 12px;">These banners show on your profile — but only one player holds each one at a time, and they change hands the moment someone else beats the record.</div>
     <div id="hofRecord" style="margin-bottom:16px;"></div>
     <div id="hofLeaderboards" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;"></div>
   </div>
@@ -4012,10 +4013,13 @@
 
     const rec = (state.worldRecords && state.worldRecords.biggestHomeInvasion) || null;
     recordEl.innerHTML = rec
-      ? `<div style="border:1px solid var(--gold); border-radius:10px; padding:14px; background:rgba(255,200,0,0.08); text-align:center;">
-           <div style="font-size:0.72rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">💥 Biggest Home Invasion Ever</div>
-           <div style="font-weight:700;">${escapeHtml(rec.attacker)} killed ${rec.thugsKilled.toLocaleString()} of ${escapeHtml(rec.defender)}'s thugs</div>
-           <div style="font-size:0.78rem; color:var(--text-dim); margin-top:4px;">£${rec.cashWon.toLocaleString()} taken in the raid</div>
+      ? `<div style="border:1px solid var(--gold); border-radius:10px; overflow:hidden; background:rgba(255,200,0,0.08);">
+           <img src="./hof-home-invasion.jpg" alt="Biggest Home Invasion Ever" style="width:100%; height:90px; object-fit:cover; display:block;">
+           <div style="padding:14px; text-align:center;">
+             <div style="font-size:0.72rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">💥 Biggest Home Invasion Ever</div>
+             <div style="font-weight:700;">${escapeHtml(rec.attacker)} killed ${rec.thugsKilled.toLocaleString()} of ${escapeHtml(rec.defender)}'s thugs</div>
+             <div style="font-size:0.78rem; color:var(--text-dim); margin-top:4px;">£${rec.cashWon.toLocaleString()} taken in the raid</div>
+           </div>
          </div>`
       : `<div class="hint" style="text-align:center;">No home invasion record set yet — be the first to wipe out a rival's crew.</div>`;
 
