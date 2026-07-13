@@ -2434,9 +2434,9 @@
     <h3>Attacking</h3>
     <p>You need 30+ turns, and your target has to be in the same city — there's no home turf, so you're fair game anywhere, including your starting city. Whoever has zero guns automatically loses to anyone with at least one; otherwise it comes down to thugs × guns (capped at one gun per thug — spare guns in storage don't help) × your own thug morale, plus some randomness. Win and you skim 20–45% of their liquid cash and wipe their thugs (most gone for good, some just hospitalized for 2 minutes); lose and you're the one who loses cash and thugs.</p>
     <h3>Bombing</h3>
-    <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, Counterfeit, or Gym) blind — you won't know if they even own one until you commit — and it wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
+    <p>Only once a target's thugs are at zero. You pick a factory type (Medical, Gun, Car, Drug, Explosive, Counterfeit, or Gym) blind — you won't know if they even own one until you commit — and always go in with your whole bomb stockpile, no qty picker, so there's nothing to reverse-engineer their numbers from. It wipes out every factory of that type they have, costing bombs based on that type's tier (Medical is cheapest, Counterfeit is by far the most expensive), plus 20 turns for sending your thugs in. Guess wrong and they own none of that type, and you still burn the 20 turns for nothing (no bombs wasted, since there was nothing to blow up) — pay an Informer first if you want to know what to actually aim at. Blow up someone's Explosive factories and their entire bomb stockpile goes with it.</p>
     <h3>Stealing Cars</h3>
-    <p>Also only once a target's thugs are at zero. You pick Cadillacs or Armored Trucks blind — you won't know if they even own any until you commit — and hauling cars out costs 4 of your own thugs' worth of muscle per car (not consumed, just required to have on hand), plus 20 turns for sending them in. Guess wrong and they own none, and you still burn the 20 turns for nothing. Whatever you steal lands straight in your own garage.</p>
+    <p>Also only once a target's thugs are at zero. You pick Cadillacs or Armored Trucks blind — you won't know if they even own any until you commit — and always send in as many thugs as you can spare, no qty picker. Hauling cars out costs 4 of your own thugs' worth of muscle per car (not consumed, just required to have on hand), plus 20 turns for sending them in. Guess wrong and they own none, and you still burn the 20 turns for nothing. Whatever you steal lands straight in your own garage.</p>
     <h3>Bounties</h3>
     <p>Put your own cash on anyone's head — bot or real player, anywhere, any size. Whoever is first to wipe out every one of that target's thugs collects the full amount straight to their cash, no matter who they are. Multiple bounties can stack on the same target and all pay out together to whoever lands the kill. Change your mind before anyone collects and you can pull it for a full refund.</p>
     <h3>The Informer</h3>
@@ -3769,19 +3769,21 @@
   }
 
   const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
-  // Must match BOMB_COST_BY_FACTORY / BOMB_TURN_COST in game_engine.py - only used here for the client-side MAX-qty estimate and button disabling.
-  const BOMB_COST_BY_FACTORY = {medical: 30, gun: 75, car: 120, drug: 135, explosive: 150, counterfeit: 450, gym: 100};
-  const BOMB_TURN_COST = 20;
+  const BOMB_TURN_COST = 20; // Must match BOMB_TURN_COST in game_engine.py.
 
   async function bombBot(botId, factoryType, qty){
     try{
       const data = await apiCall('/api/bomb', {botId, factoryType, qty});
       if(data.result.destroyed <= 0){
         showToast(`💣 Your thugs went in and hit 0 of ${data.result.boss}'s ${data.result.target} factories — they don't have any.`);
+      } else if(data.result.wipedOut){
+        // Deliberately no bomb count shown here - bombsSpent ÷ the known
+        // per-unit cost would just hand back their exact factory count,
+        // the same leak the "left standing" text used to cause.
+        const bonus = data.result.bombsDestroyed ? ` and torched their stockpiled bombs` : '';
+        showToast(`💣 Wiped out every ${data.result.target} factory ${data.result.boss} owned${bonus}!`);
       } else {
-        const bonus = data.result.bombsDestroyed ? ` and torched their ${data.result.bombsDestroyed} stockpiled bombs` : '';
-        const verb = data.result.wipedOut ? `Wiped out every` : `Destroyed ${data.result.destroyed} of`;
-        showToast(`💣 ${verb} ${data.result.target} factory ${data.result.boss} owned${bonus} (-${data.result.bombsSpent} bombs)!`);
+        showToast(`💣 Destroyed ${data.result.destroyed} of ${data.result.boss}'s ${data.result.target} factories (-${data.result.bombsSpent} bombs)!`);
       }
       render(); renderLocation(); renderAttacks();
     } catch(e){ /* toast already shown */ }
@@ -5188,22 +5190,18 @@
             ? `<div style="font-size:0.8rem; color:var(--danger); text-align:center; padding:8px;">🛡️ Recently dropped from your crew — attackable again in ${banMinsLeft} min</div>`
             : `<button class="cta attack" data-attack-bot="${b.id}" ${state.thugs < 1 ? 'disabled' : ''}>⚔️ Attack — Send all thugs</button>`}
           ${!blocked && b.thugs === 0 ? `
-            <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type and how many to hit — you won't see what they actually have until you commit. Costs ${BOMB_TURN_COST} turns even if they own none of it.</div>
+            <div class="hint" style="text-align:center; margin:6px 0 4px;">Pick a factory type — you won't see what they actually have, and neither will you find out how many you hit. Costs ${BOMB_TURN_COST} turns even if they own none of it.</div>
             <div class="bomb-controls" style="display:flex; gap:6px;">
-              <select data-bomb-factory="${b.id}" style="flex:1.3; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
+              <select data-bomb-factory="${b.id}" style="flex:1; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
                 ${Object.entries(FACTORY_TYPE_LABELS).map(([type, label]) => `<option value="${type}">${label}</option>`).join('')}
               </select>
-              <input type="number" data-bomb-qty="${b.id}" min="1" value="1" style="width:56px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
-              <button class="cta cta-sm" data-bomb-max="${b.id}" style="padding:7px 8px; font-size:0.7rem;">MAX</button>
             </div>
             <button class="cta cta-sm" data-bomb-submit="${b.id}" style="background:var(--red); width:100%; margin-top:6px;" ${state.turns < BOMB_TURN_COST ? 'disabled' : ''}>💣 Bomb${state.turns < BOMB_TURN_COST ? ` (need ${BOMB_TURN_COST} turns)` : ''}</button>
-            <div class="hint" style="text-align:center; margin:10px 0 4px;">Pick which cars to take — you won't see what they actually have until you commit. Needs ${STEAL_CARS_THUGS_PER_CAR} thugs per car and costs ${STEAL_CARS_TURN_COST} turns even if they own none.</div>
+            <div class="hint" style="text-align:center; margin:10px 0 4px;">Pick which cars to take — same deal, no numbers shown either way. Needs ${STEAL_CARS_THUGS_PER_CAR} thugs per car and costs ${STEAL_CARS_TURN_COST} turns even if they own none.</div>
             <div class="steal-car-controls" style="display:flex; gap:6px;">
-              <select data-steal-car-type="${b.id}" style="flex:1.3; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
+              <select data-steal-car-type="${b.id}" style="flex:1; min-width:0; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
                 ${Object.entries(CAR_TYPE_LABELS).map(([type, label]) => `<option value="${type}">${label}</option>`).join('')}
               </select>
-              <input type="number" data-steal-car-qty="${b.id}" min="1" value="1" style="width:56px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:7px 6px; border-radius:6px; outline:none;">
-              <button class="cta cta-sm" data-steal-car-max="${b.id}" style="padding:7px 8px; font-size:0.7rem;">MAX</button>
             </div>
             <button class="cta cta-sm" data-steal-car-submit="${b.id}" style="background:var(--gold); width:100%; margin-top:6px;" ${(state.turns < STEAL_CARS_TURN_COST || state.thugs < STEAL_CARS_THUGS_PER_CAR) ? 'disabled' : ''}>🚗 Steal Cars${state.turns < STEAL_CARS_TURN_COST ? ` (need ${STEAL_CARS_TURN_COST} turns)` : (state.thugs < STEAL_CARS_THUGS_PER_CAR ? ` (need ${STEAL_CARS_THUGS_PER_CAR} thugs)` : '')}</button>` : ''}
           ${!blocked && b.thugs > 0 ? `<div style="font-size:0.8rem; color:var(--text-dim); text-align:center;">Defeat all their thugs to bomb factories or steal their cars</div>` : ''}
@@ -5212,40 +5210,18 @@
       validContainer.querySelectorAll('[data-attack-bot]').forEach(btn => {
         btn.addEventListener('click', () => fightBot(parseInt(btn.dataset.attackBot)));
       });
-      validContainer.querySelectorAll('[data-bomb-max]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.bombMax;
-          const select = validContainer.querySelector(`[data-bomb-factory="${id}"]`);
-          const input = validContainer.querySelector(`[data-bomb-qty="${id}"]`);
-          const perUnit = BOMB_COST_BY_FACTORY[select.value];
-          input.value = Math.max(1, Math.floor((state.bombs || 0) / perUnit));
-        });
-      });
       validContainer.querySelectorAll('[data-bomb-submit]').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.bombSubmit;
           const select = validContainer.querySelector(`[data-bomb-factory="${id}"]`);
-          const input = validContainer.querySelector(`[data-bomb-qty="${id}"]`);
-          const qty = parseInt(input.value, 10);
-          if(!qty || qty < 1){ showToast('Enter a valid quantity to bomb'); return; }
-          bombBot(parseInt(id), select.value, qty);
-        });
-      });
-      validContainer.querySelectorAll('[data-steal-car-max]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.stealCarMax;
-          const input = validContainer.querySelector(`[data-steal-car-qty="${id}"]`);
-          input.value = Math.max(1, Math.floor((state.thugs || 0) / STEAL_CARS_THUGS_PER_CAR));
+          bombBot(parseInt(id), select.value, null);
         });
       });
       validContainer.querySelectorAll('[data-steal-car-submit]').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.stealCarSubmit;
           const select = validContainer.querySelector(`[data-steal-car-type="${id}"]`);
-          const input = validContainer.querySelector(`[data-steal-car-qty="${id}"]`);
-          const qty = parseInt(input.value, 10);
-          if(!qty || qty < 1){ showToast('Enter a valid quantity of cars to steal'); return; }
-          stealCars(parseInt(id), select.value, qty);
+          stealCars(parseInt(id), select.value, null);
         });
       });
       validContainer.querySelectorAll('[data-profile-id]').forEach(el => {
