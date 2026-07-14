@@ -181,9 +181,10 @@
   .top-strip{
     display:flex; flex-direction:column;
     font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-dim);
-    margin-bottom:14px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px;
+    background:var(--bg-2); border:1px solid var(--panel-line); border-top:none; border-radius:0 0 8px 8px;
     overflow:hidden;
-    position:sticky; top:0; z-index:40;
+    position:fixed; top:0; left:0; right:0; z-index:900;
+    max-width:1260px; margin:0 auto;
     box-shadow:0 6px 14px rgba(0,0,0,0.35);
   }
   .top-strip-row1{
@@ -2689,6 +2690,7 @@
       // Show game, hide homepage
       if(homepage) homepage.style.display = 'none';
       if(gameContainer) gameContainer.style.display = 'flex';
+      if(window.updateTopStripOffset) requestAnimationFrame(window.updateTopStripOffset);
 
       authDisplay.textContent = `Logged in: ${currentUser.pimpName}`;
       authDisplay.style.color = 'var(--teal)';
@@ -6299,6 +6301,23 @@
       }
     }
   }
+
+  // The top-strip is now position:fixed so it never scrolls out of view -
+  // push the rest of the app down by its real (responsive) height so
+  // nothing sits hidden underneath it.
+  (function initTopStripOffset(){
+    const bar = document.querySelector('.top-strip');
+    const shell = document.getElementById('gameContainer');
+    if(!bar || !shell) return;
+    const apply = () => { shell.style.paddingTop = (bar.offsetHeight + 14) + 'px'; };
+    window.updateTopStripOffset = apply;
+    apply();
+    if(typeof ResizeObserver !== 'undefined'){
+      new ResizeObserver(apply).observe(bar);
+    } else {
+      window.addEventListener('resize', apply);
+    }
+  })();
 
   document.querySelectorAll('.sidebar-link').forEach(btn => {
     btn.addEventListener('click', () => navigateTo(btn.dataset.page));
