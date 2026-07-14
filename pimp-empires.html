@@ -404,6 +404,23 @@
   }
   .tagline{color:var(--text-dim); font-family:'IBM Plex Mono',monospace; font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; margin-top:6px;}
 
+  /* ---- Beta welcome banner (Home page) ---- */
+  .beta-welcome-banner{
+    position:relative; background:linear-gradient(135deg, rgba(255,47,120,0.16), rgba(240,196,25,0.1));
+    border:1px solid var(--hot); border-radius:10px; padding:16px 40px 16px 18px; margin-bottom:16px;
+  }
+  .beta-welcome-title{
+    font-family:'Anton',sans-serif; font-size:1.05rem; letter-spacing:0.02em; color:#fff; margin-bottom:6px;
+  }
+  .beta-welcome-text{
+    font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--text-dim); line-height:1.6;
+  }
+  .beta-welcome-close{
+    position:absolute; top:10px; right:12px; background:none; border:none; color:var(--text-dim);
+    font-size:1rem; cursor:pointer; padding:4px; line-height:1;
+  }
+  .beta-welcome-close:hover{color:#fff;}
+
   /* ---- Quick supplies panel (bribe) ---- */
   .quick-supplies-panel{
     background:var(--panel); border:1px solid var(--panel-line); border-radius:10px;
@@ -1520,6 +1537,11 @@
 </div>
 
 <div class="page active" id="page-main">
+  <div class="beta-welcome-banner" id="betaWelcomeBanner">
+    <button class="beta-welcome-close" id="betaWelcomeCloseBtn" title="Dismiss">✕</button>
+    <div class="beta-welcome-title">🎉 Welcome to the BETA</div>
+    <div class="beta-welcome-text">Please do try everything, and most importantly — have fun! Invite your friends, make your crew, and take over! The streets are mean, good luck out there!</div>
+  </div>
   <div class="nav-buttons">
     <div class="nav-btn travel" id="openTravelBtn" style="grid-column:1/-1;">
       <div class="icon">✈️</div>
@@ -6301,6 +6323,20 @@
       }
     }
   }
+
+  (function initBetaWelcomeBanner(){
+    const banner = document.getElementById('betaWelcomeBanner');
+    const closeBtn = document.getElementById('betaWelcomeCloseBtn');
+    if(!banner || !closeBtn) return;
+    if(localStorage.getItem('betaWelcomeDismissed') === '1'){
+      banner.style.display = 'none';
+      return;
+    }
+    closeBtn.addEventListener('click', () => {
+      banner.style.display = 'none';
+      localStorage.setItem('betaWelcomeDismissed', '1');
+    });
+  })();
 
   // The top-strip is now position:fixed so it never scrolls out of view -
   // push the rest of the app down by its real (responsive) height so
