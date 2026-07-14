@@ -106,6 +106,8 @@ CITIES = [
     {"name": "Manchester"},
     {"name": "Leeds"},
     {"name": "Liverpool"},
+    {"name": "Amsterdam"},
+    {"name": "Dublin"},
 ]
 CITY_NAMES = [c["name"] for c in CITIES]
 
