@@ -1346,7 +1346,7 @@
         <div class="top-strip-info">
           <span id="worldTime">00:00 GMT</span>
           <span>·</span>
-          <span>Game ends in <b id="gameCountdown">15d 0h 0m</b></span>
+          <span>Game ends in <b id="gameCountdown">7d 0h 0m</b></span>
           <span>·</span>
           <span>Bonus in <b id="bonusCountdown">23h 45m 30s</b></span>
         </div>
@@ -4280,8 +4280,8 @@
     const worldTimeEl = document.getElementById('worldTime');
     if(worldTimeEl) worldTimeEl.textContent = `${hours}:${mins} GMT`;
 
-    // Game countdown (15 days = 1,296,000,000ms)
-    const GAME_DURATION_MS = 15 * 24 * 60 * 60 * 1000;
+    // Game countdown (7 days = 604,800,000ms)
+    const GAME_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
     const elapsed = Date.now() - (state.gameStartTime || Date.now());
     const remaining = Math.max(0, GAME_DURATION_MS - elapsed);
 
