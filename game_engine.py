@@ -49,9 +49,13 @@ BRIBE_DURATION_MS = 5 * 60 * 1000
 BRIBE_COOLDOWN_MS = 60 * 60 * 1000
 
 BOT_COUNT = 19
-BOT_TICK_MS = 5 * 60 * 1000  # bots take an action roughly every 5 real minutes
-BOT_MAX_TURNS = 5000
-BOT_MAX_TICKS_PER_CATCHUP = 60  # cap one catch-up burst at ~5 hours of simulated activity
+# Bots now regen/act on the exact same cadence and cap as a human player -
+# they used to tick 4x faster (every 5 min) with a bigger turn pool (5000
+# vs a human's 3600), which let them massively outpace real players'
+# net worth/hoes even though nobody was actively playing them.
+BOT_TICK_MS = REGEN_MS  # same 20-real-minute cadence as human turn regen
+BOT_MAX_TURNS = 3600  # same cap as a human's maxTurns
+BOT_MAX_TICKS_PER_CATCHUP = 15  # cap one catch-up burst at ~5 hours of simulated activity (15 * 20min)
 
 HOE_RECRUIT_TURN_BLOCK = 10
 HOE_RECRUIT_MIN = 1
