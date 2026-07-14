@@ -99,6 +99,12 @@ DOPE_DEALER_BY_ID = {d["id"]: d for d in DOPE_DEALER_DRUGS}
 TRAVEL_COST_PER_THUG = 50
 TRAVEL_BASE_FEE = 100
 
+# Traveling isn't just a cash toll anymore - you need enough cars to
+# physically move your whole crew. Each cadillac seats 4 thugs, each
+# armored truck seats 6; total capacity must cover your headcount.
+TRAVEL_THUGS_PER_CADILLAC = 4
+TRAVEL_THUGS_PER_ARMORED_TRUCK = 6
+
 CITIES = [
     {"name": "London"},
     {"name": "Bristol"},
@@ -2679,10 +2685,17 @@ def travel_cost(state, city):
     return max(TRAVEL_BASE_FEE, jround(TRAVEL_COST_PER_THUG * state["thugs"]))
 
 
+def travel_capacity(state):
+    return (state.get("cadillacs", 0) * TRAVEL_THUGS_PER_CADILLAC
+            + state.get("armoredTrucks", 0) * TRAVEL_THUGS_PER_ARMORED_TRUCK)
+
+
 def travel_to(state, city_name):
     city = next((c for c in CITIES if c["name"] == city_name), None)
     if not city:
         raise GameError("Unknown city")
+    if travel_capacity(state) < state["thugs"]:
+        raise GameError("Not enough cars to move your crew - buy more cadillacs or armored trucks")
     cost = travel_cost(state, city)
     if state["cash"] < cost:
         raise GameError("Not enough cash to travel there")

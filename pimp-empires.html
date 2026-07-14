@@ -3104,6 +3104,12 @@
 
   const TRAVEL_COST_PER_THUG = 50;
   const TRAVEL_BASE_FEE = 100;
+  const TRAVEL_THUGS_PER_CADILLAC = 4;
+  const TRAVEL_THUGS_PER_ARMORED_TRUCK = 6;
+
+  function travelCapacity(){
+    return (state.cadillacs || 0) * TRAVEL_THUGS_PER_CADILLAC + (state.armoredTrucks || 0) * TRAVEL_THUGS_PER_ARMORED_TRUCK;
+  }
 
   const CITIES = [
     {name:'London'},
@@ -3324,15 +3330,18 @@
 
     ensureBots();
 
+    const capacity = travelCapacity();
+    const shortOnCars = capacity < state.thugs;
+
     if(ukMapMarkers){
       ukMapMarkers.clearLayers();
       CITIES.forEach(c => {
         const isCurrent = c.name === state.location;
         const cost = travelCost(c);
-        const cantAfford = !isCurrent && state.cash < cost;
+        const cantAfford = !isCurrent && (state.cash < cost || shortOnCars);
         const coord = CITY_COORDS[c.name];
         const crewCount = botsInCity(c.name).length;
-        const costLabel = isCurrent ? 'here' : `${fmtMoney(cost)}${crewCount ? ` · ${crewCount} crew${crewCount === 1 ? '' : 's'}` : ''}`;
+        const costLabel = isCurrent ? 'here' : (shortOnCars ? 'not enough cars' : `${fmtMoney(cost)}${crewCount ? ` · ${crewCount} crew${crewCount === 1 ? '' : 's'}` : ''}`);
         const color = isCurrent ? '#2fe0c0' : (cantAfford ? '#5a5566' : '#ff2f78');
 
         const marker = L.circleMarker([coord.lat, coord.lng], {
@@ -3354,16 +3363,18 @@
     }
 
     const travelHint = document.getElementById('travelHint');
-    travelHint.textContent = 'work the block freely';
+    travelHint.textContent = shortOnCars
+      ? `not enough cars to move your crew — need ${state.thugs.toLocaleString()} seats, you've got ${capacity.toLocaleString()} (buy cadillacs/armored trucks in the Black Market)`
+      : 'work the block freely';
 
     const cityGrid = document.getElementById('cityGrid');
     if(cityGrid){
       cityGrid.innerHTML = CITIES.map(c => {
         const isCurrent = c.name === state.location;
         const cost = travelCost(c);
-        const cantAfford = !isCurrent && state.cash < cost;
+        const cantAfford = !isCurrent && (state.cash < cost || shortOnCars);
         const crewCount = botsInCity(c.name).length;
-        const costLabel = isCurrent ? 'current turf' : `${fmtMoney(cost)} plane ticket${state.thugs === 1 ? '' : 's'}`;
+        const costLabel = isCurrent ? 'current turf' : (shortOnCars ? 'not enough cars' : `${fmtMoney(cost)} plane ticket${state.thugs === 1 ? '' : 's'}`);
         return `
           <button type="button" class="city-card${isCurrent ? ' current' : ''}${cantAfford ? ' disabled' : ''}"
             data-travel-city="${escapeHtml(c.name)}" ${isCurrent || cantAfford ? 'disabled' : ''}>
