@@ -201,6 +201,8 @@
   }
   .top-strip-account button:hover{border-color:var(--hot); color:#fff;}
   .top-strip-account #buyTurnsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
+  .top-strip-account #mobDollarsBtn{background:linear-gradient(90deg, #3d2b0f, #6b4a17); border-color:var(--gold); color:var(--gold); font-weight:700; display:inline-flex; align-items:center; gap:5px;}
+  .mob-dollars-icon{width:20px; height:11px; object-fit:cover; border-radius:2px; vertical-align:middle;}
 
   .top-strip-xp{
     display:flex; align-items:center; gap:10px;
@@ -954,6 +956,8 @@
   #workResultsModal:not(.hidden){display:flex !important;}
   #attackResultModal.hidden{display:none !important;}
   #attackResultModal:not(.hidden){display:flex !important;}
+  #mobDollarsModal.hidden{display:none !important;}
+  #mobDollarsModal:not(.hidden){display:flex !important;}
 
   .actions-secondary{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
 
@@ -1372,6 +1376,7 @@
           <button id="authToggleBtn">Sign Up / Login</button>
           <button id="buyTurnsBtn">💳 500 Turns for £4</button>
           <span id="buyTurnsCountdown"></span>
+          <button id="mobDollarsBtn"><img src="./mob%20dollers.jpg" alt="" class="mob-dollars-icon"> <span id="mobDollarsBalance">0</span> Mob Dollars</button>
         </div>
       </div>
       <div class="top-strip-xp">
@@ -1533,6 +1538,24 @@
       <input type="text" id="dmInput" placeholder="Type a message..." style="flex:1; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:6px; padding:10px; color:#fff; font-family:inherit;">
       <button id="dmSendBtn" style="background:var(--gold); border:none; border-radius:6px; padding:10px 16px; cursor:pointer; font-weight:700; color:#000;">Send</button>
     </div>
+  </div>
+</div>
+
+<div id="mobDollarsModal" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; align-items:center; justify-content:center;">
+  <div style="background:var(--card-bg); border:3px solid var(--gold); border-radius:14px; width:90%; max-width:400px; padding:24px; box-shadow:0 0 30px rgba(0,0,0,0.9); position:relative;">
+    <button id="mobDollarsCloseBtn" style="position:absolute; top:12px; right:12px; background:none; border:none; color:var(--gold); font-size:1.5rem; cursor:pointer;">✕</button>
+    <img src="./mob%20dollers.jpg" alt="" style="width:100%; border-radius:8px; margin-bottom:14px;">
+    <div style="font-size:1.3rem; font-weight:700; color:var(--gold); margin-bottom:4px; text-align:center;">Mob Dollars</div>
+    <div style="text-align:center; color:var(--text-dim); font-size:0.85rem; margin-bottom:18px;">Prize cash — won from achievements, never withdrawable. Spend it on turns, no cooldown.</div>
+    <div style="text-align:center; margin-bottom:14px;">
+      <span style="color:var(--text-dim); font-size:0.85rem;">Balance:</span>
+      <b id="mobDollarsModalBalance" style="color:var(--gold); font-size:1.1rem;">0</b>
+    </div>
+    <div class="slider-row" style="margin-bottom:10px;">
+      <div class="row-top"><span>Mob Dollars to spend</span><b id="mobDollarsTurnsPreview">0 turns</b></div>
+      <input type="number" id="mobDollarsSlider" min="0" max="0" value="0">
+    </div>
+    <button class="cta gold" id="mobDollarsSpendBtn" style="width:100%;">Spend on Turns</button>
   </div>
 </div>
 
@@ -2593,6 +2616,7 @@
       gameStartTime: Date.now(),
       last24HourBonus: Date.now(),
       lastRealMoneyPurchase: 0,
+      mobDollars: 0,
       showWorkResults: false,
       messages: [],
       log: [{t:'SYSTEM', msg:'Welcome back to the block. One hoe, a little cash, and a dream. Get to work.', cls:'info'}],
@@ -4381,6 +4405,7 @@
     document.getElementById('statHoes').textContent = state.hoes;
     document.getElementById('statThugs').textContent = state.thugs;
     document.getElementById('statTurns').textContent = `${state.turns} / ${state.maxTurns}`;
+    document.getElementById('mobDollarsBalance').textContent = state.mobDollars || 0;
 
     const turnInput = document.getElementById('turnSlider');
     turnInput.max = Math.min(150, Math.max(1, state.turns));
@@ -4926,6 +4951,35 @@
       const data = await apiCall('/api/bank/withdraw', {amount: amt});
       showToast(`Withdrew ${fmtMoney(data.result.received)} (fee: ${fmtMoney(data.result.fee)}).`);
       render();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  const MOB_DOLLARS_TURNS_PER_UNIT = 20;
+
+  function openMobDollarsModal(){
+    const slider = document.getElementById('mobDollarsSlider');
+    slider.max = state.mobDollars || 0;
+    slider.value = 0;
+    updateMobDollarsModal();
+    document.getElementById('mobDollarsModal').classList.remove('hidden');
+  }
+
+  function updateMobDollarsModal(){
+    document.getElementById('mobDollarsModalBalance').textContent = state.mobDollars || 0;
+    const slider = document.getElementById('mobDollarsSlider');
+    const amt = parseInt(slider.value) || 0;
+    document.getElementById('mobDollarsTurnsPreview').textContent = `${amt * MOB_DOLLARS_TURNS_PER_UNIT} turns`;
+  }
+
+  async function spendMobDollars(){
+    const slider = document.getElementById('mobDollarsSlider');
+    const amt = parseInt(slider.value) || 0;
+    if(amt < 1) return;
+    try{
+      await apiCall('/api/mobdollars/spend', {amount: amt});
+      showToast(`Spent ${amt} 🪙 Mob Dollars on turns.`);
+      render();
+      openMobDollarsModal();
     } catch(e){ /* toast already shown */ }
   }
 
@@ -6513,6 +6567,15 @@
   document.getElementById('locPullup').addEventListener('click', () => setWorkLocation('pullup'));
   document.getElementById('bankBtn').addEventListener('click', bankCash);
   document.getElementById('withdrawBtn').addEventListener('click', withdrawCash);
+  document.getElementById('mobDollarsBtn').addEventListener('click', openMobDollarsModal);
+  document.getElementById('mobDollarsCloseBtn').addEventListener('click', () => {
+    document.getElementById('mobDollarsModal').classList.add('hidden');
+  });
+  document.getElementById('mobDollarsModal').addEventListener('click', (e) => {
+    if(e.target.id === 'mobDollarsModal') document.getElementById('mobDollarsModal').classList.add('hidden');
+  });
+  document.getElementById('mobDollarsSlider').addEventListener('input', updateMobDollarsModal);
+  document.getElementById('mobDollarsSpendBtn').addEventListener('click', spendMobDollars);
   document.getElementById('depositSlider').addEventListener('input', (e) => {
     const amt = parseInt(e.target.value) || 0;
     document.getElementById('depositLabel').textContent = fmtMoney(amt);

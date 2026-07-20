@@ -1140,6 +1140,14 @@ def api_turns_buy():
     return handle_action(ge.buy_turns_with_real_money)
 
 
+@app.route('/api/mobdollars/spend', methods=['POST'])
+@login_required
+def api_mobdollars_spend():
+    data = request.get_json() or {}
+    amt = int(data.get('amount', 0))
+    return handle_action(ge.spend_mob_dollars_on_turns, amt)
+
+
 @app.route('/api/push/vapid-public-key', methods=['GET'])
 def api_push_vapid_public_key():
     return jsonify({'publicKey': VAPID_PUBLIC_KEY})

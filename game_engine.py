@@ -71,6 +71,14 @@ DAILY_BONUS_AMOUNT = 1000
 REALMONEY_COOLDOWN_MS = 12 * 60 * 60 * 1000
 REALMONEY_TURNS = 500
 
+# Mob Dollars: a prize currency, never cashable/withdrawable, awarded for
+# achievements and (once built) crew/global season finishes. Spending it on
+# turns is instant with no cooldown, unlike the free buy_turns_with_real_money
+# grant above - that's the "advantage" for having earned some.
+MOB_DOLLARS_TURNS_PER_UNIT = 20
+ACHIEVEMENT_MOB_DOLLARS_DIVISOR = 10
+ACHIEVEMENT_MOB_DOLLARS_MIN = 5
+
 DEALER_RESET_MS = 10 * 60 * 1000
 DEALER_DAILY_CAP = 100
 DEALER_RESALE_COOLDOWN_MS = 10 * 60 * 1000
@@ -327,6 +335,7 @@ def default_state(pimp_name="Big Boss"):
         "lifetimeEarnings": 0,
         "xp": 0,
         "achievements": [],
+        "mobDollars": 0,
         "statsThugsKilled": 0,
         "statsFactoriesDestroyed": 0,
         "statsMoneyStolen": 0,
@@ -561,7 +570,9 @@ def award_achievement(state, achievement_id):
         return None
     earned.append(achievement_id)
     add_xp(state, ach["xp"])
-    add_log(state, f"🏆 Achievement unlocked: {ach['emoji']} {ach['name']} (+{ach['xp']} XP)", "good")
+    mob_dollars_reward = max(ACHIEVEMENT_MOB_DOLLARS_MIN, ach["xp"] // ACHIEVEMENT_MOB_DOLLARS_DIVISOR)
+    state["mobDollars"] = state.get("mobDollars", 0) + mob_dollars_reward
+    add_log(state, f"🏆 Achievement unlocked: {ach['emoji']} {ach['name']} (+{ach['xp']} XP, +{mob_dollars_reward} 🪙 Mob Dollars)", "good")
     return ach
 
 
@@ -2685,6 +2696,26 @@ def buy_turns_with_real_money(state):
     add_log(state, f"Purchased {REALMONEY_TURNS} turns.", "good")
 
 
+def spend_mob_dollars_on_turns(state, amount):
+    """Mob Dollars is a prize currency (won from achievements, and eventually
+    crew/global season finishes) - it can only ever be spent in-game, never
+    withdrawn or cashed out. Unlike buy_turns_with_real_money above, this has
+    no cooldown, so it's a genuine advantage over waiting for the free grant."""
+    amount = int(amount)
+    if amount <= 0:
+        raise GameError("Invalid amount")
+    have = state.get("mobDollars", 0)
+    if have < amount:
+        raise GameError("Not enough Mob Dollars")
+    room = state["maxTurns"] - state["turns"]
+    if room <= 0:
+        raise GameError("Turns already full")
+    turns_gained = min(amount * MOB_DOLLARS_TURNS_PER_UNIT, room)
+    state["mobDollars"] = have - amount
+    state["turns"] += turns_gained
+    add_log(state, f"Spent {amount} 🪙 Mob Dollars for {turns_gained} turns.", "good")
+
+
 def travel_cost(state, city):
     return max(TRAVEL_BASE_FEE, jround(TRAVEL_COST_PER_THUG * state["thugs"]))
 
@@ -2774,6 +2805,8 @@ def apply_catchup(state):
         state["xp"] = 0
     if "achievements" not in state:
         state["achievements"] = []
+    if "mobDollars" not in state:
+        state["mobDollars"] = 0
     if "statsThugsKilled" not in state:
         state["statsThugsKilled"] = 0
     if "statsFactoriesDestroyed" not in state:
