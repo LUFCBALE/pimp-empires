@@ -71,6 +71,28 @@ DAILY_BONUS_AMOUNT = 1000
 REALMONEY_COOLDOWN_MS = 12 * 60 * 60 * 1000
 REALMONEY_TURNS = 500
 
+# Must match GAME_DURATION_MS in pimp-empires.html (the per-player "Game
+# ends in" countdown shown there is cosmetic - this is the authoritative
+# shared clock used to decide when to actually award Hall of Fame prizes).
+GAME_DURATION_MS = 7 * 24 * 60 * 60 * 1000
+# Season 1's shared reset moment (2026-07-14 11:30:26 UTC, the gameStartTime
+# every human got from that reset) + GAME_DURATION_MS. Only used to backfill
+# world["seasonEndAt"] the one time that key is missing - a future season
+# reset should set world["seasonEndAt"] explicitly to a fresh value.
+SEASON_1_END_MS = 1784633426073
+
+# Hall of Fame categories awarded once, permanently, when the season ends -
+# see maybe_award_season_end_prizes in app.py (needs every human's saved
+# state, so it can't live here alongside the rest of world catchup).
+HOF_CATEGORIES = [
+    ("statsThugsKilled", "most_thugs_killed"),
+    ("statsFactoriesDestroyed", "most_factories_destroyed"),
+    ("statsMoneyStolen", "most_money_stolen"),
+    ("hoes", "most_hoes"),
+    ("statsCarsStolen", "most_cars_stolen"),
+    ("lifetimeEarnings", "top_earner"),
+]
+
 # Mob Dollars: a prize currency, never cashable/withdrawable, awarded for
 # achievements and (once built) crew/global season finishes. Spending it on
 # turns is instant with no cooldown, unlike the free buy_turns_with_real_money
@@ -2847,6 +2869,10 @@ def apply_world_catchup(world):
         world["globalAttackLog"] = []
     if "records" not in world:
         world["records"] = {}
+    if "seasonEndAt" not in world:
+        world["seasonEndAt"] = SEASON_1_END_MS
+    if "seasonPrizesAwarded" not in world:
+        world["seasonPrizesAwarded"] = False
     # One-time migration: bots created before the 4-crew system had unique
     # per-bot gang names. Reassign everyone into the new shared crews
     # without touching any other bot progress.

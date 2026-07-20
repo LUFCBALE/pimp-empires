@@ -295,7 +295,57 @@ def load_world():
         save_world(world)
 
     ge.apply_world_catchup(world)
+    maybe_award_season_end_prizes(world)
     return world
+
+
+def maybe_award_season_end_prizes(world):
+    """Once, when the shared season clock (world['seasonEndAt']) expires,
+    snapshot each Hall of Fame category and permanently award its #1 human
+    player that category's achievement (badge + XP + Mob Dollars). These six
+    achievements are deliberately never auto-granted mid-game - see the
+    comment in attach_world_view - only here, exactly once per season.
+    Cheap on every other request: the seasonPrizesAwarded flag short-circuits
+    before any DB scan once it's already run."""
+    if world.get("seasonPrizesAwarded"):
+        return
+    if ge.now_ms() < world.get("seasonEndAt", float("inf")):
+        return
+
+    db = get_db()
+    rows = db.execute('''
+        SELECT p.user_id, p.state_json, u.pimp_name
+        FROM player_state p JOIN users u ON u.id = p.user_id
+    ''').fetchall()
+    db.close()
+
+    humans = []
+    for row in rows:
+        try:
+            s = json.loads(row['state_json'])
+        except (TypeError, ValueError):
+            continue
+        humans.append((row['user_id'], row['pimp_name'], s))
+
+    results = []
+    for stat_key, achievement_id in ge.HOF_CATEGORIES:
+        winner = max(humans, key=lambda h: h[2].get(stat_key, 0), default=None)
+        if not winner or winner[2].get(stat_key, 0) <= 0:
+            continue
+        winner_id, winner_name, winner_state = winner
+        ach = ge.award_achievement(winner_state, achievement_id)
+        if ach:
+            save_state(winner_id, winner_state)
+            results.append({
+                'userId': winner_id,
+                'pimpName': winner_name,
+                'achievementId': achievement_id,
+                'value': winner_state.get(stat_key, 0),
+            })
+
+    world['seasonPrizesAwarded'] = True
+    world['seasonPrizeResults'] = results
+    save_world(world)
 
 
 def save_world(world):
@@ -404,6 +454,8 @@ def attach_world_view(state, world, user_id):
     state['globalAttackLog'] = world.get('globalAttackLog', [])
     state['worldRecords'] = world.get('records', {})
     state['bounties'] = world.get('bounties', [])
+    state['seasonEndAt'] = world.get('seasonEndAt')
+    state['seasonPrizeResults'] = world.get('seasonPrizeResults', [])
     state['selfProfileId'] = ge.HUMAN_ID_OFFSET + user_id
     state['crewRoster'] = build_crew_roster(user_id, state, world)
     state['rankInfo'] = ge.rank_info(state.get('xp', 0))

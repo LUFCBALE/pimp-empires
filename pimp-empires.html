@@ -2269,7 +2269,7 @@
   <div class="page-subtitle" id="achievementsSubtitle">Badges you've earned show up on your profile.</div>
   <div class="panel">
     <h3 style="margin-top:0;">🏛️ Hall of Fame</h3>
-    <div class="page-subtitle" style="margin:0 0 12px;">Elite prizes — whoever's #1 in each category when the game ends gets that banner locked onto their profile forever. Standings below are live, but nothing's awarded until the game is over.</div>
+    <div class="page-subtitle" id="hofSubtitle" style="margin:0 0 12px;">Elite prizes — whoever's #1 in each category when the game ends gets that banner locked onto their profile forever. Standings below are live, but nothing's awarded until the game is over.</div>
     <div id="hofRecord" style="margin-bottom:16px;"></div>
     <div id="hofLeaderboards" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;"></div>
   </div>
@@ -4123,13 +4123,22 @@
     });
 
     const boards = [
-      {key:'statsThugsKilled', title:'💀 Most Thugs Killed', fmt: v => v.toLocaleString(), banner:'./hof-most-thugs-killed.jpg'},
-      {key:'statsFactoriesDestroyed', title:'🧨 Most Factories Destroyed', fmt: v => v.toLocaleString(), banner:'./hof-most-factories-destroyed.jpg'},
-      {key:'statsMoneyStolen', title:'💰 Most Money Stolen', fmt: v => fmtMoney(v), banner:'./hof-most-money-stolen.jpg'},
-      {key:'hoes', title:'👠 Most Hoes', fmt: v => Math.floor(v).toLocaleString(), banner:'./hof-most-hoes.jpg'},
-      {key:'statsCarsStolen', title:'🚗 Most Cars Stolen', fmt: v => v.toLocaleString(), banner:'./hof-most-cars-stolen.jpg'},
-      {key:'lifetimeEarnings', title:'📈 All Time Earnings', fmt: v => fmtMoney(v), banner:'./hof-lifetime-earnings.jpg', hideValue: true},
+      {key:'statsThugsKilled', achievementId:'most_thugs_killed', title:'💀 Most Thugs Killed', fmt: v => v.toLocaleString(), banner:'./hof-most-thugs-killed.jpg'},
+      {key:'statsFactoriesDestroyed', achievementId:'most_factories_destroyed', title:'🧨 Most Factories Destroyed', fmt: v => v.toLocaleString(), banner:'./hof-most-factories-destroyed.jpg'},
+      {key:'statsMoneyStolen', achievementId:'most_money_stolen', title:'💰 Most Money Stolen', fmt: v => fmtMoney(v), banner:'./hof-most-money-stolen.jpg'},
+      {key:'hoes', achievementId:'most_hoes', title:'👠 Most Hoes', fmt: v => Math.floor(v).toLocaleString(), banner:'./hof-most-hoes.jpg'},
+      {key:'statsCarsStolen', achievementId:'most_cars_stolen', title:'🚗 Most Cars Stolen', fmt: v => v.toLocaleString(), banner:'./hof-most-cars-stolen.jpg'},
+      {key:'lifetimeEarnings', achievementId:'top_earner', title:'📈 All Time Earnings', fmt: v => fmtMoney(v), banner:'./hof-lifetime-earnings.jpg', hideValue: true},
     ];
+
+    const finalResults = state.seasonPrizeResults || [];
+    const resultsByAchievement = Object.fromEntries(finalResults.map(r => [r.achievementId, r]));
+    const subtitleEl = document.getElementById('hofSubtitle');
+    if(subtitleEl){
+      subtitleEl.textContent = finalResults.length
+        ? '🏆 Season over — final winners are locked in below, permanently.'
+        : 'Elite prizes — whoever\'s #1 in each category when the game ends gets that banner locked onto their profile forever. Standings below are live, but nothing\'s awarded until the game is over.';
+    }
 
     container.innerHTML = boards.map(board => {
       const top = entries.filter(e => e[board.key] > 0).sort((a,b) => b[board.key] - a[board.key]).slice(0, 5);
@@ -4139,11 +4148,16 @@
           <span>${board.hideValue ? '<span style="color:var(--danger); font-weight:700;">CLASSIFIED</span>' : board.fmt(e[board.key])}</span>
         </div>
       `).join('') : `<div class="hint">No records yet.</div>`;
+      const winner = resultsByAchievement[board.achievementId];
+      const winnerBanner = winner
+        ? `<div style="background:rgba(255,200,0,0.15); border:1px solid var(--gold); border-radius:6px; padding:6px 8px; margin-bottom:8px; font-size:0.78rem; color:var(--gold); font-weight:700;">🏆 FINAL: ${escapeHtml(winner.pimpName)}</div>`
+        : '';
       return `
-        <div style="border:1px solid var(--panel-line); border-radius:10px; overflow:hidden; background:var(--bg-2);">
+        <div style="border:1px solid ${winner ? 'var(--gold)' : 'var(--panel-line)'}; border-radius:10px; overflow:hidden; background:var(--bg-2);">
           ${board.banner ? `<img src="${board.banner}" alt="${escapeHtml(board.title)}" style="width:100%; height:90px; object-fit:cover; display:block;">` : ''}
           <div style="padding:12px;">
             <div style="font-weight:700; margin-bottom:8px; font-size:0.85rem;">${board.title}</div>
+            ${winnerBanner}
             ${rows}
           </div>
         </div>
@@ -4333,10 +4347,13 @@
     const worldTimeEl = document.getElementById('worldTime');
     if(worldTimeEl) worldTimeEl.textContent = `${hours}:${mins} GMT`;
 
-    // Game countdown (7 days = 604,800,000ms)
+    // Game countdown - state.seasonEndAt is the shared server clock that
+    // actually decides when Hall of Fame prizes get awarded (see
+    // maybe_award_season_end_prizes in app.py); fall back to the old
+    // per-player calc only if it hasn't loaded from the server yet.
     const GAME_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-    const elapsed = Date.now() - (state.gameStartTime || Date.now());
-    const remaining = Math.max(0, GAME_DURATION_MS - elapsed);
+    const seasonEnd = state.seasonEndAt || ((state.gameStartTime || Date.now()) + GAME_DURATION_MS);
+    const remaining = Math.max(0, seasonEnd - Date.now());
 
     const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
     const hours2 = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
