@@ -394,8 +394,6 @@ def default_state(pimp_name="Big Boss"):
         "gameStartTime": now,
         "last24HourBonus": now,
         "lastRealMoneyPurchase": 0,
-        "slotSpinsToday": 0,
-        "lastSlotReset": now,
         "showWorkResults": False,
         "showTutorial": True,
         "messages": [],
@@ -2216,93 +2214,6 @@ def run_casino_heist(state, world):
         return {"won": False, "thugsLost": thugs_lost}
 
 
-# ---------------------------------------------------------------------------
-# Slot Machine (free to play - a handful of daily spins for turns while you
-# wait on regen, not a cash sink)
-# ---------------------------------------------------------------------------
-
-SLOT_SYMBOLS = ["🍒", "🍋", "🔔", "🍀", "7️⃣"]
-SLOT_DAILY_SPINS = 5
-SLOT_RESET_MS = 24 * 60 * 60 * 1000
-
-SLOT_TIERS = {
-    "low": {"name": "Low Stakes"},
-    "mid": {"name": "Mid Stakes"},
-    "high": {"name": "High Stakes"},
-}
-# Fixed turns won per tier/outcome - all three tiers share one daily spin
-# pool (SLOT_DAILY_SPINS total, any mix of tiers), so only the payout size
-# scales between them, not how often you get to play.
-SLOT_PAYOUTS = {
-    "low": {"pair": 6, "triple": 24, "jackpot": 100},
-    "mid": {"pair": 30, "triple": 120, "jackpot": 500},
-    "high": {"pair": 120, "triple": 480, "jackpot": 2000},
-}
-SLOT_ODDS = [
-    (0.02, "jackpot"),
-    (0.08, "triple"),
-    (0.20, "pair"),
-    (0.70, "none"),
-]
-
-
-def check_slot_reset(state, now):
-    if now - state.get("lastSlotReset", 0) >= SLOT_RESET_MS:
-        state["slotSpinsToday"] = 0
-        state["lastSlotReset"] = now
-
-
-def play_slots(state, tier_key):
-    tier = SLOT_TIERS.get(tier_key)
-    if not tier:
-        raise GameError("Invalid stake")
-    check_slot_reset(state, now_ms())
-    spins_left = SLOT_DAILY_SPINS - state["slotSpinsToday"]
-    if spins_left <= 0:
-        raise GameError("Out of free spins for today — come back tomorrow")
-    state["slotSpinsToday"] += 1
-
-    roll = random.random()
-    cumulative = 0.0
-    outcome = "none"
-    for prob, name in SLOT_ODDS:
-        cumulative += prob
-        if roll < cumulative:
-            outcome = name
-            break
-
-    if outcome == "jackpot":
-        symbols = ["7️⃣", "7️⃣", "7️⃣"]
-    elif outcome == "triple":
-        sym = random.choice(SLOT_SYMBOLS[:-1])  # never a fake non-jackpot 7️⃣7️⃣7️⃣
-        symbols = [sym, sym, sym]
-    elif outcome == "pair":
-        pair_sym = random.choice(SLOT_SYMBOLS)
-        odd_sym = random.choice([s for s in SLOT_SYMBOLS if s != pair_sym])
-        symbols = [pair_sym, pair_sym, odd_sym]
-        random.shuffle(symbols)
-    else:
-        symbols = random.sample(SLOT_SYMBOLS, 3)
-
-    turns_won = SLOT_PAYOUTS[tier_key].get(outcome, 0)
-    turns_wasted = 0
-    if turns_won > 0:
-        room = state["maxTurns"] - state["turns"]
-        turns_wasted = max(0, turns_won - room)
-        state["turns"] = min(state["maxTurns"], state["turns"] + turns_won)
-
-    if turns_won > 0:
-        add_log(state, f"🎰 {tier['name']} spin: {''.join(symbols)} — won {turns_won} turns!"
-                       + (" (some lost - turns were already maxed)" if turns_wasted else ""), "good")
-    else:
-        add_log(state, f"🎰 {tier['name']} spin: {''.join(symbols)} — nothing, house wins.", "bad")
-
-    return {
-        "tier": tier_key, "symbols": symbols, "outcome": outcome,
-        "turnsWon": turns_won, "turnsWasted": turns_wasted,
-        "spinsLeft": SLOT_DAILY_SPINS - state["slotSpinsToday"],
-    }
-
 
 # ---------------------------------------------------------------------------
 # Drugs
@@ -2839,10 +2750,6 @@ def apply_catchup(state):
         state["statsCarsStolen"] = 0
     if "lastJobHeist" not in state:
         state["lastJobHeist"] = 0
-    if "slotSpinsToday" not in state:
-        state["slotSpinsToday"] = 0
-    if "lastSlotReset" not in state:
-        state["lastSlotReset"] = now
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     tick_regen(state, now)
@@ -2852,7 +2759,6 @@ def apply_catchup(state):
     process_human_hospital(state, now)
     check_dealer_reset(state, now)
     check_daily_bonus(state, now)
-    check_slot_reset(state, now)
     recalc_morale(state)
     check_milestone_achievements(state)
     check_rank_rewards(state)
