@@ -97,7 +97,7 @@ HOF_CATEGORIES = [
 # achievements and (once built) crew/global season finishes. Spending it on
 # turns is instant with no cooldown, unlike the free buy_turns_with_real_money
 # grant above - that's the "advantage" for having earned some.
-MOB_DOLLARS_TURNS_PER_UNIT = 20
+MOB_DOLLARS_TURNS_PER_UNIT = 10
 ACHIEVEMENT_MOB_DOLLARS_DIVISOR = 10
 ACHIEVEMENT_MOB_DOLLARS_MIN = 5
 
