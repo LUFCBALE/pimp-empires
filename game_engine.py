@@ -642,7 +642,9 @@ BOT_ARCHETYPES = {
     "mogul": {"hoeGrowth": 1.0, "thugGrowth": 0.9, "cashRate": 1.4, "raidChance": 0.0, "reinvestRate": 0.35},
     "shark": {"hoeGrowth": 0.9, "thugGrowth": 1.1, "cashRate": 0.9, "raidChance": 0.25, "reinvestRate": 0.10},
 }
-BOT_FACTORY_TYPES = ("medical", "gun", "car", "explosive", "counterfeit", "gym")
+# Bots buy every factory type except explosive (bombs) - a deliberate call
+# to keep bots out of the bomb-production business.
+BOT_FACTORY_TYPES = ("medical", "gun", "car", "drug", "counterfeit", "gym")
 
 # Bots keep this much hoeCash on hand as walking-around money - anything
 # above it gets plowed into guns/cars each tick (see bot_reinvest_hoecash)
@@ -650,6 +652,16 @@ BOT_FACTORY_TYPES = ("medical", "gun", "car", "explosive", "counterfeit", "gym")
 BOT_HOECASH_REINVEST_FLOOR = 15000
 BOT_REINVEST_GUN_PRICES = {"pistol9mm": 240, "shotgun12gauge": 1050, "ak47": 1800, "m249": 8000}
 BOT_REINVEST_CAR_PRICE = 9600
+# Bots have no dealer/drug-selling loop to plug real coke output into, so a
+# drug factory just pays out cash directly each tick like counterfeit does -
+# calibrated to roughly the same cost:payout ratio as counterfeit (~0.21%
+# of factory cost per tick) so it's neither a dead purchase nor a strictly
+# better one.
+BOT_DRUG_CASH_RATE = 29750
+# Bots liquidate most of what a car factory makes for cash, but hold onto a
+# slice of the fleet instead of selling 100% every tick - otherwise "Steal
+# Cars" against a bot always finds nothing to steal.
+BOT_CAR_KEEP_PCT = 0.25
 
 
 def make_bot(bot_id, used_bosses, gang, city):
@@ -702,6 +714,7 @@ def make_bot(bot_id, used_bosses, gang, city):
             "medical": 0,
             "gun": 0,
             "car": 0,
+            "drug": 0,
             "explosive": 0,
             "counterfeit": 0,
             "gym": 0,
@@ -750,6 +763,8 @@ def ensure_bots(world):
             b.setdefault("factories", {})["counterfeit"] = 0
         if "gym" not in b.get("factories", {}):
             b.setdefault("factories", {})["gym"] = 0
+        if "drug" not in b.get("factories", {}):
+            b.setdefault("factories", {})["drug"] = 0
 
 
 def ensure_bot_crew_emblems(world):
@@ -898,6 +913,8 @@ def run_bot_factories(b, ticks):
         b["cash"] += f["counterfeit"] * COUNTERFEIT_CASH_RATE * ticks
     if f.get("gym", 0) > 0:
         b["thugs"] = b.get("thugs", 0) + jround(f["gym"] * GYM_THUG_RATE * ticks)
+    if f.get("drug", 0) > 0:
+        b["cash"] += f["drug"] * BOT_DRUG_CASH_RATE * ticks
 
 
 # Bots keep this much cash on hand as walking-around money; the rest gets
@@ -933,13 +950,15 @@ def bot_sell_surplus_produce(b):
     """Bots sell off produce they don't need. Guns beyond one-per-thug are
     dead stock (gun_score caps combat power there anyway), so the excess -
     worst weapons first, keeping the best for actual combat - gets sold for
-    cash. Cadillacs and armored trucks don't count toward net worth or
-    combat at all any more, so the whole fleet gets liquidated every tick.
-    Proceeds land in `cash` and get plowed into more factories next via
-    bot_reinvest_cash."""
+    cash; AK-47s are never sold off, so a bot's stockpile only ever grows.
+    Cadillacs and armored trucks don't count toward net worth or combat at
+    all any more, so most of the fleet gets liquidated every tick, but a
+    BOT_CAR_KEEP_PCT slice stays on hand - otherwise stealing cars from a
+    bot would always come up empty. Proceeds land in `cash` and get plowed
+    into more factories next via bot_reinvest_cash."""
     guns = b.get("guns", {})
     surplus = sum(guns.values()) - b.get("thugs", 0)
-    for gun_key in ("pistol9mm", "shotgun12gauge", "ak47", "m249"):
+    for gun_key in ("pistol9mm", "shotgun12gauge", "m249"):
         if surplus <= 0:
             break
         have = guns.get(gun_key, 0)
@@ -951,14 +970,16 @@ def bot_sell_surplus_produce(b):
         surplus -= sell_qty
 
     cadillacs = b.get("cadillacs", 0)
-    if cadillacs > 0:
-        b["cash"] = b.get("cash", 0) + cadillacs * BOT_REINVEST_CAR_PRICE
-        b["cadillacs"] = 0
+    sell_cadillacs = jround(cadillacs * (1 - BOT_CAR_KEEP_PCT))
+    if sell_cadillacs > 0:
+        b["cash"] = b.get("cash", 0) + sell_cadillacs * BOT_REINVEST_CAR_PRICE
+        b["cadillacs"] = cadillacs - sell_cadillacs
 
     trucks = b.get("armoredTrucks", 0)
-    if trucks > 0:
-        b["cash"] = b.get("cash", 0) + trucks * BOT_TRUCK_SELL_PRICE
-        b["armoredTrucks"] = 0
+    sell_trucks = jround(trucks * (1 - BOT_CAR_KEEP_PCT))
+    if sell_trucks > 0:
+        b["cash"] = b.get("cash", 0) + sell_trucks * BOT_TRUCK_SELL_PRICE
+        b["armoredTrucks"] = trucks - sell_trucks
 
 
 def bot_reinvest_hoecash(b, arch):
