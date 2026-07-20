@@ -195,14 +195,17 @@
   .top-strip-info{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .top-strip-account{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .top-strip-account #authDisplay{color:var(--gold); font-weight:700;}
-  .top-strip-account button{
+  .top-strip-account button, .top-strip-account a.strip-link{
     background:var(--panel); border:1px solid var(--panel-line); color:var(--text); cursor:pointer;
     font-family:'IBM Plex Mono',monospace; font-size:0.68rem; padding:5px 10px; border-radius:6px; transition:all 0.15s;
+    text-decoration:none; display:inline-flex; align-items:center; gap:5px;
   }
-  .top-strip-account button:hover{border-color:var(--hot); color:#fff;}
+  .top-strip-account button:hover, .top-strip-account a.strip-link:hover{border-color:var(--hot); color:#fff;}
   .top-strip-account #buyTurnsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
   .top-strip-account #mobDollarsBtn{background:linear-gradient(90deg, #3d2b0f, #6b4a17); border-color:var(--gold); color:var(--gold); font-weight:700; display:inline-flex; align-items:center; gap:5px;}
   .mob-dollars-icon{width:20px; height:11px; object-fit:cover; border-radius:2px; vertical-align:middle;}
+  .top-strip-account #discordLink{background:#5865F2; border-color:#4752C4; color:#fff; font-weight:700;}
+  .top-strip-account #discordLink:hover{background:#4752C4; color:#fff;}
 
   .top-strip-xp{
     display:flex; align-items:center; gap:10px;
@@ -1377,6 +1380,7 @@
           <button id="buyTurnsBtn">💳 500 Turns for £4</button>
           <span id="buyTurnsCountdown"></span>
           <button id="mobDollarsBtn"><img src="./mob%20dollers.jpg" alt="" class="mob-dollars-icon"> <span id="mobDollarsBalance">0</span> Mob Dollars</button>
+          <a id="discordLink" class="strip-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Join Discord</a>
         </div>
       </div>
       <div class="top-strip-xp">
