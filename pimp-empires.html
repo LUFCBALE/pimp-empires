@@ -4156,12 +4156,17 @@
       const winnerBanner = winner
         ? `<div style="background:rgba(255,200,0,0.15); border:1px solid var(--gold); border-radius:6px; padding:6px 8px; margin-bottom:8px; font-size:0.78rem; color:var(--gold); font-weight:700;">🏆 FINAL: ${escapeHtml(winner.pimpName)}</div>`
         : '';
+      const ach = ACHIEVEMENTS_BY_ID[board.achievementId];
+      const prizeLine = (!winner && ach)
+        ? `<div style="font-size:0.72rem; color:var(--gold); margin-bottom:8px;">🔒 Season prize: +${ach.xp} XP · +${achievementMobDollars(ach.xp)} 🪙 Mob Dollars</div>`
+        : '';
       return `
         <div style="border:1px solid ${winner ? 'var(--gold)' : 'var(--panel-line)'}; border-radius:10px; overflow:hidden; background:var(--bg-2);">
           ${board.banner ? `<img src="${board.banner}" alt="${escapeHtml(board.title)}" style="width:100%; height:90px; object-fit:cover; display:block;">` : ''}
           <div style="padding:12px;">
             <div style="font-weight:700; margin-bottom:8px; font-size:0.85rem;">${board.title}</div>
             ${winnerBanner}
+            ${prizeLine}
             ${rows}
           </div>
         </div>
