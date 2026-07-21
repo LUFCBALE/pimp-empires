@@ -196,6 +196,7 @@
   .mob-dollars-icon{width:20px; height:11px; object-fit:cover; border-radius:2px; vertical-align:middle;}
   .top-strip-account #discordLink{background:#5865F2; border-color:#4752C4; color:#fff; font-weight:700;}
   .top-strip-account #discordLink:hover{background:#4752C4; color:#fff;}
+  .top-strip-account #referFriendBtn{background:linear-gradient(90deg, #3d2b0f, #6b4a17); border-color:var(--gold); color:var(--gold); font-weight:700;}
 
   .top-strip-xp{
     display:flex; align-items:center; gap:10px;
@@ -1341,6 +1342,7 @@
           <span id="buyTurnsCountdown"></span>
           <button id="mobDollarsBtn"><img src="./mob%20dollers.jpg" alt="" class="mob-dollars-icon"> <span id="mobDollarsBalance">0</span> Mob Dollars</button>
           <a id="discordLink" class="strip-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Join Discord</a>
+          <button id="referFriendBtn" class="strip-link">👥 Refer a Friend, Earn 🪙</button>
         </div>
       </div>
       <div class="top-strip-xp">
@@ -6467,6 +6469,17 @@
   });
   document.getElementById('bribeBtn').addEventListener('click', bribeCops);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
+  document.getElementById('referFriendBtn').addEventListener('click', () => {
+    if(!currentUser){
+      showToast('Sign up or log in first to get your invite link!');
+      return;
+    }
+    const link = `${window.location.origin}/?ref=${currentUser.id}`;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(() => showToast('🪙 Invite link copied! Share it to earn Mob Dollars.'));
+    }
+    navigateTo('page-settings');
+  });
   document.getElementById('copyReferralLinkBtn').addEventListener('click', () => {
     const input = document.getElementById('referralLinkInput');
     input.select();
