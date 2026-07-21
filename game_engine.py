@@ -737,6 +737,8 @@ def make_bot(bot_id, used_bosses, gang, city):
             "counterfeit": 0,
             "gym": 0,
         },
+        "factorySavings": 0,
+        "nextFactoryTarget": random.choice(BOT_FACTORY_TYPES),
         "lastRegen": now_ms(),
     }
 
@@ -783,6 +785,10 @@ def ensure_bots(world):
             b.setdefault("factories", {})["gym"] = 0
         if "drug" not in b.get("factories", {}):
             b.setdefault("factories", {})["drug"] = 0
+        if "factorySavings" not in b:
+            b["factorySavings"] = 0
+        if b.get("nextFactoryTarget") not in BOT_FACTORY_TYPES:
+            b["nextFactoryTarget"] = random.choice(BOT_FACTORY_TYPES)
 
 
 def ensure_bot_crew_emblems(world):
@@ -951,23 +957,31 @@ BOT_CASH_EARN_RATE = 1.0
 
 def bot_reinvest_cash(b, arch):
     """Net worth is purely factory-based now, so a bot that just stockpiles
-    cash never climbs the leaderboard no matter how much it earns. Every bot
-    plows its surplus cash (above CASH_REINVEST_FLOOR) into new factories
-    every tick, buying as many as the surplus allows - moguls reinvest most
-    aggressively, sharks least, using the same reinvestRate already used for
-    hoeCash."""
+    cash never climbs the leaderboard no matter how much it earns. Every
+    tick, a slice of surplus cash (above CASH_REINVEST_FLOOR) gets moved out
+    of spendable cash and into a running factorySavings pot instead of being
+    spent immediately - moguls funnel in the biggest slice, sharks the
+    smallest, same reinvestRate already used for hoeCash. Each bot is
+    saving toward one randomly chosen factory type (nextFactoryTarget) at a
+    time; once savings cover that type's cost, it buys it and rolls a new
+    target. Saving up (rather than always grabbing whatever's cheapest
+    affordable right now) is what actually lets bots end up owning the
+    £10-32M factory types instead of only ever Medical at £940k."""
     surplus = b["cash"] - CASH_REINVEST_FLOOR
-    if surplus <= 0:
-        return
-    spend = jround(surplus * arch["reinvestRate"])
-    affordable = [ft for ft in BOT_FACTORY_TYPES if FACTORY_COSTS[ft] <= spend]
-    while affordable:
-        choice = random.choice(affordable)
-        cost = FACTORY_COSTS[choice]
-        spend -= cost
-        b["cash"] -= cost
-        b["factories"][choice] = b["factories"].get(choice, 0) + 1
-        affordable = [ft for ft in BOT_FACTORY_TYPES if FACTORY_COSTS[ft] <= spend]
+    if surplus > 0:
+        deposit = jround(surplus * arch["reinvestRate"])
+        b["cash"] -= deposit
+        b["factorySavings"] = b.get("factorySavings", 0) + deposit
+
+    if b.get("nextFactoryTarget") not in BOT_FACTORY_TYPES:
+        b["nextFactoryTarget"] = random.choice(BOT_FACTORY_TYPES)
+
+    cost = FACTORY_COSTS[b["nextFactoryTarget"]]
+    while b.get("factorySavings", 0) >= cost:
+        b["factorySavings"] -= cost
+        b["factories"][b["nextFactoryTarget"]] = b["factories"].get(b["nextFactoryTarget"], 0) + 1
+        b["nextFactoryTarget"] = random.choice(BOT_FACTORY_TYPES)
+        cost = FACTORY_COSTS[b["nextFactoryTarget"]]
 
 
 BOT_TRUCK_SELL_PRICE = 18000
