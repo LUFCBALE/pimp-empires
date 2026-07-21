@@ -57,9 +57,12 @@ BOT_TICK_MS = REGEN_MS  # same 20-real-minute cadence as human turn regen
 BOT_MAX_TURNS = 3600  # same cap as a human's maxTurns
 BOT_MAX_TICKS_PER_CATCHUP = 72  # cap one catch-up burst at ~24 hours of simulated activity (72 * 20min) - a quiet overnight stretch with no requests shouldn't permanently cost bots a chunk of growth
 
+# Bumped ~50% (avg 2.0 -> 3.0 per 10 turns) to match the same recruitment
+# boost given to human players - hoe_earnings (regen_bots) is keyed off hoe
+# count separately from this, so it isn't affected by the change.
 HOE_RECRUIT_TURN_BLOCK = 10
-HOE_RECRUIT_MIN = 1
-HOE_RECRUIT_MAX = 3
+HOE_RECRUIT_MIN = 2
+HOE_RECRUIT_MAX = 4
 THUG_RECRUIT_PER_TURN = 1
 
 NIGHT_TURNS = 150
@@ -206,10 +209,13 @@ WORK_LOCATION_AREA_BONUS_PCT = {
 
 # New hoes recruited per 10 turns worked, at 100% collective hoe happiness -
 # scales with the *aggregate* hoeMorale, not each hoe's individual happiness.
+# Bumped ~50% across the board - purely a recruitment boost, completely
+# decoupled from WORK_LOCATION_BASE_EARN_PER_100_HOES_PER_10_TURNS above, so
+# more hoes doesn't mean more cash per work session.
 WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS = {
-    "redlight": 4,
-    "nightclub": 5,
-    "pullup": 7,
+    "redlight": 6,
+    "nightclub": 8,
+    "pullup": 11,
 }
 
 # Hoes take this cut of every session's gross earnings as their pay - it's
