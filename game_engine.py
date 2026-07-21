@@ -358,6 +358,8 @@ def default_state(pimp_name="Big Boss"):
         "xp": 0,
         "achievements": [],
         "mobDollars": 0,
+        "referredBy": None,
+        "referralRewardPaid": False,
         "statsThugsKilled": 0,
         "statsFactoriesDestroyed": 0,
         "statsMoneyStolen": 0,
@@ -528,6 +530,16 @@ RANK_UP_CASH_REWARDS = {
     7: 10_000_000,
     8: 100_000_000,
 }
+
+# Referral rewards: paid via a shareable "?ref=<userId>" signup link. The new
+# player gets a small welcome bonus instantly; the friend who invited them
+# only gets paid once the new player actually sticks around long enough to
+# reach Street Rat, not just for signing up - cheap friction against someone
+# farming free Mob Dollars with throwaway accounts. See maybe_pay_referral_reward
+# in app.py, which needs the referrer's own saved state so it can't live here.
+REFERRAL_MILESTONE_XP = RANKS[1][2]  # 1000 XP = rank 2, "Street Rat"
+REFERRAL_REWARD_MOB_DOLLARS = 50
+REFERRAL_WELCOME_BONUS_MOB_DOLLARS = 10
 
 
 def check_rank_rewards(state):
@@ -2761,6 +2773,10 @@ def apply_catchup(state):
         state["achievements"] = []
     if "mobDollars" not in state:
         state["mobDollars"] = 0
+    if "referredBy" not in state:
+        state["referredBy"] = None
+    if "referralRewardPaid" not in state:
+        state["referralRewardPaid"] = False
     if "statsThugsKilled" not in state:
         state["statsThugsKilled"] = 0
     if "statsFactoriesDestroyed" not in state:

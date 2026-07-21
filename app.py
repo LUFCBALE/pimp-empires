@@ -265,7 +265,33 @@ def load_state(user_id, pimp_name=None):
         save_state(user_id, state)
 
     ge.apply_catchup(state)
+    maybe_pay_referral_reward(user_id, state)
     return state
+
+
+def maybe_pay_referral_reward(user_id, state):
+    """Once a referred player's own state has been loaded (and caught up)
+    with enough xp to have hit Street Rat, pay the friend who invited them
+    their Mob Dollars - exactly once, tracked by referralRewardPaid on the
+    referred player's own state. Runs on every load_state call, but the
+    referredBy/referralRewardPaid checks make it a no-op for everyone except
+    a referred player who just crossed the milestone this request."""
+    ref_id = state.get("referredBy")
+    if not ref_id or state.get("referralRewardPaid"):
+        return
+    if state.get("xp", 0) < ge.REFERRAL_MILESTONE_XP:
+        return
+
+    db = get_db()
+    row = db.execute('SELECT state_json FROM player_state WHERE user_id = ?', (ref_id,)).fetchone()
+    if row:
+        ref_state = json.loads(row['state_json'])
+        ref_state["mobDollars"] = ref_state.get("mobDollars", 0) + ge.REFERRAL_REWARD_MOB_DOLLARS
+        ge.add_log(ref_state, f"🪙 +{ge.REFERRAL_REWARD_MOB_DOLLARS} Mob Dollars - a friend you invited hit Street Rat!", "good")
+        db.execute('UPDATE player_state SET state_json = ? WHERE user_id = ?', (json.dumps(ref_state), ref_id))
+        db.commit()
+    db.close()
+    state["referralRewardPaid"] = True
 
 
 def save_state(user_id, state):
@@ -554,6 +580,7 @@ def signup():
     email = data.get('email', '').strip()
     password = data.get('password', '')
     pimp_name = data.get('pimpName', '').strip()
+    referred_by = data.get('referredBy')
 
     if not email or not password or not pimp_name:
         return jsonify({'error': 'All fields required'}), 400
@@ -587,11 +614,27 @@ def signup():
         ''', (email, hashed_password, pimp_name, now, now))
         db.commit()
         user_id = cursor.lastrowid
+
+        # A referral link is just "?ref=<userId>" - validate it points at a
+        # real, different account before trusting it with a payout later.
+        valid_referrer_id = None
+        try:
+            candidate_id = int(referred_by)
+        except (TypeError, ValueError):
+            candidate_id = None
+        if candidate_id and candidate_id != user_id:
+            cursor.execute('SELECT id FROM users WHERE id = ?', (candidate_id,))
+            if cursor.fetchone():
+                valid_referrer_id = candidate_id
         db.close()
 
         session['user_id'] = user_id
 
         state = ge.default_state(pimp_name)
+        if valid_referrer_id:
+            state["referredBy"] = valid_referrer_id
+            state["mobDollars"] += ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS
+            ge.add_log(state, f"🪙 +{ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS} Mob Dollars welcome bonus for joining via a referral link!", "good")
         ge.apply_catchup(state)
         save_state(user_id, state)
         world = load_world()

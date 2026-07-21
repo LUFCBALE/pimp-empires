@@ -2351,6 +2351,14 @@
       </div>
       <button class="cta gold" id="pushToggleBtn" style="flex-shrink:0;">Enable</button>
     </div>
+    <h3>🪙 Invite Friends</h3>
+    <div style="margin-bottom:20px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
+      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Share your link. You get <b>50 🪙 Mob Dollars</b> once a friend you invite reaches Street Rat (rank 2) — they get <b>10 🪙</b> instantly just for signing up with it.</div>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="referralLinkInput" readonly style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg); color:var(--text); border-radius:4px; font-size:0.8rem;">
+        <button class="cta gold" id="copyReferralLinkBtn">Copy</button>
+      </div>
+    </div>
     <button class="cta danger" id="resetBtn" style="width:100%;">Reset Empire</button>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--panel-line); font-size:0.75rem; color:var(--text-dim);">
       Music: "Dark Ambience Loop" by Iwan Gabovitch (qubodup.net), licensed under CC-BY 3.0.
@@ -2405,6 +2413,8 @@
     <p>▲ means they've climbed since the last check, ▼ means they've dropped, and a blue "–" means no change (or nothing to compare against yet). The comparison point only refreshes every 5 minutes, so arrows hold steady instead of flickering every time the page updates.</p>
     <h3>Attack Feed</h3>
     <p>A live, global log of who attacked who and when — every real player's attacks, visible to everyone. Background bot-vs-bot skirmishes aren't included; only attacks a real player actually launched.</p>
+    <h3>Inviting Friends</h3>
+    <p>Grab your personal link from Settings and send it around. Anyone who signs up with it gets 10 🪙 Mob Dollars instantly, and you get 50 🪙 once they reach Street Rat (rank 2) — no limit on how many friends you can invite.</p>
   </div>
 </div>
 
@@ -2529,6 +2539,10 @@
 
   // Auth system
   let currentUser = null;
+
+  // A referral link is just "?ref=<userId>" tacked onto the homepage URL -
+  // grab it once on load so it's ready to send along with a sign-up.
+  const pendingReferralCode = new URLSearchParams(window.location.search).get('ref');
 
   async function initAuth(){
     // Auth is a server-side session (cookie), not something we can read
@@ -2857,7 +2871,7 @@
       const res = await fetch('/api/signup', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email, password: pass, pimpName})
+        body: JSON.stringify({email, password: pass, pimpName, referredBy: pendingReferralCode})
       });
       data = await res.json();
     } catch(e){
@@ -5347,6 +5361,8 @@
     const tutorialToggle = document.getElementById('tutorialToggle');
     if(tutorialToggle) tutorialToggle.checked = state.showTutorial !== false;
     updatePushToggleBtn();
+    const refInput = document.getElementById('referralLinkInput');
+    if(refInput && currentUser) refInput.value = `${window.location.origin}/?ref=${currentUser.id}`;
   }
 
   // ---- Onboarding tutorial ----
@@ -6451,6 +6467,17 @@
   });
   document.getElementById('bribeBtn').addEventListener('click', bribeCops);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
+  document.getElementById('copyReferralLinkBtn').addEventListener('click', () => {
+    const input = document.getElementById('referralLinkInput');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(input.value).then(() => showToast('🪙 Referral link copied!'));
+    } else {
+      document.execCommand('copy');
+      showToast('🪙 Referral link copied!');
+    }
+  });
   document.getElementById('savePimpNameBtn').addEventListener('click', savePimpName);
   document.getElementById('viewOwnProfileBtn').addEventListener('click', openOwnProfile);
   document.getElementById('saveCrewNameBtn').addEventListener('click', saveCrewName);
