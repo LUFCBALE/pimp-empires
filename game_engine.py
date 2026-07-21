@@ -1094,13 +1094,26 @@ def regen_bots(world, now):
 
             # Bots throw down on each other too, same rules as a player
             # attack (guns decide it, wins wipe thugs with hospital
-            # recovery) - but never against their own crew. Every archetype
-            # has a baseline chance; sharks (and enforcers, a bit) run hotter.
+            # recovery) - but never against their own crew, and never
+            # against a human player (targets only ever come from
+            # world["bots"], which holds no human accounts). Not restricted
+            # to the same city: each of the 4 crews lives in one fixed
+            # shared city (ensure_bot_crew_cities), so a same-city
+            # requirement here would mean two different-gang bots could
+            # never actually be in the same place at once - rival gang wars
+            # instead of a literal turf requirement. Every archetype has a
+            # baseline chance; sharks (and enforcers, a bit) run hotter.
             attack_chance = max(BOT_BASE_ATTACK_CHANCE, arch["raidChance"])
             if random.random() < attack_chance:
-                targets = [ob for ob in world["bots"] if ob["id"] != b["id"] and ob["city"] == b["city"] and ob["gang"] != b["gang"]]
+                targets = [ob for ob in world["bots"] if ob["id"] != b["id"] and ob["gang"] != b["gang"]]
                 if targets:
-                    bot_attack_bot(b, random.choice(targets), now)
+                    defender = random.choice(targets)
+                    bot_attack_bot(b, defender, now)
+                    log_attack(
+                        world,
+                        b["boss"], b.get("gang", ""), world.get("botCrewEmblems", {}).get(b.get("gang", ""), ""),
+                        defender["boss"], defender.get("gang", ""), world.get("botCrewEmblems", {}).get(defender.get("gang", ""), ""),
+                    )
 
             if random.random() < 0.12:
                 loss_pct = 0.1 + random.random() * 0.2
@@ -1137,14 +1150,13 @@ def process_human_hospital(state, now):
         state["thugsHospitalReadyAt"] = 0
 
 
-GLOBAL_ATTACK_LOG_MAX = 50
+GLOBAL_ATTACK_LOG_MAX = 150  # bot-vs-bot wars fire often enough now to churn a smaller cap within hours
 
 
 def log_attack(world, attacker_name, attacker_gang, attacker_emblem, defender_name, defender_gang, defender_emblem):
-    """Global, world-shared feed of every real attack (any player hitting
-    any bot or player) - visible to everyone, unlike the private per-player
-    log. Bot-vs-bot skirmishes don't get logged here, only ones a real
-    player actually launched."""
+    """Global, world-shared feed of every attack - a player hitting any bot
+    or player, or a bot hitting a rival bot - visible to everyone, unlike
+    the private per-player log."""
     log = world.setdefault("globalAttackLog", [])
     log.append({
         "t": now_ms(),
