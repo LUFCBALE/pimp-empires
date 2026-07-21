@@ -55,7 +55,7 @@ BOT_COUNT = 19
 # net worth/hoes even though nobody was actively playing them.
 BOT_TICK_MS = REGEN_MS  # same 20-real-minute cadence as human turn regen
 BOT_MAX_TURNS = 3600  # same cap as a human's maxTurns
-BOT_MAX_TICKS_PER_CATCHUP = 15  # cap one catch-up burst at ~5 hours of simulated activity (15 * 20min)
+BOT_MAX_TICKS_PER_CATCHUP = 72  # cap one catch-up burst at ~24 hours of simulated activity (72 * 20min) - a quiet overnight stretch with no requests shouldn't permanently cost bots a chunk of growth
 
 HOE_RECRUIT_TURN_BLOCK = 10
 HOE_RECRUIT_MIN = 1
@@ -933,6 +933,15 @@ def run_bot_factories(b, ticks):
 # plowed into new factories every tick (see bot_reinvest_cash).
 CASH_REINVEST_FLOOR = 20000
 
+# Factories cost £940k-32M (FACTORY_COSTS) but a bot's "cash" pool only ever
+# gets this slice of each tick's hoe earnings (the rest goes to hoeCash,
+# their raidable spending money) - at the old 0.2 rate bots took most of a
+# full day to afford their very first factory, leaving them looking totally
+# stagnant next to human players who can rush factories in hours. 1.0 gets
+# the first factory bought within 2-4 hours instead, without touching
+# hoeCash or thug/hoe growth (those already track human pace reasonably).
+BOT_CASH_EARN_RATE = 1.0
+
 
 def bot_reinvest_cash(b, arch):
     """Net worth is purely factory-based now, so a bot that just stockpiles
@@ -1054,7 +1063,7 @@ def regen_bots(world, now):
 
             hoe_earnings = hoes_for_earnings * HOE_NIGHTLY_CAP * (b["hoeMorale"] / 100) * (turns_to_spend / NIGHT_TURNS)
             b["hoeCash"] += jround(hoe_earnings * 1.5)
-            b["cash"] += jround(hoe_earnings * 0.2 * arch["cashRate"])
+            b["cash"] += jround(hoe_earnings * BOT_CASH_EARN_RATE * arch["cashRate"])
 
             hoes_per_turn = ((HOE_RECRUIT_MIN + HOE_RECRUIT_MAX) / 2) / HOE_RECRUIT_TURN_BLOCK
             b["hoes"] += max(0, jround(hoes_per_turn * turns_to_spend * (1.0 + random.random() * 0.8) * arch["hoeGrowth"]))
