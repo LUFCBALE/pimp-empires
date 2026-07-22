@@ -654,11 +654,21 @@ def check_milestone_achievements(state):
 #   enforcer - invests hard in thugs, more muscle than money
 #   mogul    - saves aggressively and plows cash into buying factories
 #   shark    - preys on other bots in the same city, skimming their hoeCash
+# reinvestRate controls what fraction of surplus cash gets banked toward the
+# next factory purchase each tick (see bot_reinvest_cash). Doubled across the
+# board from the original 0.10-0.35 range: with a single random factory type
+# as the savings target (costs range £940k-32M) and only a small per-tick
+# slice of surplus actually going toward it, bots were routinely still
+# sitting on a half-finished factorySavings pot with zero (or just one)
+# factories to show for a full day of play, while active human players
+# racked up 5-10x that net worth in the same stretch. At 2x, an unlucky
+# expensive first target (car/gun at £25-30M) still clears within about
+# half a day instead of potentially the whole day.
 BOT_ARCHETYPES = {
-    "hustler": {"hoeGrowth": 1.4, "thugGrowth": 0.7, "cashRate": 1.0, "raidChance": 0.0, "reinvestRate": 0.20},
-    "enforcer": {"hoeGrowth": 0.7, "thugGrowth": 1.5, "cashRate": 1.0, "raidChance": 0.05, "reinvestRate": 0.15},
-    "mogul": {"hoeGrowth": 1.0, "thugGrowth": 0.9, "cashRate": 1.4, "raidChance": 0.0, "reinvestRate": 0.35},
-    "shark": {"hoeGrowth": 0.9, "thugGrowth": 1.1, "cashRate": 0.9, "raidChance": 0.25, "reinvestRate": 0.10},
+    "hustler": {"hoeGrowth": 1.4, "thugGrowth": 0.7, "cashRate": 1.0, "raidChance": 0.0, "reinvestRate": 0.40},
+    "enforcer": {"hoeGrowth": 0.7, "thugGrowth": 1.5, "cashRate": 1.0, "raidChance": 0.05, "reinvestRate": 0.30},
+    "mogul": {"hoeGrowth": 1.0, "thugGrowth": 0.9, "cashRate": 1.4, "raidChance": 0.0, "reinvestRate": 0.70},
+    "shark": {"hoeGrowth": 0.9, "thugGrowth": 1.1, "cashRate": 0.9, "raidChance": 0.25, "reinvestRate": 0.20},
 }
 # Bots buy every factory type except explosive (bombs) - a deliberate call
 # to keep bots out of the bomb-production business.
