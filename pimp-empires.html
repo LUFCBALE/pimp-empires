@@ -452,12 +452,6 @@
 
   /* ---- Location / Travel ---- */
   .location-panel{margin-bottom:20px;}
-  .panel.location-panel{
-    background-image:linear-gradient(180deg, rgba(8,6,12,0.82), rgba(8,6,12,0.92)), url('./travel%20background.jpg');
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-  }
   .location-panel .cur{
     display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
   }
@@ -6279,18 +6273,20 @@
       syncState();
     }
 
-    // The Informer page gets its own background, overriding the current
-    // city - restore the real city image the moment you leave.
+    // The Informer and Travel Agent pages get their own background,
+    // overriding the current city - restore the real city image the
+    // moment you leave.
     const bgScene = document.querySelector('.bg-scene');
     if(bgScene){
-      if(pageId === 'page-informer'){
+      if(pageId === 'page-informer' || pageId === 'page-travel'){
+        const img = pageId === 'page-informer' ? './informer.jpg' : './travel%20background.jpg';
         bgScene.style.animation = 'none';
         setTimeout(() => {
-          bgScene.style.backgroundImage = "url('./informer.jpg')";
+          bgScene.style.backgroundImage = `url('${img}')`;
           bgScene.style.animation = 'bgFade 1s ease-in-out';
         }, 10);
-        lastBgCity = 'informer';
-      } else if(lastBgCity === 'informer'){
+        lastBgCity = pageId;
+      } else if(lastBgCity === 'page-informer' || lastBgCity === 'page-travel'){
         lastBgCity = null;
         updateBackgroundForCity();
       }
