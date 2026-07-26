@@ -131,6 +131,20 @@
     0%, 100%{opacity:0.8;}
     50%{opacity:1.2;}
   }
+  .rain-overlay{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    opacity:0; transition:opacity 1.2s ease;
+    background-image:
+      repeating-linear-gradient(100deg, transparent 0px, transparent 2px, rgba(210,225,255,0.3) 2px, rgba(210,225,255,0.3) 3px, transparent 3px, transparent 30px),
+      repeating-linear-gradient(100deg, transparent 0px, transparent 1px, rgba(210,225,255,0.15) 1px, rgba(210,225,255,0.15) 1.6px, transparent 1.6px, transparent 18px);
+    background-size:100% 140%, 100% 140%;
+    animation:rainFall 0.45s linear infinite;
+  }
+  .rain-overlay.active{opacity:0.55;}
+  @keyframes rainFall{
+    0%{background-position:0 -80px, 15px -50px;}
+    100%{background-position:-30px 80px, -15px 50px;}
+  }
   .smoke{
     position:absolute; bottom:0; left:0;
     width:100%; height:40%;
@@ -995,6 +1009,7 @@
 </head>
 <body>
 <div class="bg-scene" aria-hidden="true">
+  <div class="rain-overlay" id="rainOverlay"></div>
   <svg viewBox="0 0 1600 500" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -3102,6 +3117,7 @@
     {name:'Amsterdam'},
     {name:'Dublin'},
   ];
+  const RAINY_CITIES = new Set(['Manchester', 'Liverpool', 'Leeds', 'Dublin']);
   const GANG_NAMES = ['The Players Club', 'Gang of London', 'Mighty Ducks', 'Mafia'];
 
   const BOSS_NICKNAMES = [
@@ -3165,6 +3181,12 @@
 
   let lastBgCity = null;
 
+  function updateRainOverlay(city){
+    const rain = document.getElementById('rainOverlay');
+    if(!rain) return;
+    rain.classList.toggle('active', RAINY_CITIES.has(city));
+  }
+
   function updateBackgroundForCity(){
     const bgScene = document.querySelector('.bg-scene');
     if(!bgScene) return;
@@ -3173,6 +3195,7 @@
     lastBgCity = city;
     const cityLower = city.toLowerCase();
     const bgImage = `url('./${cityLower}.jpg')`;
+    updateRainOverlay(city);
 
     // Trigger fade animation by resetting animation
     bgScene.style.animation = 'none';
@@ -6387,6 +6410,7 @@
           bgScene.style.backgroundImage = `url('${img}')`;
           bgScene.style.animation = 'bgFade 1s ease-in-out';
         }, 10);
+        updateRainOverlay(null);
         lastBgCity = pageId;
       } else if(lastBgCity === 'page-informer' || lastBgCity === 'page-travel'){
         lastBgCity = null;
