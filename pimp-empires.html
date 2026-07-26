@@ -3779,6 +3779,8 @@
   async function bombBot(botId, factoryType, qty){
     try{
       const data = await apiCall('/api/bomb', {botId, factoryType, qty});
+      showExplosionAnimation();
+      playBombSound();
       showBombResultModal(data.result);
       render(); renderLocation(); renderAttacks();
     } catch(e){ /* toast already shown */ }
@@ -4810,6 +4812,68 @@
         <span style="font-size:4.5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0s;">💥🔫</span>
         <span style="font-size:4.5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0.08s;">🔫💥</span>
         <span style="font-size:4.5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0.16s;">💥🔫</span>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 800);
+  }
+
+  function playBombSound(){
+    if(isSoundMuted()) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+
+      // Low sine "thump" for the body of the blast.
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
+      oscGain.gain.setValueAtTime(0.9, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.5);
+
+      // Filtered noise burst for the crack/debris on top of the thump.
+      const bufferSize = ctx.sampleRate * 0.6;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i = 0; i < bufferSize; i++){
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.setValueAtTime(1800, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(200, now + 0.6);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.8, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start(now);
+    } catch(e) {
+      // Audio not supported, silent fail
+    }
+  }
+
+  function showExplosionAnimation(){
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.3);
+      display:flex; align-items:center; justify-content:center;
+      animation:gunfireFlash 0.8s ease-out; pointer-events:none;
+    `;
+    overlay.innerHTML = `
+      <div style="display:flex; gap:14px; animation:gunfireShake 0.7s ease-in-out;">
+        <span style="font-size:5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0s;">💥</span>
+        <span style="font-size:6rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0.08s;">🔥</span>
+        <span style="font-size:5rem; display:inline-block; animation:muzzleFlashPop 0.7s ease-out 0.16s;">💥</span>
       </div>
     `;
     document.body.appendChild(overlay);
