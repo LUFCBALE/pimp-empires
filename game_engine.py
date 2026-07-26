@@ -1362,7 +1362,7 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
 
     if destroyed <= 0:
         add_log(state, f"Your thugs went in and hit 0 of {bot['boss']}'s {factory_type} factories — they don't have any.", "bad")
-        return {"boss": bot["boss"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False}
+        return {"boss": bot["boss"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "networthDestroyed": 0}
 
     bot["factories"][factory_type] -= destroyed
     wiped_out = bot["factories"][factory_type] <= 0
@@ -1373,7 +1373,8 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else "") + ".", "good")
     award_achievement(state, "demolition_man")
-    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out}
+    networth_destroyed = destroyed * FACTORY_SELL_PRICES[factory_type]
+    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "networthDestroyed": networth_destroyed}
 
 
 # ---------------------------------------------------------------------------
@@ -1539,7 +1540,7 @@ def bomb_human(state, defender, factory_type, qty=None):
 
     if destroyed <= 0:
         add_log(state, f"Your thugs went in and hit 0 of {defender['name']}'s {factory_type} factories — they don't have any.", "bad")
-        return {"boss": defender["name"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "bombsDestroyed": 0}
+        return {"boss": defender["name"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "bombsDestroyed": 0, "networthDestroyed": 0}
 
     defender["factories"][factory_type] -= destroyed
     wiped_out = defender["factories"][factory_type] <= 0
@@ -1563,7 +1564,8 @@ def bomb_human(state, defender, factory_type, qty=None):
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
                        + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
     award_achievement(state, "demolition_man")
-    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed}
+    networth_destroyed = destroyed * FACTORY_SELL_PRICES[factory_type]
+    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed, "networthDestroyed": networth_destroyed}
 
 
 def steal_cars_from_bot(state, bot_id, car_type, world, qty=None):

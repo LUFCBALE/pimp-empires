@@ -921,6 +921,8 @@
   #workResultsModal:not(.hidden){display:flex !important;}
   #attackResultModal.hidden{display:none !important;}
   #attackResultModal:not(.hidden){display:flex !important;}
+  #bombResultModal.hidden{display:none !important;}
+  #bombResultModal:not(.hidden){display:flex !important;}
   #mobDollarsModal.hidden{display:none !important;}
   #mobDollarsModal:not(.hidden){display:flex !important;}
 
@@ -1462,6 +1464,18 @@
     </div>
     <div id="attackResultContent"></div>
     <button id="closeAttackResultBtn" style="width:100%; margin-top:20px; background:var(--danger); border:2px solid var(--danger); border-radius:6px; padding:12px; cursor:pointer; font-weight:700; color:#fff; font-size:1rem; transition:all 0.2s;">Continue</button>
+  </div>
+</div>
+
+<div id="bombResultModal" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:9998; display:flex; align-items:center; justify-content:center;">
+  <div id="bombResultBox" style="background:var(--panel); border:3px solid var(--gold); border-radius:14px; width:90%; max-width:500px; padding:30px; box-shadow:0 0 30px rgba(240,196,25,0.4);">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div id="bombResultIcon" style="font-size:3rem; margin-bottom:8px;">💣</div>
+      <div id="bombResultTitle" style="font-size:1.6rem; font-weight:700; color:var(--gold); margin-bottom:4px;">FACTORIES DESTROYED</div>
+      <div id="bombResultSub" style="font-size:0.9rem; color:var(--text-dim);"></div>
+    </div>
+    <div id="bombResultContent"></div>
+    <button id="closeBombResultBtn" style="width:100%; margin-top:20px; background:var(--gold); border:2px solid var(--gold); border-radius:6px; padding:12px; cursor:pointer; font-weight:700; color:#000; font-size:1rem; transition:all 0.2s;">Continue</button>
   </div>
 </div>
 
@@ -3759,24 +3773,71 @@
   }
 
   const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
+  const FACTORY_EMOJI = {medical: '🏥', gun: '🏭', car: '🏗️', drug: '❄️', explosive: '💣', counterfeit: '💰', gym: '🏋️'};
   const BOMB_TURN_COST = 20; // Must match BOMB_TURN_COST in game_engine.py.
 
   async function bombBot(botId, factoryType, qty){
     try{
       const data = await apiCall('/api/bomb', {botId, factoryType, qty});
-      if(data.result.destroyed <= 0){
-        showToast(`💣 Your thugs went in and hit 0 of ${data.result.boss}'s ${data.result.target} factories — they don't have any.`);
-      } else if(data.result.wipedOut){
-        // Deliberately no bomb count shown here - bombsSpent ÷ the known
-        // per-unit cost would just hand back their exact factory count,
-        // the same leak the "left standing" text used to cause.
-        const bonus = data.result.bombsDestroyed ? ` and torched their stockpiled bombs` : '';
-        showToast(`💣 Wiped out every ${data.result.target} factory ${data.result.boss} owned${bonus}!`);
-      } else {
-        showToast(`💣 Destroyed ${data.result.destroyed} of ${data.result.boss}'s ${data.result.target} factories (-${data.result.bombsSpent} bombs)!`);
-      }
+      showBombResultModal(data.result);
       render(); renderLocation(); renderAttacks();
     } catch(e){ /* toast already shown */ }
+  }
+
+  function showBombResultModal(r){
+    const modal = document.getElementById('bombResultModal');
+    const box = document.getElementById('bombResultBox');
+    const icon = document.getElementById('bombResultIcon');
+    const title = document.getElementById('bombResultTitle');
+    const sub = document.getElementById('bombResultSub');
+    const content = document.getElementById('bombResultContent');
+    if(!modal) return;
+
+    const emoji = FACTORY_EMOJI[r.target] || '💣';
+    const label = FACTORY_TYPE_LABELS[r.target] || r.target;
+    icon.textContent = emoji;
+
+    if(r.destroyed <= 0){
+      box.style.borderColor = 'var(--panel-line)';
+      box.style.boxShadow = 'none';
+      title.textContent = 'NOTHING TO HIT';
+      title.style.color = 'var(--text-dim)';
+      sub.innerHTML = `Your thugs went in after <b>${escapeHtml(r.boss)}</b>'s ${label} factories, but they don't own any.`;
+      content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
+          <span style="color:var(--text-dim);">Turns spent for nothing</span>
+          <span style="font-weight:700;">${BOMB_TURN_COST}</span>
+        </div>`;
+    } else {
+      box.style.borderColor = 'var(--gold)';
+      box.style.boxShadow = '0 0 30px rgba(240,196,25,0.4)';
+      title.textContent = r.wipedOut ? 'WIPED OUT' : 'FACTORIES DESTROYED';
+      title.style.color = 'var(--gold)';
+      sub.innerHTML = r.wipedOut
+        ? `You wiped out every ${label} factory <b>${escapeHtml(r.boss)}</b> owned.`
+        : `You hit <b>${escapeHtml(r.boss)}</b>'s ${label} factories.`;
+      content.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px; font-family:'IBM Plex Mono',monospace;">
+          <div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
+            <span style="color:var(--text-dim);">${emoji} ${label} factories destroyed</span>
+            <span style="color:var(--gold); font-weight:700;">${r.destroyed}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
+            <span style="color:var(--text-dim);">💣 Bombs used</span>
+            <span style="font-weight:700;">${r.bombsSpent.toLocaleString('en-GB')}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px; border:1px solid var(--gold);">
+            <span style="color:var(--text-dim);">Net worth destroyed</span>
+            <span style="color:var(--gold); font-weight:700;">${fmtMoney(r.networthDestroyed)}</span>
+          </div>
+          ${r.bombsDestroyed ? `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
+            <span style="color:var(--text-dim);">🔥 Their bomb stockpile torched</span>
+            <span style="font-weight:700;">${r.bombsDestroyed.toLocaleString('en-GB')}</span>
+          </div>` : ''}
+        </div>`;
+    }
+
+    modal.classList.remove('hidden');
   }
 
   const CAR_TYPE_LABELS = {cadillac: 'Cadillac', armoredTruck: 'Armored Truck'};
@@ -6451,6 +6512,15 @@
   });
   document.getElementById('attackResultModal').addEventListener('click', (e) => {
     if(e.target.id === 'attackResultModal'){
+      e.target.classList.add('hidden');
+    }
+  });
+  document.getElementById('closeBombResultBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('bombResultModal').classList.add('hidden');
+  });
+  document.getElementById('bombResultModal').addEventListener('click', (e) => {
+    if(e.target.id === 'bombResultModal'){
       e.target.classList.add('hidden');
     }
   });
