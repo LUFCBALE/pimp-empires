@@ -805,12 +805,13 @@
 
   .info-tip{
     display:inline-flex; align-items:center; justify-content:center;
-    width:16px; height:16px; border-radius:50%; margin-left:6px; vertical-align:middle;
-    background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text-dim);
-    font-family:'IBM Plex Mono',monospace; font-size:0.65rem; font-weight:700;
+    width:21px; height:21px; border-radius:50%; margin-left:6px; vertical-align:middle;
+    background:var(--bg-2); border:1px solid var(--gold); color:var(--gold);
+    font-family:'IBM Plex Mono',monospace; font-size:0.78rem; font-weight:700;
     cursor:help; position:relative;
+    box-shadow:0 0 6px rgba(240,196,25,0.7), 0 0 2px rgba(240,196,25,0.9);
   }
-  .info-tip:hover{color:#fff; border-color:var(--hot);}
+  .info-tip:hover{color:#1a1305; background:var(--gold); box-shadow:0 0 14px rgba(240,196,25,0.95);}
   .info-tip:hover::after{
     content:attr(data-tip);
     position:absolute; left:0; top:130%; z-index:50;
