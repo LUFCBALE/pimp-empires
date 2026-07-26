@@ -824,6 +824,15 @@
     font-family:'IBM Plex Mono',monospace; font-size:0.85rem; padding:7px 10px; border-radius:6px; outline:none;
   }
   .re-card input[type=number]:focus{border-color:var(--buy-green-light);}
+  .re-qty-row{display:flex; gap:6px;}
+  .re-qty-row input[type=number]{flex:1;}
+  .re-max-btn{
+    background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; font-weight:700; letter-spacing:0.03em;
+    padding:0 14px; border-radius:6px; cursor:pointer; white-space:nowrap;
+  }
+  .re-max-btn:hover{color:#fff; border-color:var(--buy-green-light);}
+  .re-max-btn:disabled{opacity:0.4; cursor:not-allowed;}
   input[type=range]{
     width:100%; -webkit-appearance:none; height:6px; border-radius:99px;
     background:var(--bg-2); border:1px solid var(--panel-line); outline:none;
@@ -1766,7 +1775,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedMedical">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyMedicalQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyMedicalQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyMedicalQty">
+        <button type="button" class="re-max-btn" id="buyMedicalMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyMedicalBtn" style="margin-top:8px;">Buy 1 — £940,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellMedicalQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellMedicalSlider">
@@ -1788,7 +1800,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGun">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGunQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyGunQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyGunQty">
+        <button type="button" class="re-max-btn" id="buyGunMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyGunBtn" style="margin-top:8px;">Buy 1 — £25,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellGunQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellGunSlider">
@@ -1810,7 +1825,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedCar">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyCarQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyCarQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyCarQty">
+        <button type="button" class="re-max-btn" id="buyCarMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyCarBtn" style="margin-top:8px;">Buy 1 — £30,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellCarQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellCarSlider">
@@ -1832,7 +1850,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedDrug">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyDrugQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyDrugQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyDrugQty">
+        <button type="button" class="re-max-btn" id="buyDrugMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyDrugBtn" style="margin-top:8px;">Buy 1 — £14,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellDrugQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellDrugSlider">
@@ -1854,7 +1875,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedExplosive">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyExplosiveQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyExplosiveQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyExplosiveQty">
+        <button type="button" class="re-max-btn" id="buyExplosiveMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyExplosiveBtn" style="margin-top:8px;">Buy 1 — £32,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellExplosiveQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellExplosiveSlider">
@@ -1877,7 +1901,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedCounterfeit">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyCounterfeitQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyCounterfeitQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyCounterfeitQty">
+        <button type="button" class="re-max-btn" id="buyCounterfeitMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyCounterfeitBtn" style="margin-top:8px;">Buy 1 — £23,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellCounterfeitQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellCounterfeitSlider">
@@ -1899,7 +1926,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGym">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGymQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyGymQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyGymQty">
+        <button type="button" class="re-max-btn" id="buyGymMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyGymBtn" style="margin-top:8px;">Buy 1 — £10,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellGymQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellGymSlider">
@@ -1921,7 +1951,10 @@
       </div>
       <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedWarehouse">0</span></div>
       <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyWarehouseQtyLabel">1</b></div>
-      <input type="number" min="1" value="1" id="buyWarehouseQty">
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyWarehouseQty">
+        <button type="button" class="re-max-btn" id="buyWarehouseMaxBtn">MAX</button>
+      </div>
       <button class="cta cta-buy" id="buyWarehouseBtn" style="margin-top:8px;">Buy 1 — £20,000,000</button>
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellWarehouseQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellWarehouseSlider">
@@ -5938,11 +5971,21 @@
     btn.disabled = qty < 1;
   }
 
+  function setBuyQtyMax(type){
+    const suffix = FACTORY_ID_SUFFIX[type];
+    const input = document.getElementById(`buy${suffix}Qty`);
+    if(!input || input.disabled) return;
+    const affordable = Math.floor((state.cash || 0) / FACTORY_COSTS[type]);
+    input.value = Math.max(1, affordable);
+    updateBuyFactoryLabel(type);
+  }
+
   function updateBuyFactoryLabel(type){
     const suffix = FACTORY_ID_SUFFIX[type];
     const input = document.getElementById(`buy${suffix}Qty`);
     const label = document.getElementById(`buy${suffix}QtyLabel`);
     const btn = document.getElementById(`buy${suffix}Btn`);
+    const maxBtn = document.getElementById(`buy${suffix}MaxBtn`);
     if(!input || !label || !btn) return;
     if(!isFactoryUnlocked(type)){
       const requiredRank = FACTORY_UNLOCK_RANK[type];
@@ -5950,9 +5993,11 @@
       btn.textContent = `🔒 Unlocks at Rank ${requiredRank} (${RANK_NAMES[requiredRank]})`;
       btn.disabled = true;
       input.disabled = true;
+      if(maxBtn) maxBtn.disabled = true;
       return;
     }
     input.disabled = false;
+    if(maxBtn) maxBtn.disabled = false;
     const qty = Math.max(1, parseInt(input.value) || 1);
     label.textContent = qty;
     const cost = FACTORY_COSTS[type] * qty;
@@ -6483,6 +6528,7 @@
       if(qty > 0) sellFactory(type, qty);
     });
     document.getElementById(`buy${suffix}Qty`).addEventListener('input', () => updateBuyFactoryLabel(type));
+    document.getElementById(`buy${suffix}MaxBtn`).addEventListener('click', () => setBuyQtyMax(type));
   });
   document.querySelectorAll('[data-back]').forEach(btn => {
     btn.addEventListener('click', () => showPage('page-main'));
