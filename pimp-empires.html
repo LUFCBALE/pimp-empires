@@ -942,13 +942,14 @@
   footer button:hover{color:var(--danger); border-color:var(--danger);}
 
   .toast{
-    position:fixed; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    position:fixed; top:calc(16px + env(safe-area-inset-top)); left:50%;
+    transform:translateX(-50%) translateY(-14px) scale(0.96);
     background:var(--panel); border:1px solid var(--hot); color:#fff;
     padding:10px 18px; border-radius:8px; font-family:'IBM Plex Mono',monospace; font-size:0.8rem;
-    opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:50;
-    max-width:calc(100vw - 32px);
+    opacity:0; pointer-events:none; transition:opacity .28s cubic-bezier(.25,.8,.4,1), transform .28s cubic-bezier(.25,.8,.4,1);
+    z-index:50; max-width:calc(100vw - 32px);
   }
-  .toast.show{opacity:1;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0) scale(1);}
 
   /* ---- Onboarding tutorial (spotlight coach marks) ---- */
   #tutorialOverlay{
@@ -1001,6 +1002,32 @@
   .tutorial-back:hover{color:#fff;}
   .tutorial-next{background:linear-gradient(90deg, var(--hot), #ff6b9d); color:#fff; border-color:var(--hot);}
   .tutorial-next:hover{filter:brightness(1.1);}
+
+  /* ---- Button press feedback - applied last so it wins over each
+     element's own :hover transform on the cascade tie. ---- */
+  .cta:active{transform:scale(0.97);}
+  .nav-btn:active{transform:scale(0.98) translateY(0);}
+  .re-card:active{transform:scale(0.995);}
+  .re-max-btn:active, .back-btn:active, .sidebar-link:active,
+  .bm-quickbtns button:active, .quickbtns button:active{transform:scale(0.94);}
+  .info-tip:active{transform:scale(0.9);}
+
+  /* ---- Staggered entrance for grids of cards/buttons ---- */
+  .nav-buttons .nav-btn, .re-cards .re-card{
+    animation:cardIn 0.4s ease backwards;
+  }
+  .nav-buttons .nav-btn:nth-child(1), .re-cards .re-card:nth-child(1){animation-delay:0.03s;}
+  .nav-buttons .nav-btn:nth-child(2), .re-cards .re-card:nth-child(2){animation-delay:0.08s;}
+  .nav-buttons .nav-btn:nth-child(3), .re-cards .re-card:nth-child(3){animation-delay:0.13s;}
+  .nav-buttons .nav-btn:nth-child(4), .re-cards .re-card:nth-child(4){animation-delay:0.18s;}
+  .nav-buttons .nav-btn:nth-child(5), .re-cards .re-card:nth-child(5){animation-delay:0.23s;}
+  .nav-buttons .nav-btn:nth-child(6), .re-cards .re-card:nth-child(6){animation-delay:0.28s;}
+  .nav-buttons .nav-btn:nth-child(7), .re-cards .re-card:nth-child(7){animation-delay:0.33s;}
+  .nav-buttons .nav-btn:nth-child(8), .re-cards .re-card:nth-child(8){animation-delay:0.38s;}
+  @keyframes cardIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
 </style>
 </head>
 <body>
@@ -4265,6 +4292,39 @@
     return '£' + Math.round(n).toLocaleString('en-GB');
   }
 
+  // Tweens an element's displayed number from its last rendered value to
+  // `newValue` instead of snapping straight to it. `formatFn` receives the
+  // in-progress numeric value each frame (already includes any interpolation).
+  const _numberAnimFrames = new WeakMap();
+  function animateNumberTo(el, newValue, formatFn){
+    if(!el) return;
+    const prevRaw = el.dataset.rawValue;
+    const from = prevRaw === undefined ? newValue : parseFloat(prevRaw);
+    el.dataset.rawValue = newValue;
+    if(_numberAnimFrames.has(el)){
+      cancelAnimationFrame(_numberAnimFrames.get(el));
+      _numberAnimFrames.delete(el);
+    }
+    if(isNaN(from) || from === newValue){
+      el.textContent = formatFn(newValue);
+      return;
+    }
+    const duration = 400;
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = formatFn(from + (newValue - from) * eased);
+      if(t < 1){
+        _numberAnimFrames.set(el, requestAnimationFrame(step));
+      } else {
+        el.textContent = formatFn(newValue);
+        _numberAnimFrames.delete(el);
+      }
+    }
+    _numberAnimFrames.set(el, requestAnimationFrame(step));
+  }
+
   const DRUG_FACTORY_RATE = 2079; // cocaine per factory per 30 mins
   const MEDICAL_KIT_RATE = 130; // safety kits per factory per 30 mins
   const EXPLOSIVE_BOMB_RATE = 65; // bombs per factory per 30 mins
@@ -4394,7 +4454,7 @@
     renderXP();
 
     const playerNW = totalNetWorth();
-    document.getElementById('playerNWValue').textContent = fmtMoney(playerNW);
+    animateNumberTo(document.getElementById('playerNWValue'), playerNW, v => fmtMoney(v));
 
     const dashRoster = (state.crewRoster && state.crewRoster.members) || [];
     if(state.gang && dashRoster.length > 0){
@@ -4406,11 +4466,11 @@
       document.getElementById('crewNWContainer').style.display = 'none';
     }
 
-    document.getElementById('statCash').textContent = fmtMoney(state.cash);
+    animateNumberTo(document.getElementById('statCash'), state.cash, v => fmtMoney(v));
     document.getElementById('statBank').textContent = 'banked: ' + fmtMoney(state.bank);
     document.getElementById('statHoes').textContent = state.hoes;
     document.getElementById('statThugs').textContent = state.thugs;
-    document.getElementById('statTurns').textContent = `${state.turns} / ${state.maxTurns}`;
+    animateNumberTo(document.getElementById('statTurns'), state.turns, v => `${Math.round(v)} / ${state.maxTurns}`);
     document.getElementById('mobDollarsBalance').textContent = state.mobDollars || 0;
 
     const turnInput = document.getElementById('turnSlider');
