@@ -1770,7 +1770,6 @@
   </div>
 
   <div class="re-cards">
-
     <div class="re-card" data-factory-card="medical">
       <div class="re-art">
         <img src="./medical%20factory.jpg" alt="Medical Factory">
@@ -1792,6 +1791,52 @@
       <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellMedicalQtyLabel">0</b></div>
       <input type="number" min="0" max="0" value="0" id="sellMedicalSlider">
       <button class="cta cta-sm cta-red" id="sellMedicalBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
+    </div>
+
+    <div class="re-card" data-factory-card="gym">
+      <div class="re-art">
+        <img src="./gym.jpg" alt="Gym">
+      </div>
+      <div class="re-info">
+        <div class="re-name">Gym <span class="info-tip" data-tip="Recruits and trains new thugs for your crew automatically. Requires Rank 2 (Street Rat).">?</span></div>
+        <div class="re-tier" style="color:var(--teal)">TIER 2</div>
+        <div class="re-stat">🏗️ Buy price: <b>£10,000,000</b></div>
+        <div class="re-stat">💪 Production: <b>10 Thugs / 30 mins</b></div>
+        <div class="re-stat">💷 Sell price: <b>£5,000,000 each</b></div>
+      </div>
+      <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGym">0</span></div>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGymQtyLabel">1</b></div>
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyGymQty">
+        <button type="button" class="re-max-btn" id="buyGymMaxBtn">MAX</button>
+      </div>
+      <button class="cta cta-buy" id="buyGymBtn" style="margin-top:8px;">Buy 1 — £10,000,000</button>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellGymQtyLabel">0</b></div>
+      <input type="number" min="0" max="0" value="0" id="sellGymSlider">
+      <button class="cta cta-sm cta-red" id="sellGymBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
+    </div>
+
+    <div class="re-card" data-factory-card="warehouse">
+      <div class="re-art">
+        <img src="./warehouse.jpg" alt="Warehouse">
+      </div>
+      <div class="re-info">
+        <div class="re-name">Warehouse <span class="info-tip" data-tip="Protects your stashed produce — anything over capacity is exposed and goes down with a bombing raid on the matching factories. Lose your warehouses and everything they were protecting goes with them. Requires Rank 2 (Street Rat).">?</span></div>
+        <div class="re-tier" style="color:var(--teal)">TIER 2</div>
+        <div class="re-stat">🏗️ Buy price: <b>£20,000,000</b></div>
+        <div class="re-stat">📦 Production: <b>+20,000 storage capacity each</b> for drugs, cars and guns</div>
+        <div class="re-stat">💷 Sell price: <b>£9,000,000 each</b></div>
+      </div>
+      <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedWarehouse">0</span></div>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyWarehouseQtyLabel">1</b></div>
+      <div class="re-qty-row">
+        <input type="number" min="1" value="1" id="buyWarehouseQty">
+        <button type="button" class="re-max-btn" id="buyWarehouseMaxBtn">MAX</button>
+      </div>
+      <button class="cta cta-buy" id="buyWarehouseBtn" style="margin-top:8px;">Buy 1 — £20,000,000</button>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellWarehouseQtyLabel">0</b></div>
+      <input type="number" min="0" max="0" value="0" id="sellWarehouseSlider">
+      <button class="cta cta-sm cta-red" id="sellWarehouseBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
     <div class="re-card" data-factory-card="gun">
@@ -1909,53 +1954,6 @@
       <input type="number" min="0" max="0" value="0" id="sellCounterfeitSlider">
       <button class="cta cta-sm cta-red" id="sellCounterfeitBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
-
-    <div class="re-card" data-factory-card="gym">
-      <div class="re-art">
-        <img src="./gym.jpg" alt="Gym">
-      </div>
-      <div class="re-info">
-        <div class="re-name">Gym <span class="info-tip" data-tip="Recruits and trains new thugs for your crew automatically. Requires Rank 2 (Street Rat).">?</span></div>
-        <div class="re-tier" style="color:var(--teal)">TIER 2</div>
-        <div class="re-stat">🏗️ Buy price: <b>£10,000,000</b></div>
-        <div class="re-stat">💪 Production: <b>10 Thugs / 30 mins</b></div>
-        <div class="re-stat">💷 Sell price: <b>£5,000,000 each</b></div>
-      </div>
-      <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedGym">0</span></div>
-      <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyGymQtyLabel">1</b></div>
-      <div class="re-qty-row">
-        <input type="number" min="1" value="1" id="buyGymQty">
-        <button type="button" class="re-max-btn" id="buyGymMaxBtn">MAX</button>
-      </div>
-      <button class="cta cta-buy" id="buyGymBtn" style="margin-top:8px;">Buy 1 — £10,000,000</button>
-      <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellGymQtyLabel">0</b></div>
-      <input type="number" min="0" max="0" value="0" id="sellGymSlider">
-      <button class="cta cta-sm cta-red" id="sellGymBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
-    </div>
-
-    <div class="re-card" data-factory-card="warehouse">
-      <div class="re-art">
-        <img src="./warehouse.jpg" alt="Warehouse">
-      </div>
-      <div class="re-info">
-        <div class="re-name">Warehouse <span class="info-tip" data-tip="Protects your stashed produce — anything over capacity is exposed and goes down with a bombing raid on the matching factories. Lose your warehouses and everything they were protecting goes with them. Requires Rank 2 (Street Rat).">?</span></div>
-        <div class="re-tier" style="color:var(--teal)">TIER 2</div>
-        <div class="re-stat">🏗️ Buy price: <b>£20,000,000</b></div>
-        <div class="re-stat">📦 Production: <b>+20,000 storage capacity each</b> for drugs, cars and guns</div>
-        <div class="re-stat">💷 Sell price: <b>£9,000,000 each</b></div>
-      </div>
-      <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedWarehouse">0</span></div>
-      <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyWarehouseQtyLabel">1</b></div>
-      <div class="re-qty-row">
-        <input type="number" min="1" value="1" id="buyWarehouseQty">
-        <button type="button" class="re-max-btn" id="buyWarehouseMaxBtn">MAX</button>
-      </div>
-      <button class="cta cta-buy" id="buyWarehouseBtn" style="margin-top:8px;">Buy 1 — £20,000,000</button>
-      <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellWarehouseQtyLabel">0</b></div>
-      <input type="number" min="0" max="0" value="0" id="sellWarehouseSlider">
-      <button class="cta cta-sm cta-red" id="sellWarehouseBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
-    </div>
-
   </div>
 </div>
 
