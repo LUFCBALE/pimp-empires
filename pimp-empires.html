@@ -727,16 +727,6 @@
     font-weight:600; letter-spacing:0.03em;
   }
 
-  .re-portfolio-title{font-family:'IBM Plex Mono',monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); margin-bottom:10px;}
-  .re-portfolio-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
-  @media(max-width:500px){.re-portfolio-grid{grid-template-columns:1fr;}}
-  .re-pitem{background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:10px 12px; text-align:center;}
-  .re-pitem .picon{font-size:1.4rem;}
-  .re-pitem .pname{font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--text-dim); margin:3px 0;}
-  .re-pitem .pcount{font-family:'Anton',sans-serif; font-size:1.2rem; color:var(--gold);}
-  .re-pitem .poutput{font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--teal); margin-top:2px;}
-  .re-pitem .pworth{font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--text-dim); margin-top:1px;}
-
   /* ---- Black Market ---- */
   .nav-btn.blackmarket .icon{color:var(--gold);}
   .nav-btn.blackmarket{border-color:rgba(240,196,25,0.25); background:linear-gradient(180deg, rgba(240,196,25,0.06), var(--bg-2));}
@@ -1758,11 +1748,6 @@
   <div class="factory-timer-bar">
     <span>🏭</span>
     <span id="factoryTimer">No factories owned yet</span>
-  </div>
-
-  <div class="re-portfolio" id="rePortfolio" style="display:none;">
-    <div class="re-portfolio-title">Your Portfolio</div>
-    <div class="re-portfolio-grid" id="rePortfolioGrid"></div>
   </div>
 
   <div class="re-cards">
@@ -6274,71 +6259,6 @@
     setupSellSlider('counterfeit', f.counterfeit);
     setupSellSlider('gym', f.gym || 0);
     setupSellSlider('warehouse', f.warehouse || 0);
-
-    const carRates = carFactoryOutputRates(state.carFactoryRatio ?? 1.0);
-    const gunRates = gunFactoryOutputRates(state.gunFactoryRatio ?? 0.0);
-    const total = f.medical + f.gun + f.car + (f.drug || 0) + f.explosive + f.counterfeit + (f.gym || 0) + (f.warehouse || 0);
-    const portfolio = document.getElementById('rePortfolio');
-    portfolio.style.display = total > 0 ? 'block' : 'none';
-    if(total > 0){
-      document.getElementById('rePortfolioGrid').innerHTML = `
-        <div class="re-pitem">
-          <div class="picon">🏥</div>
-          <div class="pname">Medical Factories</div>
-          <div class="pcount">${f.medical}</div>
-          <div class="poutput">${f.medical * MEDICAL_KIT_RATE} kits/30min</div>
-          <div class="pworth">${fmtMoney(f.medical * FACTORY_SELL_PRICES.medical)}</div>
-        </div>
-        <div class="re-pitem">
-          <div class="picon">🏭</div>
-          <div class="pname">Gun Factories</div>
-          <div class="pcount">${f.gun}</div>
-          <div class="poutput">${Math.round(f.gun*gunRates.pistolRate)} 9mm + ${Math.round(f.gun*gunRates.shotgunRate)} shotgun + ${Math.round(f.gun*gunRates.akRate)} AK + ${Math.round(f.gun*gunRates.m249Rate)} M249 /30min</div>
-          <div class="pworth">${fmtMoney(f.gun * FACTORY_SELL_PRICES.gun)}</div>
-        </div>
-        <div class="re-pitem">
-          <div class="picon">🏗️</div>
-          <div class="pname">Car Factories</div>
-          <div class="pcount">${f.car}</div>
-          <div class="poutput">${Math.round(f.car * carRates.cadillacRate)} cadillacs + ${Math.round(f.car * carRates.armoredRate)} trucks /30min</div>
-          <div class="pworth">${fmtMoney(f.car * FACTORY_SELL_PRICES.car)}</div>
-        </div>
-        ${(f.drug || 0) > 0 ? `<div class="re-pitem">
-          <div class="picon">❄️</div>
-          <div class="pname">Drug Factories</div>
-          <div class="pcount">${f.drug}</div>
-          <div class="poutput">${f.drug * DRUG_FACTORY_RATE} cocaine/30min</div>
-          <div class="pworth">${fmtMoney(f.drug * FACTORY_SELL_PRICES.drug)}</div>
-        </div>` : ''}
-        ${f.explosive > 0 ? `<div class="re-pitem">
-          <div class="picon">💣</div>
-          <div class="pname">Explosive Factories</div>
-          <div class="pcount">${f.explosive}</div>
-          <div class="poutput">${f.explosive * EXPLOSIVE_BOMB_RATE} bombs/30min</div>
-          <div class="pworth">${fmtMoney(f.explosive * FACTORY_SELL_PRICES.explosive)}</div>
-        </div>` : ''}
-        ${f.counterfeit > 0 ? `<div class="re-pitem">
-          <div class="picon">💰</div>
-          <div class="pname">Counterfeit Factories</div>
-          <div class="pcount">${f.counterfeit}</div>
-          <div class="poutput">£${fmtMoney(f.counterfeit * COUNTERFEIT_CASH_RATE)}/30min</div>
-          <div class="pworth">${fmtMoney(f.counterfeit * FACTORY_SELL_PRICES.counterfeit)}</div>
-        </div>` : ''}
-        ${(f.gym || 0) > 0 ? `<div class="re-pitem">
-          <div class="picon">🏋️</div>
-          <div class="pname">Gym Factories</div>
-          <div class="pcount">${f.gym}</div>
-          <div class="poutput">${f.gym * GYM_THUG_RATE} thugs/30min</div>
-          <div class="pworth">${fmtMoney(f.gym * FACTORY_SELL_PRICES.gym)}</div>
-        </div>` : ''}
-        ${(f.warehouse || 0) > 0 ? `<div class="re-pitem">
-          <div class="picon">📦</div>
-          <div class="pname">Warehouses</div>
-          <div class="pcount">${f.warehouse}</div>
-          <div class="poutput">+${(f.warehouse * WAREHOUSE_CAPACITY_PER_UNIT).toLocaleString('en-GB')} storage capacity</div>
-          <div class="pworth">${fmtMoney(f.warehouse * FACTORY_SELL_PRICES.warehouse)}</div>
-        </div>` : ''}`;
-    }
   }
 
   function fmtHM(ms){
