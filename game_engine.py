@@ -243,6 +243,7 @@ CASINO_JOB = {
 FACTORY_COSTS = {
     "medical": 940000, "gun": 25000000, "car": 30000000, "drug": 14000000,
     "explosive": 32000000, "counterfeit": 23000000, "gym": 10000000,
+    "warehouse": 20000000,
 }
 
 # Explicit per-factory sell/refund price (not a flat % of cost - each type
@@ -250,13 +251,16 @@ FACTORY_COSTS = {
 FACTORY_SELL_PRICES = {
     "medical": 170000, "gun": 14000000, "car": 13000000, "drug": 3000000,
     "explosive": 9000000, "counterfeit": 6000000, "gym": 5000000,
+    "warehouse": 9000000,
 }
 
 # Real Estate is a progression ladder, not a shopping list you can max out
 # on day one - each rank-up unlocks exactly one new factory type, roughly in
 # order of tier/cost. Matches the `RANKS` levels defined further down.
+# Warehouse shares Rank 2 with Gym rather than pushing every later factory's
+# rank up a notch.
 FACTORY_UNLOCK_RANK = {
-    "medical": 1, "gym": 2, "gun": 3, "car": 4,
+    "medical": 1, "gym": 2, "warehouse": 2, "gun": 3, "car": 4,
     "drug": 5, "explosive": 6, "counterfeit": 7,
 }
 
@@ -372,7 +376,7 @@ def default_state(pimp_name="Big Boss"):
         "statsCarsStolen": 0,
         "lastAttackedBy": None,
         "counterfeitEarnings": 0,
-        "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0},
+        "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0, "warehouse": 0},
         "carFactoryRatio": 1.0,
         "gunFactoryRatio": 0.0,
         "bombs": 0,
@@ -672,7 +676,7 @@ BOT_ARCHETYPES = {
 }
 # Bots buy every factory type except explosive (bombs) - a deliberate call
 # to keep bots out of the bomb-production business.
-BOT_FACTORY_TYPES = ("medical", "gun", "car", "drug", "counterfeit", "gym")
+BOT_FACTORY_TYPES = ("medical", "gun", "car", "drug", "counterfeit", "gym", "warehouse")
 
 # Bots keep this much hoeCash on hand as walking-around money - anything
 # above it gets plowed into guns/cars each tick (see bot_reinvest_hoecash)
@@ -746,6 +750,7 @@ def make_bot(bot_id, used_bosses, gang, city):
             "explosive": 0,
             "counterfeit": 0,
             "gym": 0,
+            "warehouse": 0,
         },
         "factorySavings": 0,
         "nextFactoryTarget": random.choice(BOT_FACTORY_TYPES),
@@ -795,6 +800,8 @@ def ensure_bots(world):
             b.setdefault("factories", {})["gym"] = 0
         if "drug" not in b.get("factories", {}):
             b.setdefault("factories", {})["drug"] = 0
+        if "warehouse" not in b.get("factories", {}):
+            b.setdefault("factories", {})["warehouse"] = 0
         if "factorySavings" not in b:
             b["factorySavings"] = 0
         if b.get("nextFactoryTarget") not in BOT_FACTORY_TYPES:
@@ -839,7 +846,101 @@ def factory_sell_value(factories):
         + f.get("explosive", 0) * FACTORY_SELL_PRICES["explosive"]
         + f.get("counterfeit", 0) * FACTORY_SELL_PRICES["counterfeit"]
         + f.get("gym", 0) * FACTORY_SELL_PRICES["gym"]
+        + f.get("warehouse", 0) * FACTORY_SELL_PRICES["warehouse"]
     )
+
+
+# Warehouses don't produce anything - they're storage for produce (drugs,
+# cars, guns) that would otherwise sit out in the open. Without any, everyone
+# still gets a small base allowance; each warehouse raises the ceiling on all
+# three categories at once. Whatever sits above the current cap is
+# "unprotected" - it isn't lost on its own, but a successful bombing run on
+# the matching production factory (drug/gun/car) takes it out along with the
+# factories, and a wiped-out warehouse wing takes out everything that WAS
+# protected. See bomb_bot/bomb_human.
+WAREHOUSE_BASE_CAPACITY = 5000
+WAREHOUSE_CAPACITY_PER_UNIT = 20000
+
+
+def warehouse_capacity(entity):
+    return WAREHOUSE_BASE_CAPACITY + entity.get("factories", {}).get("warehouse", 0) * WAREHOUSE_CAPACITY_PER_UNIT
+
+
+def _total_drugs(entity):
+    return sum(entity.get("drugs", {}).values())
+
+
+def _total_guns(entity):
+    return sum(entity.get("guns", {}).values())
+
+
+def _total_cars(entity):
+    return entity.get("cadillacs", 0) + entity.get("armoredTrucks", 0)
+
+
+def _reduce_drugs_by(entity, amount):
+    remaining = amount
+    for k in list(entity.get("drugs", {}).keys()):
+        if remaining <= 0:
+            break
+        cut = min(entity["drugs"][k], remaining)
+        entity["drugs"][k] -= cut
+        remaining -= cut
+
+
+def _reduce_guns_by(entity, amount):
+    remaining = amount
+    for k in list(entity.get("guns", {}).keys()):
+        if remaining <= 0:
+            break
+        cut = min(entity["guns"][k], remaining)
+        entity["guns"][k] -= cut
+        remaining -= cut
+
+
+def _reduce_cars_by(entity, amount):
+    remaining = amount
+    cut = min(entity.get("armoredTrucks", 0), remaining)
+    entity["armoredTrucks"] = entity.get("armoredTrucks", 0) - cut
+    remaining -= cut
+    if remaining > 0:
+        cut2 = min(entity.get("cadillacs", 0), remaining)
+        entity["cadillacs"] = entity.get("cadillacs", 0) - cut2
+
+
+def expose_unprotected_produce(entity, factory_type):
+    """Called after a successful bombing hit on drug/gun/car factories -
+    whatever stash of that produce sits above current warehouse capacity
+    was sitting out unprotected right next to the factories and goes with
+    them. Anything within capacity (i.e. actually in a warehouse) is safe."""
+    cap = warehouse_capacity(entity)
+    if factory_type == "drug":
+        over = _total_drugs(entity) - cap
+        if over > 0:
+            _reduce_drugs_by(entity, over)
+    elif factory_type == "gun":
+        over = _total_guns(entity) - cap
+        if over > 0:
+            _reduce_guns_by(entity, over)
+    elif factory_type == "car":
+        over = _total_cars(entity) - cap
+        if over > 0:
+            _reduce_cars_by(entity, over)
+
+
+def wipe_warehoused_produce(entity, cap_before):
+    """Called when a warehouse wing is wiped out entirely - everything that
+    fit inside it (across drugs, guns and cars) is gone. `cap_before` is the
+    capacity that existed right before this bombing run, so it only takes
+    out what was actually protected, not stash that was already exposed.
+    Returns True if anything was actually destroyed."""
+    removed_drugs = min(_total_drugs(entity), cap_before)
+    _reduce_drugs_by(entity, removed_drugs)
+    removed_guns = min(_total_guns(entity), cap_before)
+    _reduce_guns_by(entity, removed_guns)
+    removed_cars = min(_total_cars(entity), cap_before)
+    _reduce_cars_by(entity, removed_cars)
+    return removed_drugs > 0 or removed_guns > 0 or removed_cars > 0
 
 
 THUG_NET_WORTH_VALUE = 500
@@ -1308,7 +1409,7 @@ def fight_bot(state, bot_id, world):
 # to afford even a single hit, not let one bombing run wipe out a bot's
 # whole factory portfolio in one sitting. "drug" only ever shows up on real
 # player targets - bots never build drug factories.
-BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450, "gym": 100}
+BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450, "gym": 100, "warehouse": 200}
 BOMB_TURN_COST = 20
 
 # Stealing cars needs bodies on the ground to drive them out, not bombs -
@@ -1364,17 +1465,24 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
         add_log(state, f"Your thugs went in and hit 0 of {bot['boss']}'s {factory_type} factories — they don't have any.", "bad")
         return {"boss": bot["boss"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "networthDestroyed": 0}
 
+    cap_before = warehouse_capacity(bot)
     bot["factories"][factory_type] -= destroyed
     wiped_out = bot["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
+    produce_wiped = False
+    if factory_type in ("drug", "gun", "car"):
+        expose_unprotected_produce(bot, factory_type)
+    elif factory_type == "warehouse" and wiped_out:
+        produce_wiped = wipe_warehoused_produce(bot, cap_before)
     # Never reveal how many the target has left after a partial hit - that's
     # exactly what the Informer exists to sell. "Wiped out" is fine to show
     # since a follow-up bomb run on an empty target would say so anyway.
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
-                   + (" (all of them)" if wiped_out else "") + ".", "good")
+                   + (" (all of them)" if wiped_out else "")
+                   + (", destroying their stashed produce with it" if produce_wiped else "") + ".", "good")
     award_achievement(state, "demolition_man")
     networth_destroyed = destroyed * FACTORY_SELL_PRICES[factory_type]
-    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "networthDestroyed": networth_destroyed}
+    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "produceWiped": produce_wiped, "networthDestroyed": networth_destroyed}
 
 
 # ---------------------------------------------------------------------------
@@ -1542,9 +1650,15 @@ def bomb_human(state, defender, factory_type, qty=None):
         add_log(state, f"Your thugs went in and hit 0 of {defender['name']}'s {factory_type} factories — they don't have any.", "bad")
         return {"boss": defender["name"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "bombsDestroyed": 0, "networthDestroyed": 0}
 
+    cap_before = warehouse_capacity(defender)
     defender["factories"][factory_type] -= destroyed
     wiped_out = defender["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
+    produce_wiped = False
+    if factory_type in ("drug", "gun", "car"):
+        expose_unprotected_produce(defender, factory_type)
+    elif factory_type == "warehouse" and wiped_out:
+        produce_wiped = wipe_warehoused_produce(defender, cap_before)
 
     # Blow up someone's explosive factories and a matching share of their
     # bomb stockpile goes with it - there's nowhere else those bombs were
@@ -1559,13 +1673,15 @@ def bomb_human(state, defender, factory_type, qty=None):
     # defender's own log below is unaffected, since it's their own factories.
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {defender['name']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else "")
-                   + (f", destroying their {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "good")
+                   + (f", destroying their {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "")
+                   + (", destroying their stashed produce with it" if produce_wiped else "") + ".", "good")
     add_log(defender, f"{state['name']} destroyed {destroyed} of your {factory_type} factories with a bombing run"
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
-                       + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
+                       + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "")
+                       + (", taking your stashed produce with it" if produce_wiped else "") + ".", "bad")
     award_achievement(state, "demolition_man")
     networth_destroyed = destroyed * FACTORY_SELL_PRICES[factory_type]
-    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed, "networthDestroyed": networth_destroyed}
+    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed, "produceWiped": produce_wiped, "networthDestroyed": networth_destroyed}
 
 
 def steal_cars_from_bot(state, bot_id, car_type, world, qty=None):
@@ -2814,6 +2930,8 @@ def apply_catchup(state):
         state["factories"]["drug"] = 0
     if "gym" not in state["factories"]:
         state["factories"]["gym"] = 0
+    if "warehouse" not in state["factories"]:
+        state["factories"]["warehouse"] = 0
     if "thugsInHospital" not in state:
         state["thugsInHospital"] = 0
     if "thugsHospitalReadyAt" not in state:

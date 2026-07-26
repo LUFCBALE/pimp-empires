@@ -1975,6 +1975,28 @@
       <button class="cta cta-sm cta-red" id="sellGymBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
     </div>
 
+    <div class="re-card" data-factory-card="warehouse">
+      <div class="re-art">
+        <div style="font-size:3rem; text-align:center; padding:20px;">📦</div>
+      </div>
+      <div class="re-info">
+        <div class="re-name">Warehouse</div>
+        <div class="re-tier" style="color:var(--teal)">TIER 2</div>
+        <div class="re-stat">🏗️ Cost: <b>£20,000,000</b></div>
+        <div class="re-stat">📦 Storage: <b>+20,000 capacity each</b> for drugs, cars and guns</div>
+        <div class="re-stat">📈 Net worth: <b>+£9,000,000 each</b></div>
+        <div class="re-stat">🔒 Protects your stashed produce — anything over capacity is exposed and goes down with a bombing raid on the matching factories. Lose your warehouses and everything they were protecting goes with them.</div>
+        <div class="re-stat" style="color:var(--gold);">🔓 Requires Rank 2 (Street Rat)</div>
+      </div>
+      <div class="re-owned-row"><span class="re-owned-label">Owned:</span><span class="re-owned-val" id="ownedWarehouse">0</span></div>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Buy qty</span><b id="buyWarehouseQtyLabel">1</b></div>
+      <input type="number" min="1" value="1" id="buyWarehouseQty">
+      <button class="cta cta-buy" id="buyWarehouseBtn" style="margin-top:8px;">Buy 1 — £20,000,000</button>
+      <div class="store-qty-row" style="margin-top:8px;"><span>Sell qty</span><b id="sellWarehouseQtyLabel">0</b></div>
+      <input type="number" min="0" max="0" value="0" id="sellWarehouseSlider">
+      <button class="cta cta-sm cta-red" id="sellWarehouseBtn" style="width:100%; margin-top:8px;">Sell — £0</button>
+    </div>
+
   </div>
 </div>
 
@@ -1982,6 +2004,12 @@
   <button class="back-btn" data-back>← Back to the block</button>
   <h2 class="page-title">Production</h2>
   <div class="page-subtitle">Manage what your factories make. Medical, Gun, Drug, Explosive, Counterfeit and Gym factories run automatically; Car factories are yours to tune.</div>
+
+  <div class="panel" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">📦 Warehouse Storage</h3>
+    <div class="page-subtitle" style="margin-top:-6px;">Anything held over capacity is exposed — a bombing raid on the matching factories (or your warehouses themselves) takes it out.</div>
+    <div id="storageCapacityGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
+  </div>
 
   <div class="panel" style="margin-bottom:16px;">
     <h3 style="margin-top:0;">🏥 Medical Factories</h3>
@@ -2525,7 +2553,7 @@
       cadillacs: 0,
       armoredTrucks: 0,
       medsStock: 0,
-      factories: { medical: 0, gun: 0, car: 0, drug: 0, explosive: 0, counterfeit: 0, gym: 0 },
+      factories: { medical: 0, gun: 0, car: 0, drug: 0, explosive: 0, counterfeit: 0, gym: 0, warehouse: 0 },
       bombs: 0,
       lastFactoryRun: Date.now(),
       market: {
@@ -3772,8 +3800,8 @@
     modal.classList.remove('hidden');
   }
 
-  const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
-  const FACTORY_EMOJI = {medical: '🏥', gun: '🏭', car: '🏗️', drug: '❄️', explosive: '💣', counterfeit: '💰', gym: '🏋️'};
+  const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym', warehouse: 'Warehouse'};
+  const FACTORY_EMOJI = {medical: '🏥', gun: '🏭', car: '🏗️', drug: '❄️', explosive: '💣', counterfeit: '💰', gym: '🏋️', warehouse: '📦'};
   const BOMB_TURN_COST = 20; // Must match BOMB_TURN_COST in game_engine.py.
 
   async function bombBot(botId, factoryType, qty){
@@ -3835,6 +3863,10 @@
           ${r.bombsDestroyed ? `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
             <span style="color:var(--text-dim);">🔥 Their bomb stockpile torched</span>
             <span style="font-weight:700;">${r.bombsDestroyed.toLocaleString('en-GB')}</span>
+          </div>` : ''}
+          ${r.produceWiped ? `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
+            <span style="color:var(--text-dim);">📦 Their stashed produce torched too</span>
+            <span style="font-weight:700;">wiped</span>
           </div>` : ''}
         </div>`;
     }
@@ -5920,7 +5952,7 @@
     const fSecs = Math.floor((factoryRemainder % 60000) / 1000);
     const timerEl = document.getElementById('factoryTimer');
     if(timerEl){
-      const f = state.factories || {medical:0,gun:0,car:0,drug:0,explosive:0,counterfeit:0,gym:0};
+      const f = state.factories || {medical:0,gun:0,car:0,drug:0,explosive:0,counterfeit:0,gym:0,warehouse:0};
       const hasFactories = f.medical > 0 || f.gun > 0 || f.car > 0 || (f.drug||0) > 0 || f.explosive > 0 || f.counterfeit > 0 || (f.gym||0) > 0;
       timerEl.textContent = hasFactories
         ? `Next factory run in ${fMins}:${fSecs.toString().padStart(2,'0')}`
@@ -5947,12 +5979,15 @@
     } catch(e){ /* toast already shown */ }
   }
 
-  const FACTORY_COSTS = {medical: 940000, gun: 25000000, car: 30000000, drug: 14000000, explosive: 32000000, counterfeit: 23000000, gym: 10000000};
-  const FACTORY_SELL_PRICES = {medical: 170000, gun: 14000000, car: 13000000, drug: 3000000, explosive: 9000000, counterfeit: 6000000, gym: 5000000};
-  const FACTORY_ID_SUFFIX = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym'};
+  // Must match WAREHOUSE_BASE_CAPACITY / WAREHOUSE_CAPACITY_PER_UNIT in game_engine.py.
+  const WAREHOUSE_BASE_CAPACITY = 5000;
+  const WAREHOUSE_CAPACITY_PER_UNIT = 20000;
+  const FACTORY_COSTS = {medical: 940000, gun: 25000000, car: 30000000, drug: 14000000, explosive: 32000000, counterfeit: 23000000, gym: 10000000, warehouse: 20000000};
+  const FACTORY_SELL_PRICES = {medical: 170000, gun: 14000000, car: 13000000, drug: 3000000, explosive: 9000000, counterfeit: 6000000, gym: 5000000, warehouse: 9000000};
+  const FACTORY_ID_SUFFIX = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym', warehouse: 'Warehouse'};
   // Must match FACTORY_UNLOCK_RANK / RANKS in game_engine.py - Real Estate is
   // a progression ladder, not a shopping list you can max out from Rank 1.
-  const FACTORY_UNLOCK_RANK = {medical: 1, gym: 2, gun: 3, car: 4, drug: 5, explosive: 6, counterfeit: 7};
+  const FACTORY_UNLOCK_RANK = {medical: 1, gym: 2, warehouse: 2, gun: 3, car: 4, drug: 5, explosive: 6, counterfeit: 7};
   const RANK_NAMES = ['', 'Junkie', 'Street Rat', 'Foot Soldier', 'Associate', 'Gang Member', 'Gang Leader', 'Mob Boss', 'THE DON'];
 
   function isFactoryUnlocked(type){
@@ -6065,7 +6100,28 @@
   }
 
   function renderProduction(){
-    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0, gym:0};
+    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0, gym:0, warehouse:0};
+
+    const storageCap = WAREHOUSE_BASE_CAPACITY + (f.warehouse || 0) * WAREHOUSE_CAPACITY_PER_UNIT;
+    const totalDrugs = Object.values(state.drugs || {}).reduce((a, b) => a + b, 0);
+    const totalGuns = Object.values(state.guns || {}).reduce((a, b) => a + b, 0);
+    const totalCars = (state.cadillacs || 0) + (state.armoredTrucks || 0);
+    const storageRows = [
+      {label: '❄️ Drugs', total: totalDrugs},
+      {label: '🏭 Guns', total: totalGuns},
+      {label: '🚗 Cars', total: totalCars},
+    ];
+    document.getElementById('storageCapacityGrid').innerHTML = storageRows.map(row => {
+      const exposed = Math.max(0, row.total - storageCap);
+      const color = exposed > 0 ? 'var(--danger)' : 'var(--text-dim)';
+      return `
+        <div style="padding:10px; background:var(--bg-2); border-radius:6px;">
+          <div style="font-size:0.85rem; color:var(--text-dim);">${row.label}</div>
+          <div style="font-weight:700;">${Math.floor(row.total).toLocaleString('en-GB')} / ${storageCap.toLocaleString('en-GB')}</div>
+          ${exposed > 0 ? `<div style="font-size:0.78rem; color:${color};">⚠️ ${Math.floor(exposed).toLocaleString('en-GB')} exposed</div>` : `<div style="font-size:0.78rem; color:${color};">safely stored</div>`}
+        </div>`;
+    }).join('');
+
     document.getElementById('prodMedicalOwned').textContent = f.medical;
     document.getElementById('prodGunOwned').textContent = f.gun;
     document.getElementById('prodCarOwned').textContent = f.car;
@@ -6188,7 +6244,7 @@
   }
 
   function renderRealEstate(){
-    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0, gym:0};
+    const f = state.factories || {medical:0, gun:0, car:0, drug:0, explosive:0, counterfeit:0, gym:0, warehouse:0};
     document.getElementById('ownedMedical').textContent = f.medical;
     document.getElementById('ownedGun').textContent = f.gun;
     document.getElementById('ownedCar').textContent = f.car;
@@ -6196,6 +6252,7 @@
     document.getElementById('ownedExplosive').textContent = f.explosive;
     document.getElementById('ownedCounterfeit').textContent = f.counterfeit;
     document.getElementById('ownedGym').textContent = f.gym || 0;
+    document.getElementById('ownedWarehouse').textContent = f.warehouse || 0;
     document.getElementById('bombsOwned').textContent = state.bombs;
     updateBuyFactoryLabel('medical');
     updateBuyFactoryLabel('gun');
@@ -6204,6 +6261,7 @@
     updateBuyFactoryLabel('explosive');
     updateBuyFactoryLabel('counterfeit');
     updateBuyFactoryLabel('gym');
+    updateBuyFactoryLabel('warehouse');
     Object.keys(FACTORY_UNLOCK_RANK).forEach(type => {
       const card = document.querySelector(`[data-factory-card="${type}"]`);
       if(card) card.classList.toggle('locked', !isFactoryUnlocked(type));
@@ -6215,10 +6273,11 @@
     setupSellSlider('explosive', f.explosive || 0);
     setupSellSlider('counterfeit', f.counterfeit);
     setupSellSlider('gym', f.gym || 0);
+    setupSellSlider('warehouse', f.warehouse || 0);
 
     const carRates = carFactoryOutputRates(state.carFactoryRatio ?? 1.0);
     const gunRates = gunFactoryOutputRates(state.gunFactoryRatio ?? 0.0);
-    const total = f.medical + f.gun + f.car + (f.drug || 0) + f.explosive + f.counterfeit + (f.gym || 0);
+    const total = f.medical + f.gun + f.car + (f.drug || 0) + f.explosive + f.counterfeit + (f.gym || 0) + (f.warehouse || 0);
     const portfolio = document.getElementById('rePortfolio');
     portfolio.style.display = total > 0 ? 'block' : 'none';
     if(total > 0){
@@ -6271,6 +6330,13 @@
           <div class="pcount">${f.gym}</div>
           <div class="poutput">${f.gym * GYM_THUG_RATE} thugs/30min</div>
           <div class="pworth">${fmtMoney(f.gym * FACTORY_SELL_PRICES.gym)}</div>
+        </div>` : ''}
+        ${(f.warehouse || 0) > 0 ? `<div class="re-pitem">
+          <div class="picon">📦</div>
+          <div class="pname">Warehouses</div>
+          <div class="pcount">${f.warehouse}</div>
+          <div class="poutput">+${(f.warehouse * WAREHOUSE_CAPACITY_PER_UNIT).toLocaleString('en-GB')} storage capacity</div>
+          <div class="pworth">${fmtMoney(f.warehouse * FACTORY_SELL_PRICES.warehouse)}</div>
         </div>` : ''}`;
     }
   }
@@ -6542,7 +6608,8 @@
   document.getElementById('buyExplosiveBtn').addEventListener('click', () => buyFactory('explosive'));
   document.getElementById('buyCounterfeitBtn').addEventListener('click', () => buyFactory('counterfeit'));
   document.getElementById('buyGymBtn').addEventListener('click', () => buyFactory('gym'));
-  ['medical', 'gun', 'car', 'drug', 'explosive', 'counterfeit', 'gym'].forEach(type => {
+  document.getElementById('buyWarehouseBtn').addEventListener('click', () => buyFactory('warehouse'));
+  ['medical', 'gun', 'car', 'drug', 'explosive', 'counterfeit', 'gym', 'warehouse'].forEach(type => {
     const suffix = FACTORY_ID_SUFFIX[type];
     document.getElementById(`sell${suffix}Slider`).addEventListener('input', () => updateSellFactoryLabel(type));
     document.getElementById(`sell${suffix}Btn`).addEventListener('click', () => {
