@@ -929,6 +929,10 @@
   .inv-row .inv-val{color:var(--teal); font-weight:700;}
   .inv-row.inv-total{margin-top:8px; padding-top:8px; border-top:1px solid var(--panel-line);}
   .inv-row.inv-total .inv-val{color:var(--gold);}
+  .house-box{margin-top:10px; padding-top:10px; border-top:1px solid var(--panel-line);}
+  .house-box-label{display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;}
+  .house-box-label b{color:var(--gold); text-transform:none; letter-spacing:0;}
+  .house-box img{width:100%; height:130px; object-fit:cover; border-radius:8px; display:block; border:1px solid var(--panel-line);}
 
   #dmModal.hidden{display:none !important;}
   #dmModal:not(.hidden){display:flex !important;}
@@ -4818,6 +4822,31 @@
     term.scrollTop = term.scrollHeight;
   }
 
+  // Net worth thresholds for the house progression under All-Time Earnings.
+  // Each tier's photo unlocks once net worth reaches its threshold; you're
+  // always shown the highest tier you currently qualify for.
+  const HOUSE_TIERS = [
+    {img: './houses/1.jpg', threshold: 0},
+    {img: './houses/2.jpg', threshold: 1000000},
+    {img: './houses/3.jpg', threshold: 50000000},
+    {img: './houses/4.jpg', threshold: 120000000},
+    {img: './houses/5.jpg', threshold: 300000000},
+    {img: './houses/6.jpg', threshold: 1000000000},
+    {img: './houses/7.jpg', threshold: 5000000000},
+    {img: './houses/8.jpg', threshold: 15000000000},
+    {img: './houses/9.jpg', threshold: 30000000000},
+    {img: './houses/10.jpg', threshold: 50000000000},
+  ];
+
+  function currentHouseTier(netWorth){
+    let tier = HOUSE_TIERS[0];
+    let tierNum = 1;
+    for(let i = 0; i < HOUSE_TIERS.length; i++){
+      if(netWorth >= HOUSE_TIERS[i].threshold){ tier = HOUSE_TIERS[i]; tierNum = i + 1; }
+    }
+    return {img: tier.img, tierNum};
+  }
+
   function renderInventory(){
     const list = document.getElementById('inventoryList');
     if(!list) return;
@@ -4841,11 +4870,16 @@
       ['Bombs', Math.floor(state.bombs || 0)],
       ['Cocaine', Math.floor((state.drugs || {}).coke || 0)],
     ];
+    const house = currentHouseTier(totalNetWorth());
     list.innerHTML = rows.map(([label, val]) => `
       <div class="logline info inv-row"><span>${label}</span><span class="inv-val">${val}</span></div>
     `).join('') + `
       <div class="logline good inv-row"><span>Counterfeit Earned</span><span class="inv-val">${fmtMoney(state.counterfeitEarnings || 0)}</span></div>
       <div class="logline money inv-row inv-total"><span>All-Time Earnings</span><span class="inv-val">${fmtMoney(state.lifetimeEarnings || 0)}</span></div>
+      <div class="house-box">
+        <div class="house-box-label"><span>Your Crib</span><b>Level ${house.tierNum} / ${HOUSE_TIERS.length}</b></div>
+        <img src="${house.img}" alt="Your house, level ${house.tierNum}">
+      </div>
     `;
   }
 
