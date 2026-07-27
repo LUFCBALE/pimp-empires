@@ -586,7 +586,7 @@
   .heist-card.mid{border-top:3px solid #ffd700;}
   .heist-card.high{border-top:3px solid #ff1744;}
   .heist-card.extreme{border-top:4px solid #ff1744; box-shadow:0 0 20px rgba(255,23,68,0.4);}
-  .heist-art svg{width:100%; height:80px;}
+  .heist-art svg, .heist-art img{width:100%; height:80px; display:block; object-fit:cover; border-radius:8px;}
   .hbldg{fill:#2a2040;}
   .hbldg.mid{fill:#251e38;}
   .hbldg.high{fill:#1e1830;}
@@ -1673,14 +1673,7 @@
 
     <div class="heist-card low" data-job="shop">
       <div class="heist-art">
-        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-          <rect x="10" y="30" width="60" height="40" rx="3" class="hbldg"/>
-          <rect x="20" y="42" width="16" height="28" rx="2" class="hdoor"/>
-          <rect x="45" y="38" width="18" height="14" rx="2" class="hwindow"/>
-          <rect x="6" y="26" width="68" height="8" rx="2" class="hroof"/>
-          <text x="40" y="22" text-anchor="middle" class="hsign">SHOP</text>
-          <circle cx="28" cy="56" r="2" class="hdoorknob"/>
-        </svg>
+        <img src="./corner%20shop.jpg" alt="Corner Shop">
       </div>
       <div class="heist-info">
         <div class="heist-name">Corner Shop</div>
@@ -1695,15 +1688,7 @@
 
     <div class="heist-card mid" data-job="jewellery">
       <div class="heist-art">
-        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="28" width="64" height="44" rx="3" class="hbldg mid"/>
-          <rect x="20" y="44" width="14" height="28" rx="2" class="hdoor"/>
-          <rect x="44" y="36" width="20" height="18" rx="2" class="hwindow mid"/>
-          <rect x="4" y="22" width="72" height="10" rx="2" class="hroof mid"/>
-          <text x="40" y="19" text-anchor="middle" class="hsign mid">JEWELS</text>
-          <polygon points="54,46 60,38 66,46 63,52 57,52" class="hgem"/>
-          <polygon points="54,46 57,52 60,48 63,52 66,46 60,44" class="hgemhi"/>
-        </svg>
+        <img src="./jewlerry%20store.jpg" alt="Jewellery Store">
       </div>
       <div class="heist-info">
         <div class="heist-name">Jewellery Store</div>
@@ -1718,20 +1703,7 @@
 
     <div class="heist-card high" data-job="bank">
       <div class="heist-art">
-        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-          <rect x="6" y="32" width="68" height="42" rx="2" class="hbldg high"/>
-          <rect x="28" y="48" width="24" height="26" rx="2" class="hdoor high"/>
-          <line x1="15" y1="32" x2="15" y2="74" stroke="#3d3250" stroke-width="3"/>
-          <line x1="26" y1="32" x2="26" y2="74" stroke="#3d3250" stroke-width="3"/>
-          <line x1="54" y1="32" x2="54" y2="74" stroke="#3d3250" stroke-width="3"/>
-          <line x1="65" y1="32" x2="65" y2="74" stroke="#3d3250" stroke-width="3"/>
-          <rect x="2" y="24" width="76" height="12" rx="2" class="hroof high"/>
-          <polygon points="40,4 8,24 72,24" class="hpediment"/>
-          <text x="40" y="21" text-anchor="middle" class="hsign high">BANK</text>
-          <circle cx="40" cy="61" r="7" class="hvault"/>
-          <line x1="40" y1="54" x2="40" y2="68" stroke="#0b0910" stroke-width="1.5"/>
-          <line x1="33" y1="61" x2="47" y2="61" stroke="#0b0910" stroke-width="1.5"/>
-        </svg>
+        <img src="./bank.jpg" alt="National Bank">
       </div>
       <div class="heist-info">
         <div class="heist-name">National Bank</div>
@@ -1746,16 +1718,7 @@
 
     <div class="heist-card extreme" data-job="casino">
       <div class="heist-art">
-        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="20" width="70" height="50" rx="4" class="hbldg extreme"/>
-          <rect x="15" y="35" width="18" height="28" rx="2" class="hdoor"/>
-          <rect x="40" y="28" width="20" height="16" rx="2" class="hwindow extreme"/>
-          <rect x="2" y="12" width="76" height="12" rx="3" class="hroof extreme"/>
-          <text x="40" y="18" text-anchor="middle" class="hsign extreme">🎰 CASINO</text>
-          <circle cx="55" cy="50" r="3" class="hgem"/>
-          <circle cx="65" cy="55" r="3" class="hgem"/>
-          <circle cx="48" cy="58" r="3" class="hgem"/>
-        </svg>
+        <img src="./casino.jpg" alt="Casino Heist">
       </div>
       <div class="heist-info">
         <div class="heist-name">Casino Heist</div>
