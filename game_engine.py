@@ -375,6 +375,8 @@ def default_state(pimp_name="Big Boss"):
         "statsFactoriesDestroyed": 0,
         "statsMoneyStolen": 0,
         "statsCarsStolen": 0,
+        "statsJobsSucceeded": 0,
+        "statsTurnsWorked": 0,
         "lastAttackedBy": None,
         "counterfeitEarnings": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0, "warehouse": 0},
@@ -1509,6 +1511,8 @@ def human_as_bot(user_id, pimp_name, s):
         "statsFactoriesDestroyed": s.get("statsFactoriesDestroyed", 0),
         "statsMoneyStolen": s.get("statsMoneyStolen", 0),
         "statsCarsStolen": s.get("statsCarsStolen", 0),
+        "statsJobsSucceeded": s.get("statsJobsSucceeded", 0),
+        "statsTurnsWorked": s.get("statsTurnsWorked", 0),
         "lifetimeEarnings": s.get("lifetimeEarnings", 0),
     }
 
@@ -1977,6 +1981,7 @@ def work_block(state, requested_turns):
         raise GameError("Not enough turns")
 
     state["turns"] -= turns
+    state["statsTurnsWorked"] = state.get("statsTurnsWorked", 0) + turns
     check_thug_attrition(state)
     hoes_lost = check_hoe_attrition(state)
 
@@ -2323,6 +2328,7 @@ def run_heist(state, job_id):
         state["cash"] += cash_won
         state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_won
         state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + cash_won
+        state["statsJobsSucceeded"] = state.get("statsJobsSucceeded", 0) + 1
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
         recalc_morale(state)
@@ -2368,6 +2374,7 @@ def run_casino_heist(state, world):
         state["cash"] += player_share
         state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + player_share
         state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + player_share
+        state["statsJobsSucceeded"] = state.get("statsJobsSucceeded", 0) + 1
         lo, hi = job["casualtyPct"]
         pct = lo + random.random() * (hi - lo)
         thugs_lost = jround(thugs_needed * pct)
@@ -2946,6 +2953,10 @@ def apply_catchup(state):
         state["statsMoneyStolen"] = 0
     if "statsCarsStolen" not in state:
         state["statsCarsStolen"] = 0
+    if "statsJobsSucceeded" not in state:
+        state["statsJobsSucceeded"] = 0
+    if "statsTurnsWorked" not in state:
+        state["statsTurnsWorked"] = 0
     if "lastJobHeist" not in state:
         state["lastJobHeist"] = 0
     state.pop("hoeRoster", None)

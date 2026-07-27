@@ -513,6 +513,8 @@
   .lb-tab-btn{opacity:0.55; padding:10px;}
   .lb-tab-btn.active{opacity:1;}
   .lb-header.lb-crewview, .lb-row.lb-crewview{grid-template-columns: 30px 1.5fr 70px 60px 60px 60px 0.8fr;}
+  .lb-header.lb-respectview, .lb-row.lb-respectview{grid-template-columns: 44px 1.7fr 1fr 0.8fr;}
+  .lb-respect{color:var(--gold); font-weight:700; text-align:right;}
   .lb-city{color:var(--text-dim);}
   .lb-stat{color:var(--text-dim);}
   .lb-nw{color:var(--gold); font-weight:700; text-align:right;}
@@ -1359,6 +1361,7 @@
         <button class="sidebar-link" data-page="page-bounties">🎯<span>Bounties</span></button>
         <button class="sidebar-link" data-page="page-informer">🕵️<span>Informer</span></button>
         <button class="sidebar-link" data-page="page-leaderboard">🏆<span>Leaderboard</span></button>
+        <button class="sidebar-link" data-page="page-respect">🎖️<span>Respect</span></button>
         <button class="sidebar-link" data-page="page-achievements">🎖️<span>Achievements/Prizes</span></button>
         <button class="sidebar-link" data-page="page-settings">⚙️<span>Settings</span></button>
         <button class="sidebar-link" data-page="page-about">ℹ️<span>About</span></button>
@@ -2171,6 +2174,26 @@
         <div>#</div><div>Player</div><div>Crew</div><div>City</div><div>Hoes</div><div>Thugs</div><div>Cars</div><div style="text-align:right;">Net Worth</div>
       </div>
       <div class="lb-list" id="lbList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-respect">
+  <button class="back-btn" data-back>← Back to the block</button>
+  <h2 class="page-title">Respect</h2>
+  <div class="page-subtitle">Nothing to do with net worth — pure respect, earned by putting in the work. Real players only.</div>
+  <div class="lb-legend" style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-bottom:12px; padding:10px 14px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px; font-size:0.78rem; color:var(--text-dim);">
+    <span>💼 +3 per successful job pulled</span>
+    <span>⏳ +1 per 10 turns worked</span>
+    <span>💀 +1 per 1,000 thugs killed</span>
+    <span>🧨 +1 per factory bombed</span>
+  </div>
+  <div class="panel">
+    <div class="lb-wrap">
+      <div class="lb-header lb-respectview" id="respectHeader">
+        <div>#</div><div>Player</div><div>Crew</div><div style="text-align:right;">Respect</div>
+      </div>
+      <div class="lb-list" id="respectList"></div>
     </div>
   </div>
 </div>
@@ -4154,6 +4177,54 @@
     }).join('');
 
     container.querySelectorAll('[data-profile-id]').forEach(el => {
+      el.addEventListener('click', () => openProfile(parseInt(el.dataset.profileId)));
+    });
+  }
+
+  // Respect: a pure points score, nothing to do with net worth. Computed
+  // client-side from the same lifetime stat counters the server tracks for
+  // Hall of Fame, so it's always in sync with whatever `state`/`state.bots`
+  // last synced. AI bots never generate these stats themselves (only real
+  // players taking actions do), so — same as Hall of Fame — this only ever
+  // has something to show for isHuman entries.
+  function computeRespect(e){
+    return (e.statsJobsSucceeded || 0) * 3
+      + Math.floor((e.statsTurnsWorked || 0) / 10)
+      + Math.floor((e.statsThugsKilled || 0) / 1000)
+      + (e.statsFactoriesDestroyed || 0);
+  }
+
+  function renderRespectLeaderboard(){
+    const list = document.getElementById('respectList');
+    if(!list) return;
+
+    const entries = [{
+      id: null, name: state.name || 'Big Boss', isYou: true,
+      gang: state.gang || '', emblem: (state.crewRoster && state.crewRoster.emblem) || '',
+      respect: computeRespect(state),
+    }];
+    (state.bots || []).forEach(b => {
+      if(!b.isHuman) return;
+      entries.push({
+        id: b.id, name: b.boss, isYou: false,
+        gang: b.gang || '', emblem: (state.botCrewEmblems || {})[b.gang] || '',
+        respect: computeRespect(b),
+      });
+    });
+    entries.sort((a, b) => b.respect - a.respect);
+
+    const rankTier = i => i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
+    const rankMedal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+    list.innerHTML = entries.map((r, i) => `
+      <div class="lb-row lb-respectview ${r.isYou ? 'lb-you' : ''}">
+        <div class="lb-rank ${rankTier(i)}">${rankMedal(i)}${ordinal(i + 1)}</div>
+        <div class="lb-name">${!r.isYou ? `<span data-profile-id="${r.id}" style="cursor:pointer; text-decoration:underline dotted;" title="View profile">${escapeHtml(r.name)}</span>` : escapeHtml(r.name)}</div>
+        <div class="lb-gang">${r.gang ? `${r.emblem ? emblemInlineHtml(r.emblem) + ' ' : ''}${escapeHtml(r.gang)}` : '—'}</div>
+        <div class="lb-respect">${r.respect.toLocaleString('en-GB')}</div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('[data-profile-id]').forEach(el => {
       el.addEventListener('click', () => openProfile(parseInt(el.dataset.profileId)));
     });
   }
@@ -6417,6 +6488,7 @@
     'page-informer': renderInformer,
     'page-messages': renderMessages,
     'page-leaderboard': renderLeaderboard,
+    'page-respect': renderRespectLeaderboard,
     'page-achievements': renderAchievements,
     'page-settings': renderSettings,
   };
