@@ -1813,7 +1813,7 @@
         <img src="./warehouse.jpg" alt="Warehouse">
       </div>
       <div class="re-info">
-        <div class="re-name">Warehouse <span class="info-tip" data-tip="Protects your stashed produce — anything over capacity is exposed and goes down with a bombing raid on the matching factories. Lose your warehouses and everything they were protecting goes with them. Requires Rank 2 (Street Rat).">?</span></div>
+        <div class="re-name">Warehouse <span class="info-tip" data-tip="Protects your stashed produce — anything over capacity is exposed and goes down with a bombing raid on the matching factories. Once produce is safely under capacity it stays protected for good, even if your warehouses are destroyed afterward. Requires Rank 2 (Street Rat).">?</span></div>
         <div class="re-tier" style="color:var(--gold)">TIER 2</div>
         <div class="re-stat">🏗️ Buy price: <b>£20,000,000</b></div>
         <div class="re-stat">📦 Production: <b>+20,000 storage capacity each</b> for drugs, cars and guns</div>
@@ -1957,7 +1957,7 @@
   <div class="panel" style="margin-bottom:16px;">
     <img src="./warehouse.jpg" alt="Warehouse Storage" style="width:100%; height:110px; object-fit:cover; border-radius:8px; display:block; margin-bottom:10px;">
     <h3 style="margin-top:0;">Warehouse Storage</h3>
-    <div class="page-subtitle" style="margin-top:-6px;">Anything held over capacity is exposed — a bombing raid on the matching factories (or your warehouses themselves) takes it out.</div>
+    <div class="page-subtitle" style="margin-top:-6px;">Anything held over capacity is exposed — a bombing raid on the matching factories takes it out. Once stock is safely under capacity it's protected for good, even if your warehouses get destroyed afterward.</div>
     <div id="storageCapacityGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
   </div>
 
@@ -3820,10 +3820,6 @@
           ${r.bombsDestroyed ? `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
             <span style="color:var(--text-dim);">🔥 Their bomb stockpile torched</span>
             <span style="font-weight:700;">${r.bombsDestroyed.toLocaleString('en-GB')}</span>
-          </div>` : ''}
-          ${r.produceWiped ? `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--bg-2); border-radius:6px;">
-            <span style="color:var(--text-dim);">📦 Their stashed produce torched too</span>
-            <span style="font-weight:700;">wiped</span>
           </div>` : ''}
         </div>`;
     }

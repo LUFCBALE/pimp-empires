@@ -856,8 +856,9 @@ def factory_sell_value(factories):
 # three categories at once. Whatever sits above the current cap is
 # "unprotected" - it isn't lost on its own, but a successful bombing run on
 # the matching production factory (drug/gun/car) takes it out along with the
-# factories, and a wiped-out warehouse wing takes out everything that WAS
-# protected. See bomb_bot/bomb_human.
+# factories. Produce that's within capacity is safe permanently - bombing the
+# warehouses themselves only removes future capacity, never touches stash
+# that's already protected. See bomb_bot/bomb_human.
 WAREHOUSE_BASE_CAPACITY = 5000
 WAREHOUSE_CAPACITY_PER_UNIT = 20000
 
@@ -926,21 +927,6 @@ def expose_unprotected_produce(entity, factory_type):
         over = _total_cars(entity) - cap
         if over > 0:
             _reduce_cars_by(entity, over)
-
-
-def wipe_warehoused_produce(entity, cap_before):
-    """Called when a warehouse wing is wiped out entirely - everything that
-    fit inside it (across drugs, guns and cars) is gone. `cap_before` is the
-    capacity that existed right before this bombing run, so it only takes
-    out what was actually protected, not stash that was already exposed.
-    Returns True if anything was actually destroyed."""
-    removed_drugs = min(_total_drugs(entity), cap_before)
-    _reduce_drugs_by(entity, removed_drugs)
-    removed_guns = min(_total_guns(entity), cap_before)
-    _reduce_guns_by(entity, removed_guns)
-    removed_cars = min(_total_cars(entity), cap_before)
-    _reduce_cars_by(entity, removed_cars)
-    return removed_drugs > 0 or removed_guns > 0 or removed_cars > 0
 
 
 THUG_NET_WORTH_VALUE = 500
@@ -1465,24 +1451,19 @@ def bomb_bot(state, bot_id, factory_type, world, qty=None):
         add_log(state, f"Your thugs went in and hit 0 of {bot['boss']}'s {factory_type} factories — they don't have any.", "bad")
         return {"boss": bot["boss"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "networthDestroyed": 0}
 
-    cap_before = warehouse_capacity(bot)
     bot["factories"][factory_type] -= destroyed
     wiped_out = bot["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
-    produce_wiped = False
     if factory_type in ("drug", "gun", "car"):
         expose_unprotected_produce(bot, factory_type)
-    elif factory_type == "warehouse" and wiped_out:
-        produce_wiped = wipe_warehoused_produce(bot, cap_before)
     # Never reveal how many the target has left after a partial hit - that's
     # exactly what the Informer exists to sell. "Wiped out" is fine to show
     # since a follow-up bomb run on an empty target would say so anyway.
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {bot['boss']}'s {factory_type} factories"
-                   + (" (all of them)" if wiped_out else "")
-                   + (", destroying their stashed produce with it" if produce_wiped else "") + ".", "good")
+                   + (" (all of them)" if wiped_out else "") + ".", "good")
     award_achievement(state, "demolition_man")
     networth_destroyed = destroyed * FACTORY_SELL_PRICES[factory_type]
-    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "produceWiped": produce_wiped, "networthDestroyed": networth_destroyed}
+    return {"boss": bot["boss"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "networthDestroyed": networth_destroyed}
 
 
 # ---------------------------------------------------------------------------
@@ -1650,15 +1631,11 @@ def bomb_human(state, defender, factory_type, qty=None):
         add_log(state, f"Your thugs went in and hit 0 of {defender['name']}'s {factory_type} factories — they don't have any.", "bad")
         return {"boss": defender["name"], "target": factory_type, "bombsSpent": 0, "destroyed": 0, "wipedOut": False, "bombsDestroyed": 0, "networthDestroyed": 0}
 
-    cap_before = warehouse_capacity(defender)
     defender["factories"][factory_type] -= destroyed
     wiped_out = defender["factories"][factory_type] <= 0
     state["statsFactoriesDestroyed"] = state.get("statsFactoriesDestroyed", 0) + destroyed
-    produce_wiped = False
     if factory_type in ("drug", "gun", "car"):
         expose_unprotected_produce(defender, factory_type)
-    elif factory_type == "warehouse" and wiped_out:
-        produce_wiped = wipe_warehoused_produce(defender, cap_before)
 
     # Blow up someone's explosive factories and a matching share of their
     # bomb stockpile goes with it - there's nowhere else those bombs were
@@ -1673,15 +1650,13 @@ def bomb_human(state, defender, factory_type, qty=None):
     # defender's own log below is unaffected, since it's their own factories.
     add_log(state, f"You spent {cost} bombs destroying {destroyed} of {defender['name']}'s {factory_type} factories"
                    + (" (all of them)" if wiped_out else "")
-                   + (f", destroying their {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "")
-                   + (", destroying their stashed produce with it" if produce_wiped else "") + ".", "good")
+                   + (f", destroying their {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "good")
     add_log(defender, f"{state['name']} destroyed {destroyed} of your {factory_type} factories with a bombing run"
                        + (" (wiped out entirely)" if wiped_out else f" ({defender['factories'][factory_type]} left standing)")
-                       + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "")
-                       + (", taking your stashed produce with it" if produce_wiped else "") + ".", "bad")
+                       + (f", taking your {bombs_destroyed} stockpiled bombs with it" if bombs_destroyed else "") + ".", "bad")
     award_achievement(state, "demolition_man")
     networth_destroyed = destroyed * FACTORY_SELL_PRICES[factory_type]
-    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed, "produceWiped": produce_wiped, "networthDestroyed": networth_destroyed}
+    return {"boss": defender["name"], "target": factory_type, "bombsSpent": cost, "destroyed": destroyed, "wipedOut": wiped_out, "bombsDestroyed": bombs_destroyed, "networthDestroyed": networth_destroyed}
 
 
 def steal_cars_from_bot(state, bot_id, car_type, world, qty=None):
