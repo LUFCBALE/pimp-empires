@@ -346,6 +346,7 @@ def default_state(pimp_name="Big Boss"):
     now = now_ms()
     state = {
         "name": pimp_name,
+        "bio": "",
         "gang": "",
         "cash": 500,
         "bank": 0,
@@ -2548,6 +2549,20 @@ def tick_market(state, now):
         for item in BLACKMARKET_ITEMS:
             _step_market_item(state, item["key"])
     state["lastMarketUpdate"] += int(ticks) * MARKET_MS
+
+
+# ---------------------------------------------------------------------------
+# Profile
+# ---------------------------------------------------------------------------
+
+BIO_MAX_LENGTH = 200
+
+
+def save_bio(state, bio):
+    bio = (bio or "").strip()
+    if len(bio) > BIO_MAX_LENGTH:
+        raise GameError(f"Bio can't be more than {BIO_MAX_LENGTH} characters")
+    state["bio"] = bio
 
 
 # ---------------------------------------------------------------------------

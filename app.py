@@ -1081,6 +1081,7 @@ def api_profile(target_id):
         'profile': {
             'botId': target_id,
             'name': row['pimp_name'],
+            'bio': target_state.get('bio', ''),
             'gang': target_state.get('gang', ''),
             'emblem': target_state.get('crewEmblem', ''),
             'netWorth': ge.total_net_worth(target_state),
@@ -1203,6 +1204,13 @@ def api_travel():
 def api_settings_pimpname():
     data = request.get_json() or {}
     return handle_action(ge.save_pimp_name, data.get('name', ''))
+
+
+@app.route('/api/settings/bio', methods=['POST'])
+@login_required
+def api_settings_bio():
+    data = request.get_json() or {}
+    return handle_action(ge.save_bio, data.get('bio', ''))
 
 
 @app.route('/api/settings/tutorial', methods=['POST'])

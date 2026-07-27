@@ -2335,6 +2335,14 @@
       <input type="text" id="pimpNameInput" placeholder="Enter your pimp name" maxlength="30" style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px;">
       <button class="cta gold" id="savePimpNameBtn">Save Name</button>
     </div>
+    <h3>Bio</h3>
+    <div style="margin-bottom:20px;">
+      <textarea id="bioInput" placeholder="Say a little about yourself — shows up on your profile for other players to see." maxlength="200" rows="3" style="width:100%; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <span style="font-size:0.72rem; color:var(--text-dim);" id="bioCharCount">0 / 200</span>
+        <button class="cta gold" id="saveBioBtn">Save Bio</button>
+      </div>
+    </div>
     <h3>Game</h3>
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
       <div>
@@ -5092,6 +5100,16 @@
     } catch(e){ /* toast already shown ("Pimp name is locked...") */ }
   }
 
+  async function saveBio(){
+    const bioInput = document.getElementById('bioInput');
+    const bio = bioInput.value.trim();
+    try{
+      await apiCall('/api/settings/bio', {bio});
+      showToast('Bio saved!');
+      render();
+    } catch(e){ /* toast already shown */ }
+  }
+
   async function saveCrewName(){
     const crewInput = document.getElementById('crewNameInput');
     const crew = crewInput.value.trim();
@@ -5182,6 +5200,7 @@
           <h3 style="margin:0;">${escapeHtml(p.name)}</h3>
           <div style="font-family:'Anton',sans-serif; color:var(--gold); font-size:0.9rem;">Lv.${p.rank.level} ${escapeHtml(p.rank.name)}</div>
         </div>
+        ${p.bio ? `<div style="margin-bottom:16px; padding:12px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px; font-size:0.85rem; font-style:italic; color:var(--text); white-space:pre-wrap;">"${escapeHtml(p.bio)}"</div>` : (p.isSelf ? `<div style="margin-bottom:16px; padding:12px; background:var(--bg-2); border:1px dashed var(--panel-line); border-radius:8px; font-size:0.85rem; color:var(--text-dim);">No bio yet — add one on the Settings page.</div>` : '')}
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:16px;">
           <div style="background:var(--bg-2); border:1px solid var(--panel-line); border-radius:8px; padding:12px;">
             <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Crew</div>
@@ -5535,6 +5554,17 @@
     updatePushToggleBtn();
     const refInput = document.getElementById('referralLinkInput');
     if(refInput && currentUser) refInput.value = `${window.location.origin}/?ref=${currentUser.id}`;
+    const bioInput = document.getElementById('bioInput');
+    if(bioInput && document.activeElement !== bioInput){
+      bioInput.value = state.bio || '';
+      updateBioCharCount();
+    }
+  }
+
+  function updateBioCharCount(){
+    const bioInput = document.getElementById('bioInput');
+    const counter = document.getElementById('bioCharCount');
+    if(bioInput && counter) counter.textContent = `${bioInput.value.length} / 200`;
   }
 
   // ---- Onboarding tutorial ----
@@ -6661,6 +6691,8 @@
     }
   });
   document.getElementById('savePimpNameBtn').addEventListener('click', savePimpName);
+  document.getElementById('saveBioBtn').addEventListener('click', saveBio);
+  document.getElementById('bioInput').addEventListener('input', updateBioCharCount);
   document.getElementById('viewOwnProfileBtn').addEventListener('click', openOwnProfile);
   document.getElementById('saveCrewNameBtn').addEventListener('click', saveCrewName);
   document.getElementById('workResultsToggle').addEventListener('change', (e) => {
