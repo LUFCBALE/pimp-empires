@@ -4198,6 +4198,7 @@
     const list = document.getElementById('respectList');
     if(!list) return;
 
+    const rosterIds = crewRosterIds();
     const entries = [{
       id: null, name: state.name || 'Big Boss', isYou: true,
       gang: state.gang || '', emblem: (state.crewRoster && state.crewRoster.emblem) || '',
@@ -4205,9 +4206,12 @@
     }];
     (state.bots || []).forEach(b => {
       if(!b.isHuman) return;
+      // Recruited bots fly your crew's colors, not their old street gang.
+      const inYourCrew = rosterIds.has(b.id);
       entries.push({
         id: b.id, name: b.boss, isYou: false,
-        gang: b.gang || '', emblem: (state.botCrewEmblems || {})[b.gang] || '',
+        gang: inYourCrew ? (state.gang || '') : (b.gang || ''),
+        emblem: inYourCrew ? ((state.crewRoster && state.crewRoster.emblem) || '') : ((state.botCrewEmblems || {})[b.gang] || ''),
         respect: computeRespect(b),
       });
     });
