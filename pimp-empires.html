@@ -1394,7 +1394,7 @@
       </div>
       <div class="top-strip-stats">
         <div class="ts-stat cash">
-          <span class="ts-icon">💰</span>
+          <span class="ts-icon"><img src="./cash-icon.jpg" alt="Cash"></span>
           <div class="ts-main">
             <div class="ts-label">Cash</div>
             <div class="ts-value" id="statCash">£0</div>
@@ -3894,7 +3894,7 @@
       <div style="font-size:1.1rem; font-weight:700; margin-bottom:4px;">${escapeHtml(r.boss)}${r.gang ? ` — "${escapeHtml(r.gang)}"` : ''}</div>
       <div style="color:var(--text-dim); font-size:0.85rem; margin-bottom:12px;">${escapeHtml(r.city || '')} · Net Worth: ${fmtMoney(r.netWorth)} · You paid: ${fmtMoney(r.cost)}</div>
       <div class="bot-stats-row" style="margin-bottom:12px;">
-        <span>💰 ${fmtMoney(r.cash)} ${r.bank !== undefined ? 'liquid cash' : 'operating cash'}</span>
+        <span><img src="./cash-icon.jpg" alt="Cash" style="height:1em; width:1em; object-fit:cover; border-radius:50%; vertical-align:-2px;"> ${fmtMoney(r.cash)} ${r.bank !== undefined ? 'liquid cash' : 'operating cash'}</span>
         ${r.bank !== undefined ? `<span>🏦 ${fmtMoney(r.bank)} banked</span>` : ''}
         ${r.hoeCash !== undefined ? `<span>💵 ${fmtMoney(r.hoeCash)} hoe earnings</span>` : ''}
         <span><img src="./thug-icon.jpg" alt="Thugs" style="height:1em; width:1em; object-fit:cover; object-position:top center; border-radius:50%; vertical-align:-2px;"> ${r.thugs} thugs</span>
@@ -4094,7 +4094,7 @@
     const boards = [
       {key:'statsThugsKilled', achievementId:'most_thugs_killed', title:'💀 Most Thugs Killed', fmt: v => v.toLocaleString(), banner:'./hof-most-thugs-killed.jpg'},
       {key:'statsFactoriesDestroyed', achievementId:'most_factories_destroyed', title:'🧨 Most Factories Destroyed', fmt: v => v.toLocaleString(), banner:'./hof-most-factories-destroyed.jpg'},
-      {key:'statsMoneyStolen', achievementId:'most_money_stolen', title:'💰 Most Money Stolen', fmt: v => fmtMoney(v), banner:'./hof-most-money-stolen.jpg'},
+      {key:'statsMoneyStolen', achievementId:'most_money_stolen', title:'Most Money Stolen', titleImg:'./cash-icon.jpg', fmt: v => fmtMoney(v), banner:'./hof-most-money-stolen.jpg'},
       {key:'hoes', achievementId:'most_hoes', title:'Most Hoes', titleImg:'./hoes-icon.png', fmt: v => Math.floor(v).toLocaleString(), banner:'./hof-most-hoes.jpg'},
       {key:'statsCarsStolen', achievementId:'most_cars_stolen', title:'🚗 Most Cars Stolen', fmt: v => v.toLocaleString(), banner:'./hof-most-cars-stolen.jpg'},
       {key:'lifetimeEarnings', achievementId:'top_earner', title:'📈 All Time Earnings', fmt: v => fmtMoney(v), banner:'./hof-lifetime-earnings.jpg', hideValue: true},
