@@ -1397,8 +1397,11 @@ def fight_bot(state, bot_id, world):
 # tick, so these costs are meant to take multiple ticks of pure stockpiling
 # to afford even a single hit, not let one bombing run wipe out a bot's
 # whole factory portfolio in one sitting. "drug" only ever shows up on real
-# player targets - bots never build drug factories.
-BOMB_COST_BY_FACTORY = {"medical": 30, "gun": 75, "car": 120, "drug": 135, "explosive": 150, "counterfeit": 450, "gym": 100, "warehouse": 200}
+# player targets - bots never build drug factories. Priced by factory tier
+# (see the Real Estate page's TIER labels), not individually per type:
+# Tier 1 (Medical) = 100, Tier 2 (Gym/Warehouse/Gun) = 250,
+# Tier 3 (Car/Drug) = 450, Tier 4 (Explosive) = 700, Tier 5 (Counterfeit) = 1000.
+BOMB_COST_BY_FACTORY = {"medical": 100, "gym": 250, "warehouse": 250, "gun": 250, "car": 450, "drug": 450, "explosive": 700, "counterfeit": 1000}
 BOMB_TURN_COST = 20
 
 # Stealing cars needs bodies on the ground to drive them out, not bombs -
