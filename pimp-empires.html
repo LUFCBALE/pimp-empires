@@ -3414,27 +3414,27 @@
   const LEGACY_EMOJI_EMBLEMS = ['🐍', '🦂', '🐺', '💀', '🔥', '👑', '🗡️', '🦅', '🐉', '⚡', '🎩', '♠️'];
   // Image-based emblems - id -> file under ./crew_emblems/.
   const IMAGE_EMBLEMS = {
-    the_pride: 'crew_emblems/the_pride.png',
-    the_forge: 'crew_emblems/the_forge.png',
-    the_serpents_fang: 'crew_emblems/the_serpents_fang.png',
-    the_royal_dead: 'crew_emblems/the_royal_dead.png',
-    the_stormbringers: 'crew_emblems/the_stormbringers.png',
-    the_stormbringers_2: 'crew_emblems/the_stormbringers_2.png',
-    the_watchers: 'crew_emblems/the_watchers.png',
-    the_nightfall_crew: 'crew_emblems/the_nightfall_crew.png',
-    the_ironclad: 'crew_emblems/the_ironclad.png',
-    the_reborn: 'crew_emblems/the_reborn.png',
-    the_riptide: 'crew_emblems/the_riptide.png',
-    the_contagion: 'crew_emblems/the_contagion.png',
-    the_pathfinders: 'crew_emblems/the_pathfinders.png',
-    the_maulers: 'crew_emblems/the_maulers.png',
-    the_breakers: 'crew_emblems/the_breakers.png',
-    the_stargazers: 'crew_emblems/the_stargazers.png',
-    the_wyverns: 'crew_emblems/the_wyverns.png',
-    the_rustlers: 'crew_emblems/the_rustlers.png',
-    the_metropolitans: 'crew_emblems/the_metropolitans.png',
-    the_chroniclers: 'crew_emblems/the_chroniclers.png',
-    the_lone_wolves: 'crew_emblems/the_lone_wolves.png',
+    the_pride: 'crew_emblems/the_pride.gif',
+    the_forge: 'crew_emblems/the_forge.gif',
+    the_serpents_fang: 'crew_emblems/the_serpents_fang.gif',
+    the_royal_dead: 'crew_emblems/the_royal_dead.gif',
+    the_stormbringers: 'crew_emblems/the_stormbringers.gif',
+    the_stormbringers_2: 'crew_emblems/the_stormbringers_2.gif',
+    the_watchers: 'crew_emblems/the_watchers.gif',
+    the_nightfall_crew: 'crew_emblems/the_nightfall_crew.gif',
+    the_ironclad: 'crew_emblems/the_ironclad.gif',
+    the_reborn: 'crew_emblems/the_reborn.gif',
+    the_riptide: 'crew_emblems/the_riptide.gif',
+    the_contagion: 'crew_emblems/the_contagion.gif',
+    the_pathfinders: 'crew_emblems/the_pathfinders.gif',
+    the_maulers: 'crew_emblems/the_maulers.gif',
+    the_breakers: 'crew_emblems/the_breakers.gif',
+    the_stargazers: 'crew_emblems/the_stargazers.gif',
+    the_wyverns: 'crew_emblems/the_wyverns.gif',
+    the_rustlers: 'crew_emblems/the_rustlers.gif',
+    the_metropolitans: 'crew_emblems/the_metropolitans.gif',
+    the_chroniclers: 'crew_emblems/the_chroniclers.gif',
+    the_lone_wolves: 'crew_emblems/the_lone_wolves.gif',
   };
   const ALL_EMBLEM_IDS = () => Object.keys(IMAGE_EMBLEMS);
 
@@ -3547,7 +3547,7 @@
         isYou: false,
         isHuman: !!b.isHuman,
         isOnline: !!b.isOnline,
-        isDon: !!b.isHuman && (b.rankLevel || 1) >= 8,
+        isDon: !!b.isHuman && (b.rankLevel || 1) >= 13,
         botId: b.id,
         name: b.boss,
         // Recruited bots fly your crew's colors, not their old street gang
@@ -3566,7 +3566,7 @@
     // You're always "in" your own city, so you belong on both tabs
     rows.push({
       isYou: true,
-      isDon: (state.rankInfo?.level || 1) >= 8,
+      isDon: (state.rankInfo?.level || 1) >= 13,
       botId: null,
       name: state.name || 'Big Boss',
       gang: state.gang || '',
@@ -4047,7 +4047,7 @@
   }
 
   // Must match RANK_UP_CASH_REWARDS / RANKS in game_engine.py.
-  const RANK_UP_CASH_REWARDS = {2: 5000, 3: 25000, 4: 100000, 5: 500000, 6: 2000000, 7: 10000000, 8: 100000000};
+  const RANK_UP_CASH_REWARDS = {2: 5000, 3: 25000, 4: 100000, 5: 500000, 6: 2000000, 7: 10000000, 8: 30000000, 9: 60000000, 10: 100000000, 11: 200000000, 12: 400000000, 13: 1000000000};
 
   function renderAchievements(){
     const earned = new Set(state.achievements || []);
@@ -5307,7 +5307,7 @@
         ? 'This is what everyone else sees when they click your name.'
         : 'Public info only — no combat stats. Pay an Informer for the real numbers.';
       const joinDate = new Date(p.joinDate).toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
-      const isDon = p.rank.level >= 8;
+      const isDon = p.rank.level >= 13;
       container.innerHTML = `
         ${isDon ? `
         <div style="text-align:center; margin-bottom:16px; padding:14px; border:2px solid var(--gold); border-radius:12px; background:linear-gradient(135deg, rgba(255,200,0,0.15), rgba(255,200,0,0.03)); box-shadow:0 0 20px rgba(255,200,0,0.35);">
@@ -6127,7 +6127,7 @@
   // Must match FACTORY_UNLOCK_RANK / RANKS in game_engine.py - Real Estate is
   // a progression ladder, not a shopping list you can max out from Rank 1.
   const FACTORY_UNLOCK_RANK = {medical: 1, gym: 2, warehouse: 2, gun: 3, car: 4, drug: 5, explosive: 6, counterfeit: 7};
-  const RANK_NAMES = ['', 'Junkie', 'Street Rat', 'Foot Soldier', 'Associate', 'Gang Member', 'Gang Leader', 'Mob Boss', 'THE DON'];
+  const RANK_NAMES = ['', 'Junkie', 'Street Rat', 'Foot Soldier', 'Associate', 'Gang Member', 'Gang Leader', 'Mob Boss', 'Underboss', 'Consigliere', 'Capo', 'Boss of Bosses', 'Kingpin', 'THE DON'];
 
   function isFactoryUnlocked(type){
     return (state.rankInfo?.level || 1) >= FACTORY_UNLOCK_RANK[type];

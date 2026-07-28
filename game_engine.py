@@ -488,7 +488,12 @@ RANKS = [
     (5, "Gang Member", 30000),
     (6, "Gang Leader", 70000),
     (7, "Mob Boss", 150000),
-    (8, "THE DON", 300000),
+    (8, "Underboss", 300000),
+    (9, "Consigliere", 550000),
+    (10, "Capo", 950000),
+    (11, "Boss of Bosses", 1600000),
+    (12, "Kingpin", 2750000),
+    (13, "THE DON", 5000000),
 ]
 
 XP_PER_TURN_SPENT = 1
@@ -541,7 +546,12 @@ RANK_UP_CASH_REWARDS = {
     5: 500_000,
     6: 2_000_000,
     7: 10_000_000,
-    8: 100_000_000,
+    8: 30_000_000,
+    9: 60_000_000,
+    10: 100_000_000,
+    11: 200_000_000,
+    12: 400_000_000,
+    13: 1_000_000_000,
 }
 
 # Referral rewards: paid via a shareable "?ref=<userId>" signup link. The new
@@ -642,7 +652,7 @@ def check_milestone_achievements(state):
     rank = rank_info(state.get("xp", 0))
     if rank["level"] >= 6:
         award_achievement(state, "gang_leader_rank")
-    if rank["level"] >= 8:
+    if rank["level"] >= 13:
         award_achievement(state, "the_don")
 
     nw = total_net_worth(state)
@@ -2599,27 +2609,27 @@ CREW_EMBLEMS = ["🐍", "🦂", "🐺", "💀", "🔥", "👑", "🗡️", "🦅
 # badges: cropped/transparent-background PNGs supplied by the admin, not
 # an open player upload).
 CREW_EMBLEM_IMAGES = {
-    "the_pride": "crew_emblems/the_pride.png",
-    "the_forge": "crew_emblems/the_forge.png",
-    "the_serpents_fang": "crew_emblems/the_serpents_fang.png",
-    "the_royal_dead": "crew_emblems/the_royal_dead.png",
-    "the_stormbringers": "crew_emblems/the_stormbringers.png",
-    "the_stormbringers_2": "crew_emblems/the_stormbringers_2.png",
-    "the_watchers": "crew_emblems/the_watchers.png",
-    "the_nightfall_crew": "crew_emblems/the_nightfall_crew.png",
-    "the_ironclad": "crew_emblems/the_ironclad.png",
-    "the_reborn": "crew_emblems/the_reborn.png",
-    "the_riptide": "crew_emblems/the_riptide.png",
-    "the_contagion": "crew_emblems/the_contagion.png",
-    "the_pathfinders": "crew_emblems/the_pathfinders.png",
-    "the_maulers": "crew_emblems/the_maulers.png",
-    "the_breakers": "crew_emblems/the_breakers.png",
-    "the_stargazers": "crew_emblems/the_stargazers.png",
-    "the_wyverns": "crew_emblems/the_wyverns.png",
-    "the_rustlers": "crew_emblems/the_rustlers.png",
-    "the_metropolitans": "crew_emblems/the_metropolitans.png",
-    "the_chroniclers": "crew_emblems/the_chroniclers.png",
-    "the_lone_wolves": "crew_emblems/the_lone_wolves.png",
+    "the_pride": "crew_emblems/the_pride.gif",
+    "the_forge": "crew_emblems/the_forge.gif",
+    "the_serpents_fang": "crew_emblems/the_serpents_fang.gif",
+    "the_royal_dead": "crew_emblems/the_royal_dead.gif",
+    "the_stormbringers": "crew_emblems/the_stormbringers.gif",
+    "the_stormbringers_2": "crew_emblems/the_stormbringers_2.gif",
+    "the_watchers": "crew_emblems/the_watchers.gif",
+    "the_nightfall_crew": "crew_emblems/the_nightfall_crew.gif",
+    "the_ironclad": "crew_emblems/the_ironclad.gif",
+    "the_reborn": "crew_emblems/the_reborn.gif",
+    "the_riptide": "crew_emblems/the_riptide.gif",
+    "the_contagion": "crew_emblems/the_contagion.gif",
+    "the_pathfinders": "crew_emblems/the_pathfinders.gif",
+    "the_maulers": "crew_emblems/the_maulers.gif",
+    "the_breakers": "crew_emblems/the_breakers.gif",
+    "the_stargazers": "crew_emblems/the_stargazers.gif",
+    "the_wyverns": "crew_emblems/the_wyverns.gif",
+    "the_rustlers": "crew_emblems/the_rustlers.gif",
+    "the_metropolitans": "crew_emblems/the_metropolitans.gif",
+    "the_chroniclers": "crew_emblems/the_chroniclers.gif",
+    "the_lone_wolves": "crew_emblems/the_lone_wolves.gif",
 }
 
 
