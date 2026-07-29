@@ -3032,8 +3032,10 @@
     if(item.key === 'thugs') return 90;
     ensureMarket();
     const mult = (state.market[item.key] && state.market[item.key].mult) || 1;
-    // Sell price never exceeds buy price (max 1.0 multiplier)
-    return Math.max(1, Math.round(item.price * Math.min(mult, 1.0)));
+    // Capped below 1.0 (not at 1.0) so a buy-then-sell round trip always
+    // costs real cash, never a wash - must match _market_current_price in
+    // game_engine.py exactly, or this preview price will lie to the player.
+    return Math.max(1, Math.round(item.price * Math.min(mult, 0.9)));
   }
 
   function thugBuyPrice(){

@@ -2482,7 +2482,12 @@ def _market_current_price(state, item):
     if item["key"] == "thugs":
         return 90
     mult = state["market"].get(item["key"], {"mult": 1.0})["mult"]
-    return max(1, jround(item["price"] * min(mult, 1.0)))
+    # Capped below 1.0 (not at 1.0) so a buy-then-sell round trip on the same
+    # item always nets a real cash loss, never a wash - otherwise, whenever
+    # the market multiplier drifts above 1.0 (which happens often), buying
+    # and immediately reselling costs nothing net while still paying out the
+    # sell-side XP every time: free, unlimited XP/rank/Mob Dollar farming.
+    return max(1, jround(item["price"] * min(mult, 0.9)))
 
 
 def thug_buy_price(state):
