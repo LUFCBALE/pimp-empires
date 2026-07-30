@@ -1353,7 +1353,6 @@
     <div class="sidebar-section nav-section">
       <div class="sidebar-links" id="sidebar">
         <button class="sidebar-link" data-page="page-main">🏠<span>Home</span></button>
-        <button class="sidebar-link" data-page="page-bank">🏦<span>Bank</span></button>
         <button class="sidebar-link" data-page="page-travel">✈️<span>Travel Agent</span></button>
         <button class="sidebar-link" data-page="page-heist">🔫<span>Pull a Job</span></button>
         <button class="sidebar-link" data-page="page-realestate">🏭<span>Real Estate</span></button>
@@ -1408,7 +1407,6 @@
           <div class="ts-main">
             <div class="ts-label">Cash</div>
             <div class="ts-value" id="statCash">£0</div>
-            <div class="ts-sub" id="statBank">banked: £0</div>
           </div>
         </div>
         <div class="ts-stat hoes">
@@ -1651,27 +1649,6 @@
     <div class="results-event" id="resultsEvent"></div>
 
     <button class="cta" id="resultsBackBtn">Back to the block</button>
-  </div>
-</div>
-
-<div class="page" id="page-bank">
-  <button class="back-btn" data-back>← Back to the block</button>
-  <h2 class="page-title">The Bank</h2>
-  <div class="page-subtitle">Banked cash can't be touched in a raid, but the bank skims 5% every hour. Withdrawals cost 10%.</div>
-  <div class="panel">
-    <div class="slider-row">
-      <div class="row-top"><span>Deposit to bank</span><b id="depositLabel">£0</b></div>
-      <input type="number" id="depositSlider" min="0" max="0" value="0">
-    </div>
-    <button class="cta gold" id="bankBtn" style="width:100%;">Deposit</button>
-
-    <div class="slider-row" style="margin-top:16px;">
-      <div class="row-top"><span>Withdraw from bank</span><b id="withdrawLabel">£0</b></div>
-      <input type="number" id="withdrawSlider" min="0" max="0" value="0">
-    </div>
-    <button class="cta gold" id="withdrawBtn" style="width:100%;">Withdraw</button>
-
-    <div class="hint" id="bankFeeHint" style="margin-top:14px;"></div>
   </div>
 </div>
 
@@ -2415,9 +2392,9 @@
   <h2 class="page-title">About The Hustle</h2>
   <div class="panel">
     <p>The Hustle is a browser-based crime empire management game. Every account starts out dropped into a random UK city — no home turf, nowhere safe — building up hoes to earn you money, thugs to protect it, and a criminal business empire, with your crew deciding together where to actually set up shop. Every other account playing right now, plus a roster of AI-controlled rival bosses, shares the exact same world you do.</p>
-    <p>There's no combat you watch play out — every action is a single click and an instant result. The depth is in the economy and the risk/reward calls: how hard you push your hoes before happiness collapses, how much cash you leave lying around versus banked away, who's worth attacking, and what you're willing to spend to find out what a rival is actually sitting on.</p>
+    <p>There's no combat you watch play out — every action is a single click and an instant result. The depth is in the economy and the risk/reward calls: how hard you push your hoes before happiness collapses, how much cash you leave sitting exposed, who's worth attacking, and what you're willing to spend to find out what a rival is actually sitting on.</p>
     <h3>The core loop</h3>
-    <p><b>Work the Block</b> is your main income — it turns your turns into cash, new hoes, and new thugs, with a chance of getting raided by police along the way. From there, cash gets put to work: banked for safety (at a fee), spent on real estate (factories that passively produce goods and count toward net worth), spent recruiting muscle and weapons for protection, or gambled on heists and the Casino for a bigger payout.</p>
+    <p><b>Work the Block</b> is your main income — it turns your turns into cash, new hoes, and new thugs, with a chance of getting raided by police along the way. From there, cash gets put to work: spent on real estate (factories that passively produce goods and count toward net worth), spent recruiting muscle and weapons for protection, or gambled on heists and the Casino for a bigger payout. All of it sits exposed to a raid until you spend it — there's no way to protect cash once you've earned it.</p>
     <h3>It's genuinely multiplayer</h3>
     <p>Every bot and every real player you see on the Leaderboard, the Attacks page, or the Informer's dropdown is part of one shared world. Attacking, bombing, and recruiting real players works exactly the same as it does against bots — same rules, same risks, both ways. Nobody's stats are visible for free, though: what you see is name and net worth only. Anything more detailed costs you an Informer's fee.</p>
     <h3>Net worth</h3>
@@ -2447,8 +2424,6 @@
     <p>Put your own cash on anyone's head — bot or real player, anywhere, any size. Whoever is first to wipe out every one of that target's thugs collects the full amount straight to their cash, no matter who they are. Multiple bounties can stack on the same target and all pay out together to whoever lands the kill. Change your mind before anyone collects and you can pull it for a full refund.</p>
     <h3>The Informer</h3>
     <p>The only way to see someone's actual numbers — cash, factories, guns, everything. Costs 12% of their known net worth, paid straight to the informer.</p>
-    <h3>The Bank</h3>
-    <p>Banked cash survives a raid, but the bank skims 5% of your balance every hour, and withdrawing costs a 10% fee. It's a tradeoff between safety and cost, not free insurance.</p>
     <h3>Real Estate / Factories</h3>
     <p>Seven factory types, each producing something automatically every 30 minutes: Medical (safety kits for your hoes), Gun (weapons, mix tunable), Car (Cadillacs/Armored Trucks, mix tunable), Drug (cocaine to sell), Explosive (bombs), Counterfeit (straight cash — highest risk/reward tier), and Gym (recruits thugs straight into your crew). All factories can be sold back at 50% of build cost, except Explosive.</p>
     <h3>Crew</h3>
@@ -2528,7 +2503,6 @@
       name: 'Big Boss',
       gang: '',
       cash: 500,
-      bank: 0,
       hoes: 1,
       thugs: 0,
       turns: 4000,
@@ -2557,8 +2531,6 @@
         cars: {mult:1, history:[1]},
       },
       lastMarketUpdate: Date.now(),
-      lastBankFeeUpdate: Date.now(),
-      bankLockedUntil: 0,
       lastCasinoHeist: 0,
       lastJobHeist: 0,
       bribeActiveUntil: 0,
@@ -2987,7 +2959,7 @@
   const FACTORY_MS = 30 * 60 * 1000; // 30 minutes
 
   // All time-based catch-up (turn regen, factory production, market drift,
-  // bank fees, bot regen) now runs server-side in game_engine.apply_catchup()
+  // bot regen) now runs server-side in game_engine.apply_catchup()
   // every time state is loaded or an action is taken. This is a no-op shim
   // kept so any remaining call site doesn't error.
   function applyOfflineRegen(){}
@@ -3046,10 +3018,6 @@
     return Math.max(100, Math.round(price));
   }
 
-  const BANK_LOCKOUT_MS = 10 * 60 * 1000; // 10 minutes locked out of banking after a raid
-  const BANK_FEE_MS = 60 * 60 * 1000; // 1 hour
-  const BANK_FEE_PCT = 0.05; // 5% skimmed off the bank every hour
-
   const BRIBE_DURATION_MS = 5 * 60 * 1000; // 5 minutes of no raids
   const BRIBE_COOLDOWN_MS = 60 * 60 * 1000; // usable once an hour
   const BRIBE_COST_PER_HOE = 15;
@@ -3095,25 +3063,6 @@
       bribeBtn.disabled = state.cash < bribeCost();
       bribeHint.textContent = `Keeps raids off your back for 5 minutes · once every hour · £15 per hoe on the roster.`;
     }
-  }
-
-  function tickBankFee(){
-    const now = Date.now();
-    if(!state.lastBankFeeUpdate) state.lastBankFeeUpdate = now;
-    const elapsed = now - state.lastBankFeeUpdate;
-    const ticks = Math.floor(elapsed / BANK_FEE_MS);
-    if(ticks < 1) return false;
-    if(state.bank > 0){
-      const before = state.bank;
-      state.bank = Math.round(state.bank * Math.pow(1 - BANK_FEE_PCT, ticks));
-      const fee = before - state.bank;
-      if(fee >= 1){
-        const label = ticks > 1 ? ` (${ticks}× while you were away)` : '';
-        addLog(`The bank skimmed its cut off your stash${label}: -${fmtMoney(fee)}.`, 'bad');
-      }
-    }
-    state.lastBankFeeUpdate += ticks * BANK_FEE_MS;
-    return true;
   }
 
   const TRAVEL_COST_PER_THUG = 50;
@@ -3938,8 +3887,7 @@
       <div style="font-size:1.1rem; font-weight:700; margin-bottom:4px;">${escapeHtml(r.boss)}${r.gang ? ` — "${escapeHtml(r.gang)}"` : ''}</div>
       <div style="color:var(--text-dim); font-size:0.85rem; margin-bottom:12px;">${escapeHtml(r.city || '')} · Net Worth: ${fmtMoney(r.netWorth)} · You paid: ${fmtMoney(r.cost)}</div>
       <div class="bot-stats-row" style="margin-bottom:12px;">
-        <span><img src="./cash-icon.jpg" alt="Cash" style="height:1em; width:1em; object-fit:cover; border-radius:50%; vertical-align:-2px;"> ${fmtMoney(r.cash)} ${r.bank !== undefined ? 'liquid cash' : 'operating cash'}</span>
-        ${r.bank !== undefined ? `<span>🏦 ${fmtMoney(r.bank)} banked</span>` : ''}
+        <span><img src="./cash-icon.jpg" alt="Cash" style="height:1em; width:1em; object-fit:cover; border-radius:50%; vertical-align:-2px;"> ${fmtMoney(r.cash)} cash</span>
         ${r.hoeCash !== undefined ? `<span>💵 ${fmtMoney(r.hoeCash)} hoe earnings</span>` : ''}
         <span><img src="./thug-icon.jpg" alt="Thugs" style="height:1em; width:1em; object-fit:cover; object-position:top center; border-radius:50%; vertical-align:-2px;"> ${r.thugs} thugs</span>
         <span><img src="./hoes-icon.png" alt="Hoes" style="height:1em; width:1em; object-fit:cover; object-position:top center; border-radius:50%; vertical-align:-2px;"> ${r.hoes} hoes</span>
@@ -4529,7 +4477,6 @@
     }
 
     animateNumberTo(document.getElementById('statCash'), state.cash, v => fmtMoney(v));
-    document.getElementById('statBank').textContent = 'banked: ' + fmtMoney(state.bank);
     document.getElementById('statHoes').textContent = state.hoes;
     document.getElementById('statThugs').textContent = state.thugs;
     animateNumberTo(document.getElementById('statTurns'), state.turns, v => `${Math.round(v)} / ${state.maxTurns}`);
@@ -4540,28 +4487,6 @@
     if(parseInt(turnInput.value) > turnInput.max) turnInput.value = turnInput.max;
 
     document.getElementById('workBtn').disabled = state.turns < 1;
-    const bankLocked = Date.now() < (state.bankLockedUntil || 0);
-    const bankBtn = document.getElementById('bankBtn');
-    const depositSlider = document.getElementById('depositSlider');
-    depositSlider.max = state.cash;
-    if(parseInt(depositSlider.value) > state.cash) depositSlider.value = state.cash;
-    const depositAmt = parseInt(depositSlider.value) || 0;
-    const depositFee = Math.round(depositAmt * 0.05);
-    const depositNet = depositAmt - depositFee;
-    document.getElementById('depositLabel').textContent = fmtMoney(depositAmt);
-    bankBtn.disabled = bankLocked || state.cash < 1;
-    bankBtn.textContent = bankLocked ? `Locked` : `Deposit (5% fee + 5%/hr charge)`;
-
-    const withdrawSlider = document.getElementById('withdrawSlider');
-    const withdrawBtn = document.getElementById('withdrawBtn');
-    withdrawSlider.max = state.bank;
-    if(parseInt(withdrawSlider.value) > state.bank) withdrawSlider.value = state.bank;
-    const withdrawAmt = parseInt(withdrawSlider.value) || 0;
-    const withdrawFee = Math.round(withdrawAmt * 0.10);
-    const withdrawNet = withdrawAmt - withdrawFee;
-    document.getElementById('withdrawLabel').textContent = fmtMoney(withdrawAmt);
-    withdrawBtn.disabled = state.bank < 1;
-    withdrawBtn.textContent = `Withdraw (10% fee: -${fmtMoney(withdrawFee)})`;
 
     updateBribeUI();
 
@@ -5156,28 +5081,6 @@
     showWorkResults(r);
 
     render();
-  }
-
-  async function bankCash(){
-    const slider = document.getElementById('depositSlider');
-    const amt = parseInt(slider.value) || 0;
-    if(amt < 1) return;
-    try{
-      const data = await apiCall('/api/bank/deposit', {amount: amt});
-      showToast(`Banked ${fmtMoney(data.result.deposited)} (fee: ${fmtMoney(data.result.fee)}).`);
-      render();
-    } catch(e){ /* toast already shown */ }
-  }
-
-  async function withdrawCash(){
-    const slider = document.getElementById('withdrawSlider');
-    const amt = parseInt(slider.value) || 0;
-    if(amt < 1) return;
-    try{
-      const data = await apiCall('/api/bank/withdraw', {amount: amt});
-      showToast(`Withdrew ${fmtMoney(data.result.received)} (fee: ${fmtMoney(data.result.fee)}).`);
-      render();
-    } catch(e){ /* toast already shown */ }
   }
 
   const MOB_DOLLARS_TURNS_PER_UNIT = 10;
@@ -6041,7 +5944,7 @@
   }
 
   // ---- Turn regen ticking ----
-  // All actual regen/production/market/bank-fee math now happens
+  // All actual regen/production/market math now happens
   // server-side (game_engine.apply_catchup). This function only refreshes
   // on-screen countdowns from the last-synced `state` every second, and a
   // separate slower interval (syncState, see below) periodically re-pulls
@@ -6059,23 +5962,6 @@
         const nextMins = Math.max(0, Math.ceil(nextMs / 60000));
         marketSub.forEach(el => el.textContent = `next move in ~${nextMins} min`);
       }
-    }
-
-    // Bank fee timer
-    const bankFeeRemainder = BANK_FEE_MS - ((now - (state.lastBankFeeUpdate || now)) % BANK_FEE_MS);
-    const bfMins = Math.floor(bankFeeRemainder / 60000);
-    const bfSecs = Math.floor((bankFeeRemainder % 60000) / 1000);
-    const bankFeeHint = document.getElementById('bankFeeHint');
-    const bankBtn = document.getElementById('bankBtn');
-    const lockRemaining = (state.bankLockedUntil || 0) - now;
-    if(lockRemaining > 0){
-      const lMins = Math.floor(lockRemaining / 60000);
-      const lSecs = Math.floor((lockRemaining % 60000) / 1000);
-      const lockStr = `${lMins}:${lSecs.toString().padStart(2,'0')}`;
-      if(bankFeeHint) bankFeeHint.textContent = `The bank's watching you — no deposits for ${lockStr} after that raid.`;
-      if(bankBtn){ bankBtn.disabled = true; bankBtn.textContent = `Locked (${lockStr})`; }
-    } else {
-      if(bankFeeHint) bankFeeHint.textContent = `Banked cash can't be touched in a raid, but the bank skims 5% every hour — next skim in ${bfMins}:${bfSecs.toString().padStart(2,'0')}.`;
     }
 
     // Bribe status
@@ -6779,8 +6665,6 @@
   document.getElementById('locRedLight').addEventListener('click', () => setWorkLocation('redlight'));
   document.getElementById('locNightclub').addEventListener('click', () => setWorkLocation('nightclub'));
   document.getElementById('locPullup').addEventListener('click', () => setWorkLocation('pullup'));
-  document.getElementById('bankBtn').addEventListener('click', bankCash);
-  document.getElementById('withdrawBtn').addEventListener('click', withdrawCash);
   document.getElementById('mobDollarsBtn').addEventListener('click', openMobDollarsModal);
   document.getElementById('mobDollarsCloseBtn').addEventListener('click', () => {
     document.getElementById('mobDollarsModal').classList.add('hidden');
@@ -6790,17 +6674,6 @@
   });
   document.getElementById('mobDollarsSlider').addEventListener('input', updateMobDollarsModal);
   document.getElementById('mobDollarsSpendBtn').addEventListener('click', spendMobDollars);
-  document.getElementById('depositSlider').addEventListener('input', (e) => {
-    const amt = parseInt(e.target.value) || 0;
-    document.getElementById('depositLabel').textContent = fmtMoney(amt);
-    document.getElementById('bankBtn').textContent = `Deposit (5% fee + 5%/hr charge)`;
-  });
-  document.getElementById('withdrawSlider').addEventListener('input', (e) => {
-    const amt = parseInt(e.target.value) || 0;
-    const fee = Math.round(amt * 0.10);
-    document.getElementById('withdrawLabel').textContent = fmtMoney(amt);
-    document.getElementById('withdrawBtn').textContent = `Withdraw (10% fee: -${fmtMoney(fee)})`;
-  });
   document.getElementById('bribeBtn').addEventListener('click', bribeCops);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('referFriendBtn').addEventListener('click', () => {

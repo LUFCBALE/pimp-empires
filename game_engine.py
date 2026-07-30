@@ -41,10 +41,6 @@ MARKET_MIN_MULT = 0.5
 MARKET_MAX_MULT = 1.8
 MARKET_HISTORY_CAP = 24
 
-BANK_LOCKOUT_MS = 10 * 60 * 1000
-BANK_FEE_MS = 60 * 60 * 1000
-BANK_FEE_PCT = 0.05
-
 BRIBE_DURATION_MS = 5 * 60 * 1000
 BRIBE_COOLDOWN_MS = 60 * 60 * 1000
 
@@ -219,7 +215,7 @@ WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS = {
 }
 
 # Hoes take this cut of every session's gross earnings as their pay - it's
-# just gone, not credited to cash, bank or hoeCash anywhere.
+# just gone, not credited to cash or hoeCash anywhere.
 HOE_WAGE_PCT = 0.10
 
 HEIST_JOBS = {
@@ -353,7 +349,6 @@ def default_state(pimp_name="Big Boss"):
         "bio": "",
         "gang": "",
         "cash": 500,
-        "bank": 0,
         "hoes": 1,
         "thugs": 0,
         "turns": 2000,
@@ -390,8 +385,6 @@ def default_state(pimp_name="Big Boss"):
         "lastFactoryRun": now,
         "market": {item["key"]: {"mult": 1.0, "history": [1.0]} for item in BLACKMARKET_ITEMS},
         "lastMarketUpdate": now,
-        "lastBankFeeUpdate": now,
-        "bankLockedUntil": 0,
         "lastCasinoHeist": 0,
         "lastJobHeist": 0,
         "bribeActiveUntil": 0,
@@ -924,6 +917,22 @@ def _reduce_cars_by(entity, amount):
     if remaining > 0:
         cut2 = min(entity.get("cadillacs", 0), remaining)
         entity["cadillacs"] = entity.get("cadillacs", 0) - cut2
+
+
+def exposed_cars_of_type(entity, car_type):
+    """How many of this specific car type currently sit outside warehouse
+    protection and are actually stealable/bombable. Warehouse capacity is
+    one shared cap across cadillacs+armoredTrucks combined (see
+    warehouse_capacity/_total_cars), so if the combined total is within
+    capacity, NOTHING of either type is exposed - matches the removal
+    order _reduce_cars_by already uses (armored trucks counted as exposed
+    before cadillacs)."""
+    cap = warehouse_capacity(entity)
+    exposed_total = max(0, _total_cars(entity) - cap)
+    trucks = entity.get("armoredTrucks", 0)
+    if car_type == "armoredTruck":
+        return min(trucks, exposed_total)
+    return max(0, exposed_total - trucks)
 
 
 def expose_unprotected_produce(entity, factory_type):
@@ -1499,8 +1508,9 @@ def human_as_bot(user_id, pimp_name, s):
     already renders for bots, so every bot-oriented UI (Attacks page, city
     listings, Leaderboard) works for real player targets with no changes.
     Field mapping mirrors a bot's cash/hoeCash split: a bot's `hoeCash` is
-    its unprotected, raidable pot and `cash` is what funds factories - for a
-    human, that's `cash` (raidable) and `bank` (protected) respectively."""
+    its unprotected, raidable pot and `cash` is what funds factories - a
+    human has no protected pot at all anymore (the Bank was removed, so
+    every raid targets their entire cash), hence `cash` is fixed at 0 here."""
     return {
         "id": HUMAN_ID_OFFSET + user_id,
         "isHuman": True,
@@ -1513,7 +1523,7 @@ def human_as_bot(user_id, pimp_name, s):
         "thugNames": [],
         "hoes": s.get("hoes", 0),
         "hoeNames": [],
-        "cash": s.get("bank", 0),
+        "cash": 0,
         "hoeCash": s.get("cash", 0),
         "thugMorale": s.get("thugMorale", 50),
         "hoeMorale": s.get("hoeMorale", 50),
@@ -1535,10 +1545,10 @@ def human_as_bot(user_id, pimp_name, s):
 
 
 def fight_human(state, defender, world, defender_target_id=None):
-    """Attack another real player. Mirrors fight_bot exactly, but the
-    raidable pot is the defender's liquid `cash` (their `bank` stays
-    protected, same as a bot's `cash` staying untouched while `hoeCash`
-    gets raided)."""
+    """Attack another real player. Raids the defender's `cash` directly -
+    there's no protected pot for a human at all (no Bank), so this always
+    raids their entire liquid cash, unlike a bot where `hoeCash` is raided
+    but `cash` stays untouched."""
     if state["turns"] < 30:
         raise GameError("Not enough turns (need 30)")
     if defender["location"] != state["location"]:
@@ -1705,7 +1715,7 @@ def steal_cars_from_bot(state, bot_id, car_type, world, qty=None):
 
     field = CAR_TYPE_FIELD[car_type]
     label = CAR_TYPE_LABELS[car_type]
-    owned = bot.get(field, 0)
+    owned = exposed_cars_of_type(bot, car_type)
     capacity = state["thugs"] // STEAL_CARS_THUGS_PER_CAR
     stolen = min(owned, capacity)
     if qty is not None:
@@ -1742,7 +1752,7 @@ def steal_cars_from_human(state, defender, car_type, qty=None):
 
     field = CAR_TYPE_FIELD[car_type]
     label = CAR_TYPE_LABELS[car_type]
-    owned = defender.get(field, 0)
+    owned = exposed_cars_of_type(defender, car_type)
     capacity = state["thugs"] // STEAL_CARS_THUGS_PER_CAR
     stolen = min(owned, capacity)
     if qty is not None:
@@ -1879,7 +1889,7 @@ def informer_report_human(state, defender):
     return {
         "boss": defender["name"], "gang": defender.get("gang", ""), "city": defender.get("location", ""),
         "cost": cost, "netWorth": nw,
-        "cash": defender["cash"], "bank": defender["bank"],
+        "cash": defender["cash"],
         "thugs": defender["thugs"], "hoes": defender["hoes"],
         "guns": dict(defender.get("guns", {})),
         "cadillacs": defender.get("cadillacs", 0), "armoredTrucks": defender.get("armoredTrucks", 0),
@@ -2066,35 +2076,6 @@ def set_work_location(state, loc):
     if loc not in WORK_LOCATIONS:
         raise GameError("Invalid location")
     state["workLocation"] = loc
-
-
-# ---------------------------------------------------------------------------
-# Banking
-# ---------------------------------------------------------------------------
-
-def bank_cash(state, amt):
-    now = now_ms()
-    if now < state["bankLockedUntil"]:
-        raise GameError("Bank is locked right now")
-    amt = min(amt, state["cash"])
-    if amt <= 0:
-        raise GameError("Nothing to deposit")
-    fee = jround(amt * 0.05)
-    deposited = amt - fee
-    state["cash"] -= amt
-    state["bank"] += deposited
-    return {"deposited": deposited, "fee": fee}
-
-
-def withdraw_cash(state, amt):
-    amt = min(amt, state["bank"])
-    if amt <= 0:
-        raise GameError("Nothing to withdraw")
-    fee = jround(amt * 0.10)
-    received = amt - fee
-    state["bank"] -= amt
-    state["cash"] += received
-    return {"received": received, "fee": fee}
 
 
 # ---------------------------------------------------------------------------
@@ -2923,14 +2904,6 @@ def tick_factories(state, now):
         state["lastFactoryRun"] += int(ticks) * FACTORY_MS
 
 
-def tick_bank_fee(state, now):
-    ticks = (now - state["lastBankFeeUpdate"]) // BANK_FEE_MS
-    if ticks >= 1:
-        if state["bank"] > 0:
-            state["bank"] = jround(state["bank"] * ((1 - BANK_FEE_PCT) ** int(ticks)))
-        state["lastBankFeeUpdate"] += int(ticks) * BANK_FEE_MS
-
-
 def check_daily_bonus(state, now):
     if now - state["last24HourBonus"] >= DAILY_BONUS_MS:
         state["turns"] = min(state["maxTurns"], state["turns"] + DAILY_BONUS_AMOUNT)
@@ -2991,10 +2964,15 @@ def apply_catchup(state):
         state["lastJobHeist"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
+    # Bank feature removed - fold any balance still sitting in it back into
+    # cash so nobody's money just vanishes, then drop the now-unused fields.
+    if "bank" in state:
+        state["cash"] = state.get("cash", 0) + state.pop("bank")
+    state.pop("lastBankFeeUpdate", None)
+    state.pop("bankLockedUntil", None)
     tick_regen(state, now)
     tick_factories(state, now)
     tick_market(state, now)
-    tick_bank_fee(state, now)
     process_human_hospital(state, now)
     check_dealer_reset(state, now)
     check_daily_bonus(state, now)

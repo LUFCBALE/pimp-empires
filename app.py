@@ -740,22 +740,6 @@ def api_work_location():
     return handle_action(ge.set_work_location, data.get('location', ''))
 
 
-@app.route('/api/bank/deposit', methods=['POST'])
-@login_required
-def api_bank_deposit():
-    data = request.get_json() or {}
-    amt = int(data.get('amount', 0))
-    return handle_action(ge.bank_cash, amt)
-
-
-@app.route('/api/bank/withdraw', methods=['POST'])
-@login_required
-def api_bank_withdraw():
-    data = request.get_json() or {}
-    amt = int(data.get('amount', 0))
-    return handle_action(ge.withdraw_cash, amt)
-
-
 @app.route('/api/factory/buy', methods=['POST'])
 @login_required
 def api_factory_buy():
