@@ -223,21 +223,25 @@ WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS = {
 HOE_WAGE_PCT = 0.10
 
 HEIST_JOBS = {
-    "shop": {"minThugs": 200, "turnCost": 10, "minCash": 800, "maxCash": 4000,
+    "shop": {"minThugs": 200, "turnCost": 10, "minCash": 1600, "maxCash": 8000,
              "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35),
-             "netWorthPct": (0.0025, 0.0075)},
-    "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 8000, "maxCash": 35000,
+             "netWorthPct": (0.005, 0.015)},
+    "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 16000, "maxCash": 70000,
                   "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55),
-                  "netWorthPct": (0.01, 0.03)},
-    "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 60000, "maxCash": 250000,
+                  "netWorthPct": (0.02, 0.06)},
+    "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 120000, "maxCash": 500000,
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
-             "netWorthPct": (0.04, 0.125)},
+             "netWorthPct": (0.08, 0.25)},
 }
 HEIST_JOB_COOLDOWN_MS = 6 * 3600 * 1000
 CASINO_JOB = {
     "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 500000, "maxCash": 2000000,
     "successChance": 0.35, "casualtyPct": (0.15, 0.30), "failCasualtyPct": (0.50, 0.90),
     "cooldownHours": 24,
+    # Scales off the WHOLE crew's combined net worth (player + every crew
+    # member), not just the player's own - the biggest heist in the game
+    # should actually reflect how loaded the crew pulling it off is.
+    "netWorthPct": (0.05, 0.15),
 }
 
 FACTORY_COSTS = {
@@ -2381,7 +2385,12 @@ def run_casino_heist(state, world):
     won = random.random() < (0.35 + (state["thugMorale"] / 100) * 0.10)
 
     if won:
-        total_cash = jround(job["minCash"] + random.random() * (job["maxCash"] - job["minCash"]))
+        flat_cash = jround(job["minCash"] + random.random() * (job["maxCash"] - job["minCash"]))
+        crew_bots = [next((b for b in world["bots"] if b["id"] == m["botId"]), None) for m in state["crewMembers"]]
+        crew_net_worth = total_net_worth(state) + sum(bot_net_worth(b) for b in crew_bots if b)
+        nw_lo, nw_hi = job["netWorthPct"]
+        scaled_cash = jround(crew_net_worth * (nw_lo + random.random() * (nw_hi - nw_lo)))
+        total_cash = max(flat_cash, scaled_cash)
         player_share = jround(total_cash * 0.60)
         crew_share_per_member = jround(total_cash * 0.40 / crew_size)
         state["cash"] += player_share

@@ -4244,8 +4244,8 @@
     shop: {
       name:'Corner Shop', emoji:'🏪',
       minThugs:200, maxThugs:400, turnCost:10,
-      minCash:800, maxCash:4000,
-      netWorthPct:{min:0.0025, max:0.0075},
+      minCash:1600, maxCash:8000,
+      netWorthPct:{min:0.005, max:0.015},
       successChance:0.60,
       casualtyPct:{min:0.05, max:0.15},
       failCasualtyPct:{min:0.15, max:0.35},
@@ -4254,8 +4254,8 @@
     jewellery: {
       name:'Jewellery Store', emoji:'💎',
       minThugs:1000, maxThugs:2000, turnCost:50,
-      minCash:8000, maxCash:35000,
-      netWorthPct:{min:0.01, max:0.03},
+      minCash:16000, maxCash:70000,
+      netWorthPct:{min:0.02, max:0.06},
       successChance:0.42,
       casualtyPct:{min:0.10, max:0.25},
       failCasualtyPct:{min:0.30, max:0.55},
@@ -4264,8 +4264,8 @@
     bank: {
       name:'National Bank', emoji:'🏦',
       minThugs:5000, maxThugs:10000, turnCost:150,
-      minCash:60000, maxCash:250000,
-      netWorthPct:{min:0.04, max:0.125},
+      minCash:120000, maxCash:500000,
+      netWorthPct:{min:0.08, max:0.25},
       successChance:0.28,
       casualtyPct:{min:0.20, max:0.40},
       failCasualtyPct:{min:0.45, max:0.80},
@@ -4277,6 +4277,7 @@
       thugsPerMember:10000,
       turnsPerMember:100,
       minCash:500000, maxCash:2000000,
+      netWorthPct:{min:0.05, max:0.15},
       successChance:0.35,
       casualtyPct:{min:0.15, max:0.30},
       failCasualtyPct:{min:0.50, max:0.90},
@@ -6462,6 +6463,14 @@
       const hi = Math.max(job.maxCash, Math.round(nw * job.netWorthPct.max));
       document.getElementById(cashSpans[id]).textContent = `${fmtMoney(lo)} – ${fmtMoney(hi)}`;
     });
+
+    const casinoJob = HEIST_JOBS.casino;
+    const dashRoster = (state.crewRoster && state.crewRoster.members) || [];
+    const crewNetWorth = nw + dashRoster.reduce((sum, m) => sum + (m.isYou ? 0 : m.netWorth), 0);
+    const casinoLo = Math.max(casinoJob.minCash, Math.round(crewNetWorth * casinoJob.netWorthPct.min));
+    const casinoHi = Math.max(casinoJob.maxCash, Math.round(crewNetWorth * casinoJob.netWorthPct.max));
+    const casinoCashEl = document.getElementById('casinoCash');
+    if(casinoCashEl) casinoCashEl.textContent = `${fmtMoney(casinoLo)} – ${fmtMoney(casinoHi)}`;
   }
 
   // ---- Page navigation ----
