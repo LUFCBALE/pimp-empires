@@ -2453,7 +2453,10 @@ def buy_drugs(state, drug_id, qty):
     state["cash"] -= total_cost
     state["drugs"][drug_id] = state["drugs"].get(drug_id, 0) + qty
     state["dealerBoughtToday"][bought_key] = already_bought + qty
-    state["drugBoughtAt"][f"{city}_{drug_id}"] = now_ms()
+    # Keyed by drug only, not city - the stash itself isn't location-bound,
+    # so a city-scoped key here would let you buy in one city and instantly
+    # flip for guaranteed profit in another where the cooldown never fired.
+    state["drugBoughtAt"][drug_id] = now_ms()
     state["drugsPaidPrice"][drug_id] = price
     return {"totalCost": total_cost, "price": price}
 
@@ -2463,7 +2466,7 @@ def sell_drugs(state, drug_id, qty):
     if qty < 1 or qty > have:
         raise GameError("Not enough to sell")
     city = state["location"]
-    bought_at = state["drugBoughtAt"].get(f"{city}_{drug_id}", 0)
+    bought_at = state["drugBoughtAt"].get(drug_id, 0)
     if bought_at > 0 and (now_ms() - bought_at) < DEALER_RESALE_COOLDOWN_MS:
         raise GameError("Prices haven't moved yet - wait a bit")
     price = get_dealer_price(state, city, drug_id, True)
