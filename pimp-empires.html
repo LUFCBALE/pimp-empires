@@ -538,6 +538,15 @@
   .cms-val.gold{color:var(--gold);}
   .cms-sub{font-size:0.62rem; color:var(--text-dim); font-weight:400;}
 
+  /* ---- Crew Chat (home page) ---- */
+  .crew-chat-messages{max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px; padding-right:4px;}
+  .crew-chat-msg{background:var(--bg-2); border-radius:8px; padding:7px 10px; font-size:0.82rem; line-height:1.4; word-wrap:break-word;}
+  .crew-chat-msg.you{background:rgba(255,47,120,0.12);}
+  .crew-chat-msg-name{font-weight:700; color:var(--gold); font-size:0.7rem;}
+  .crew-chat-msg-time{color:var(--text-dim); font-size:0.62rem; font-weight:400; margin-left:6px;}
+  .crew-chat-input-row{display:flex; gap:8px;}
+  .crew-chat-input-row input{flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px; font-family:inherit;}
+
   /* ---- Crew Leaderboard ---- */
   .crew-stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:20px;}
   .crew-stat-card{padding:14px; background:var(--bg-2); border:1px solid var(--panel-line); border-radius:6px; text-align:center;}
@@ -1607,6 +1616,15 @@
     <div class="nav-btn blackmarket photo-card" id="openBlackMarketBtn" style="grid-column:1/-1; background-image:linear-gradient(90deg, rgba(8,7,11,0.92) 0%, rgba(8,7,11,0.55) 45%, rgba(8,7,11,0.15) 100%), url('./black-market-bg.jpg');">
       <div class="icon">🕶️</div>
       <div class="ntext"><div class="ntitle">Black Market</div><div class="nsub" id="navBlackMarketSub">sell guns · meds · cars for quick cash</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="crewChatBox" style="display:none; margin-top:16px;">
+    <h3 style="margin-top:0;">💬 Crew Chat</h3>
+    <div class="crew-chat-messages" id="crewChatMessages"></div>
+    <div class="crew-chat-input-row">
+      <input type="text" id="crewChatInput" placeholder="Message your crew..." maxlength="300">
+      <button class="cta gold" id="crewChatSendBtn">Send</button>
     </div>
   </div>
 
@@ -2718,6 +2736,7 @@
     liveSocket = io();
     liveSocket.on('dm', (data) => { if(data.text) showToast(`✉️ ${data.text}`); syncState(); });
     liveSocket.on('attacked', (data) => { if(data.text) showToast(`💥 ${data.text}`); playAttackAlert(); syncState(); });
+    liveSocket.on('crewChat', () => { syncState(); });
   }
   function disconnectLiveSocket(){
     if(liveSocket){ liveSocket.disconnect(); liveSocket = null; }
@@ -4494,6 +4513,7 @@
     renderLog();
     renderInventory();
     renderHouseBox();
+    renderCrewChat();
 
     document.getElementById('navTravelSub').textContent = `currently in ${state.location}`;
     document.getElementById('navBlackMarketSub').textContent =
@@ -4805,6 +4825,40 @@
       <div class="logline good inv-row"><span>Counterfeit Earned</span><span class="inv-val">${fmtMoney(state.counterfeitEarnings || 0)}</span></div>
       <div class="logline money inv-row inv-total"><span>All-Time Earnings</span><span class="inv-val">${fmtMoney(state.lifetimeEarnings || 0)}</span></div>
     `;
+  }
+
+  function renderCrewChat(){
+    const box = document.getElementById('crewChatBox');
+    const list = document.getElementById('crewChatMessages');
+    if(!box || !list) return;
+    if(!state.gang){
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = 'block';
+
+    const messages = (state.crewRoster && state.crewRoster.chat) || [];
+    const wasNearBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 40;
+    list.innerHTML = messages.length
+      ? messages.map(m => `
+          <div class="crew-chat-msg ${currentUser && m.userId === currentUser.id ? 'you' : ''}">
+            <span class="crew-chat-msg-name">${escapeHtml(m.name)}</span><span class="crew-chat-msg-time">${timeAgo(m.timestamp)}</span>
+            <div>${escapeHtml(m.text)}</div>
+          </div>
+        `).join('')
+      : '<div class="hint">No messages yet — say something to your crew.</div>';
+    if(wasNearBottom) list.scrollTop = list.scrollHeight;
+  }
+
+  async function sendCrewChatMessage(){
+    const input = document.getElementById('crewChatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = '';
+    try{
+      await apiCall('/api/crew/chat/send', {text});
+      render();
+    } catch(e){ /* toast already shown */ }
   }
 
   function renderHouseBox(){
@@ -6675,6 +6729,10 @@
   document.getElementById('mobDollarsSlider').addEventListener('input', updateMobDollarsModal);
   document.getElementById('mobDollarsSpendBtn').addEventListener('click', spendMobDollars);
   document.getElementById('bribeBtn').addEventListener('click', bribeCops);
+  document.getElementById('crewChatSendBtn').addEventListener('click', sendCrewChatMessage);
+  document.getElementById('crewChatInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') sendCrewChatMessage();
+  });
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('referFriendBtn').addEventListener('click', () => {
     if(!currentUser){

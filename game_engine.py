@@ -394,6 +394,10 @@ def default_state(pimp_name="Big Boss"):
         "crewEmblem": "",
         "crewLeaderUserId": None,
         "crewLeaderName": "",
+        # Only the crew LEADER's copy of this is ever authoritative/shared -
+        # same rule as crewMembers. See build_crew_roster (app.py) and
+        # send_crew_chat_message below.
+        "crewChat": [],
         "pendingCrewInvites": [],
         "thugsInHospital": 0,
         "thugsHospitalReadyAt": 0,
@@ -2813,6 +2817,32 @@ def mark_dm_read(state, from_id):
             m["read"] = True
 
 
+CREW_CHAT_MAX_LENGTH = 300
+CREW_CHAT_HISTORY_CAP = 100
+
+
+def send_crew_chat_message(leader_state, sender_user_id, sender_name, text):
+    """Appends to the crew LEADER's own crewChat log - the one shared,
+    authoritative copy every member reads from (same pattern as
+    crewMembers/crewEmblem). The caller (app.py) is responsible for
+    resolving `leader_state` to the actual leader's state - this function
+    doesn't care whether the sender IS the leader or just a member."""
+    text = (text or "").strip()
+    if not text:
+        raise GameError("Message can't be empty")
+    if len(text) > CREW_CHAT_MAX_LENGTH:
+        raise GameError(f"Message can't be more than {CREW_CHAT_MAX_LENGTH} characters")
+    chat = leader_state.setdefault("crewChat", [])
+    chat.append({
+        "userId": sender_user_id,
+        "name": sender_name,
+        "text": text,
+        "timestamp": now_ms(),
+    })
+    del chat[:-CREW_CHAT_HISTORY_CAP]
+    return {"sent": True}
+
+
 # ---------------------------------------------------------------------------
 # Settings / misc
 # ---------------------------------------------------------------------------
@@ -2926,6 +2956,8 @@ def apply_catchup(state):
         state["crewAttackBans"] = {}
     if "crewEmblem" not in state:
         state["crewEmblem"] = ""
+    if "crewChat" not in state:
+        state["crewChat"] = []
     if "drug" not in state["factories"]:
         state["factories"]["drug"] = 0
     if "gym" not in state["factories"]:

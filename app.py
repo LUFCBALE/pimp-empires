@@ -459,7 +459,7 @@ def build_crew_roster(user_id, state, world):
                 'cars': bot.get('cadillacs', 0),
                 'netWorth': ge.bot_net_worth(bot),
             })
-    return {'emblem': leader_state.get('crewEmblem', ''), 'members': members}
+    return {'emblem': leader_state.get('crewEmblem', ''), 'members': members, 'chat': leader_state.get('crewChat', [])}
 
 
 def crew_protected_ids(user_id, state, world):
@@ -1173,6 +1173,36 @@ def api_crew_remove():
             ge.remove_from_crew(state, bot_id)
     except ge.GameError as e:
         return jsonify({'error': str(e)}), 400
+    return action_response(user['id'], state, world)
+
+
+@app.route('/api/crew/chat/send', methods=['POST'])
+@login_required
+def api_crew_chat_send():
+    data = request.get_json() or {}
+    text = data.get('text', '')
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        if not state.get('gang'):
+            raise ge.GameError('You need a crew first')
+        leader_id = state.get('crewLeaderUserId')
+        if leader_id is None:
+            leader_state, leader_user_id = state, user['id']
+        else:
+            leader_state, leader_user_id = load_state(leader_id), leader_id
+        ge.send_crew_chat_message(leader_state, user['id'], user['pimp_name'], text)
+        if leader_user_id != user['id']:
+            save_state(leader_user_id, leader_state)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+
+    roster = build_crew_roster(user['id'], state, world)
+    for m in roster['members']:
+        if m['isYou'] or m['botId'] < ge.HUMAN_ID_OFFSET:
+            continue
+        notify_user(m['botId'] - ge.HUMAN_ID_OFFSET, 'crewChat', {'from': state['name']})
     return action_response(user['id'], state, world)
 
 
