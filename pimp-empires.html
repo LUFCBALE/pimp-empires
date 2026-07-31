@@ -1456,6 +1456,15 @@
           <div class="title-row"><span class="feed-icon">📦</span>Inventory</div>
           <div id="inventoryList"></div>
         </div>
+
+        <div class="panel" id="crewChatBox" style="display:none; margin-top:8px;">
+          <h3 style="margin-top:0;">💬 Crew Chat</h3>
+          <div class="crew-chat-messages" id="crewChatMessages"></div>
+          <div class="crew-chat-input-row">
+            <input type="text" id="crewChatInput" placeholder="Message your crew..." maxlength="300">
+            <button class="cta gold" id="crewChatSendBtn">Send</button>
+          </div>
+        </div>
       </div>
 
       <div class="work-block-col">
@@ -1616,15 +1625,6 @@
     <div class="nav-btn blackmarket photo-card" id="openBlackMarketBtn" style="grid-column:1/-1; background-image:linear-gradient(90deg, rgba(8,7,11,0.92) 0%, rgba(8,7,11,0.55) 45%, rgba(8,7,11,0.15) 100%), url('./black-market-bg.jpg');">
       <div class="icon">🕶️</div>
       <div class="ntext"><div class="ntitle">Black Market</div><div class="nsub" id="navBlackMarketSub">sell guns · meds · cars for quick cash</div></div>
-    </div>
-  </div>
-
-  <div class="panel" id="crewChatBox" style="display:none; margin-top:16px;">
-    <h3 style="margin-top:0;">💬 Crew Chat</h3>
-    <div class="crew-chat-messages" id="crewChatMessages"></div>
-    <div class="crew-chat-input-row">
-      <input type="text" id="crewChatInput" placeholder="Message your crew..." maxlength="300">
-      <button class="cta gold" id="crewChatSendBtn">Send</button>
     </div>
   </div>
 
