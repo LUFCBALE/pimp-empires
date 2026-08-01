@@ -1934,17 +1934,23 @@ def maybe_bot_places_bounty(world, humans):
     return bounty
 
 
-def claim_bounties(world, target_id):
+def claim_bounties(world, target_id, blocked_poster_ids=None):
     """Called right after a successful attack wipes a target's thugs to
-    zero. Every bounty posted on that target's head pays out at once,
-    removed from the shared world - the caller credits the total to the
-    winner's own cash."""
+    zero. Every bounty posted on that target's head pays out at once to
+    the winner - except any posted by one of the WINNER's own crew-mates,
+    which would otherwise be a free way to pass cash to a teammate (post a
+    bounty, have your crew-mate collect the kill). Those stay in the
+    world's bounty list untouched, still collectable later by anyone who
+    actually isn't in the poster's crew."""
+    blocked_poster_ids = blocked_poster_ids or set()
     bounties = world.setdefault("bounties", [])
     matching = [b for b in bounties if b["targetId"] == target_id]
     if not matching:
         return []
-    world["bounties"] = [b for b in bounties if b["targetId"] != target_id]
-    return matching
+    collectable = [b for b in matching if b["posterId"] not in blocked_poster_ids]
+    blocked = [b for b in matching if b["posterId"] in blocked_poster_ids]
+    world["bounties"] = [b for b in bounties if b["targetId"] != target_id] + blocked
+    return collectable
 
 
 # ---------------------------------------------------------------------------

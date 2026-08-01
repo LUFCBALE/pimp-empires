@@ -537,12 +537,14 @@ def action_response(user_id, state, world, extra=None):
     return jsonify(payload)
 
 
-def award_bounties(state, world, target_id, winner_user_id):
+def award_bounties(state, world, target_id, winner_user_id, blocked_poster_ids=None):
     """Call right after a successful attack wipes target_id's thugs to
     zero. Pays every bounty on that head to the winner's own cash at once
     and notifies each poster (skipping the poster if they're the one who
-    just collected their own bounty)."""
-    claimed = ge.claim_bounties(world, target_id)
+    just collected their own bounty). Any bounty posted by one of the
+    winner's own crew-mates is deliberately excluded - see claim_bounties -
+    and stays active for someone outside that crew to collect later."""
+    claimed = ge.claim_bounties(world, target_id, blocked_poster_ids)
     if not claimed:
         return 0
     total = sum(b['amount'] for b in claimed)
@@ -888,7 +890,8 @@ def api_attack():
     state = load_state(user['id'], user['pimp_name'])
     world = load_world()
     try:
-        if target_id in crew_protected_ids(user['id'], state, world):
+        protected_ids = crew_protected_ids(user['id'], state, world)
+        if target_id in protected_ids:
             raise ge.GameError("You can't attack your own crew")
         if target_id is not None and target_id >= ge.HUMAN_ID_OFFSET:
             defender_id = target_id - ge.HUMAN_ID_OFFSET
@@ -908,7 +911,8 @@ def api_attack():
             result = ge.fight_bot(state, target_id, world)
 
         if result.get('won'):
-            bounty_total = award_bounties(state, world, target_id, user['id'])
+            blocked_poster_ids = {pid - ge.HUMAN_ID_OFFSET for pid in protected_ids if pid >= ge.HUMAN_ID_OFFSET}
+            bounty_total = award_bounties(state, world, target_id, user['id'], blocked_poster_ids)
             if bounty_total:
                 result['bountyWon'] = bounty_total
     except ge.GameError as e:
