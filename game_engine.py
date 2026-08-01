@@ -1867,6 +1867,73 @@ def cancel_bounty(state, world, bounty_id, poster_id):
     return bounty
 
 
+BOT_BOUNTY_INTERVAL_MS = 3 * 60 * 60 * 1000  # every 3 hours, a bot puts a bounty on a top player
+BOT_BOUNTY_TOP_N = 5  # picked from the 5 wealthiest real players
+BOT_BOUNTY_PCT = (0.005, 0.02)  # 0.5-2% of the target's net worth
+
+
+def maybe_bot_places_bounty(world, humans):
+    """Every few hours, a random bot puts a bounty on one of the wealthiest
+    real players, funded out of that bot's own cash (same escrow rule as a
+    player-placed bounty) - keeps the top of the leaderboard from feeling
+    too safe. `humans` is a list of (user_id, pimp_name, state) tuples for
+    every registered player - app.py owns the DB query, this owns the
+    selection/mutation. Cheap on every other request: the interval check
+    short-circuits before doing anything else.
+
+    posterId is deliberately None, not the bot's own id - bot ids and real
+    user ids share the same small integer space, so reusing a bot's raw id
+    here could let a human whose userId happens to match cancel a bounty
+    they never posted. None can never equal a real user's id, so
+    cancel_bounty always correctly refuses to let anyone pull these."""
+    now = now_ms()
+    if now - world.get("lastBotBounty", 0) < BOT_BOUNTY_INTERVAL_MS:
+        return None
+    world["lastBotBounty"] = now
+
+    ranked = sorted(
+        ((uid, name, total_net_worth(s)) for uid, name, s in humans),
+        key=lambda h: h[2], reverse=True,
+    )
+    ranked = [h for h in ranked if h[2] > 0][:BOT_BOUNTY_TOP_N]
+    if not ranked:
+        return None
+
+    candidates = [b for b in world.get("bots", []) if b.get("cash", 0) >= BOUNTY_MIN_AMOUNT]
+    if not candidates:
+        return None
+    bot = random.choice(candidates)
+    target_id, target_name, target_nw = random.choice(ranked)
+
+    lo, hi = BOT_BOUNTY_PCT
+    amount = jround(target_nw * (lo + random.random() * (hi - lo)))
+    amount = min(amount, bot["cash"])
+    if amount < BOUNTY_MIN_AMOUNT:
+        return None
+
+    bot["cash"] -= amount
+    bounties = world.setdefault("bounties", [])
+    next_id = world.get("nextBountyId", 1)
+    world["nextBountyId"] = next_id + 1
+    bounty = {
+        "id": next_id, "targetId": HUMAN_ID_OFFSET + target_id, "targetName": target_name,
+        "posterId": None, "posterName": bot["boss"],
+        "amount": amount, "postedAt": now,
+    }
+    bounties.append(bounty)
+
+    chat = world.setdefault("globalChat", [])
+    chat.append({
+        "userId": None, "name": "📰 Street Word",
+        "text": f"{bot['boss']} just slapped a £{amount} bounty on {target_name}'s head!",
+        "timestamp": now,
+    })
+    if len(chat) > GLOBAL_CHAT_HISTORY_CAP:
+        world["globalChat"] = chat[-GLOBAL_CHAT_HISTORY_CAP:]
+
+    return bounty
+
+
 def claim_bounties(world, target_id):
     """Called right after a successful attack wipes a target's thugs to
     zero. Every bounty posted on that target's head pays out at once,

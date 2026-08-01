@@ -322,7 +322,33 @@ def load_world():
 
     ge.apply_world_catchup(world)
     maybe_award_season_end_prizes(world)
+    # Cheap peek before the DB scan - maybe_bot_places_bounty rechecks the
+    # same interval itself, this just avoids querying every human's state
+    # on every single request when it's not even due yet.
+    if ge.now_ms() - world.get('lastBotBounty', 0) >= ge.BOT_BOUNTY_INTERVAL_MS:
+        ge.maybe_bot_places_bounty(world, fetch_all_humans())
     return world
+
+
+def fetch_all_humans():
+    """Every registered player's (user_id, pimp_name, state) - shared by
+    anything that needs to scan the whole human roster at once (season-end
+    prizes, bot-placed bounty target selection)."""
+    db = get_db()
+    rows = db.execute('''
+        SELECT p.user_id, p.state_json, u.pimp_name
+        FROM player_state p JOIN users u ON u.id = p.user_id
+    ''').fetchall()
+    db.close()
+
+    humans = []
+    for row in rows:
+        try:
+            s = json.loads(row['state_json'])
+        except (TypeError, ValueError):
+            continue
+        humans.append((row['user_id'], row['pimp_name'], s))
+    return humans
 
 
 def maybe_award_season_end_prizes(world):
@@ -338,21 +364,7 @@ def maybe_award_season_end_prizes(world):
     if ge.now_ms() < world.get("seasonEndAt", float("inf")):
         return
 
-    db = get_db()
-    rows = db.execute('''
-        SELECT p.user_id, p.state_json, u.pimp_name
-        FROM player_state p JOIN users u ON u.id = p.user_id
-    ''').fetchall()
-    db.close()
-
-    humans = []
-    for row in rows:
-        try:
-            s = json.loads(row['state_json'])
-        except (TypeError, ValueError):
-            continue
-        humans.append((row['user_id'], row['pimp_name'], s))
-
+    humans = fetch_all_humans()
     results = []
     for stat_key, achievement_id in ge.HOF_CATEGORIES:
         winner = max(humans, key=lambda h: h[2].get(stat_key, 0), default=None)
@@ -539,7 +551,9 @@ def award_bounties(state, world, target_id, winner_user_id):
     bounty_count = f" ({len(claimed)} bounties)" if len(claimed) > 1 else ""
     ge.add_log(state, f"Collected £{total} in bounty money{bounty_count} for taking down {target_name}!", "good")
     for b in claimed:
-        if b['posterId'] == winner_user_id:
+        # posterId is None for bot-placed bounties (see maybe_bot_places_bounty)
+        # - no real account to notify/pay a refund path for.
+        if b['posterId'] is None or b['posterId'] == winner_user_id:
             continue
         poster_state = load_state(b['posterId'])
         text = f"{state['name']} collected your £{b['amount']} bounty on {target_name}!"
