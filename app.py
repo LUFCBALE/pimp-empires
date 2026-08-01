@@ -12,7 +12,7 @@ import game_engine as ge
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'game.db')
-ASSET_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.mp3', '.ogg', '.wav', '.js', '.json'}
+ASSET_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico', '.mp3', '.ogg', '.wav', '.js', '.json'}
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pimp-empires-secret-key-change-in-production')
