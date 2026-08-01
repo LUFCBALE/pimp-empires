@@ -478,6 +478,7 @@ def attach_world_view(state, world, user_id):
     state['bots'] = world.get('bots', []) + build_human_targets(user_id)
     state['botCrewEmblems'] = world.get('botCrewEmblems', {})
     state['globalAttackLog'] = world.get('globalAttackLog', [])
+    state['globalChat'] = world.get('globalChat', [])
     state['worldRecords'] = world.get('records', {})
     state['bounties'] = world.get('bounties', [])
     state['seasonEndAt'] = world.get('seasonEndAt')
@@ -1203,6 +1204,22 @@ def api_crew_chat_send():
         if m['isYou'] or m['botId'] < ge.HUMAN_ID_OFFSET:
             continue
         notify_user(m['botId'] - ge.HUMAN_ID_OFFSET, 'crewChat', {'from': state['name']})
+    return action_response(user['id'], state, world)
+
+
+@app.route('/api/globalchat/send', methods=['POST'])
+@login_required
+def api_globalchat_send():
+    data = request.get_json() or {}
+    text = data.get('text', '')
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        ge.send_global_chat_message(world, user['id'], user['pimp_name'], text)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+    socketio.emit('globalChat', {'from': state['name']})
     return action_response(user['id'], state, world)
 
 

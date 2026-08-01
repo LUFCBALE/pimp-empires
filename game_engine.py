@@ -1308,6 +1308,31 @@ def log_attack(world, attacker_name, attacker_gang, attacker_emblem, defender_na
         world["globalAttackLog"] = log[-GLOBAL_ATTACK_LOG_MAX:]
 
 
+GLOBAL_CHAT_MAX_LENGTH = 300
+GLOBAL_CHAT_HISTORY_CAP = 150
+
+
+def send_global_chat_message(world, sender_user_id, sender_name, text):
+    """Every real player shares this one feed, world-shared same as
+    globalAttackLog - unlike crew chat there's no leader indirection, it
+    lives directly on the world state everyone already reads from."""
+    text = (text or "").strip()
+    if not text:
+        raise GameError("Message can't be empty")
+    if len(text) > GLOBAL_CHAT_MAX_LENGTH:
+        raise GameError(f"Message can't be more than {GLOBAL_CHAT_MAX_LENGTH} characters")
+    chat = world.setdefault("globalChat", [])
+    chat.append({
+        "userId": sender_user_id,
+        "name": sender_name,
+        "text": text,
+        "timestamp": now_ms(),
+    })
+    if len(chat) > GLOBAL_CHAT_HISTORY_CAP:
+        world["globalChat"] = chat[-GLOBAL_CHAT_HISTORY_CAP:]
+    return {"sent": True}
+
+
 # Caps repeat hits on the same target so one player can't farm another
 # (or an alt) over and over in a short window. Keyed per-attacker-per-target
 # inside the attacker's own state, so it never affects anyone else's ability
@@ -3022,6 +3047,8 @@ def apply_world_catchup(world):
     ensure_bots(world)
     if "globalAttackLog" not in world:
         world["globalAttackLog"] = []
+    if "globalChat" not in world:
+        world["globalChat"] = []
     if "records" not in world:
         world["records"] = {}
     if "seasonEndAt" not in world:

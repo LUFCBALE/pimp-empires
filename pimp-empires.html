@@ -1504,6 +1504,15 @@
           <button class="cta bribe cta-sm" id="bribeBtn" style="width:100%;">👮 Bribe the Cops — £0</button>
           <div class="hint" id="bribeHint">Keeps raids off your back for 5 minutes · once every hour · £15 per hoe on the roster</div>
         </div>
+
+        <div class="panel" id="globalChatBox" style="margin-top:8px;">
+          <h3 style="margin-top:0; font-size:0.9rem;">🌍 Global Chat</h3>
+          <div class="crew-chat-messages" id="globalChatMessages" style="max-height:120px;"></div>
+          <div class="crew-chat-input-row">
+            <input type="text" id="globalChatInput" placeholder="Say something..." maxlength="300">
+            <button class="cta gold" id="globalChatSendBtn">Send</button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -2737,6 +2746,7 @@
     liveSocket.on('dm', (data) => { if(data.text) showToast(`✉️ ${data.text}`); syncState(); });
     liveSocket.on('attacked', (data) => { if(data.text) showToast(`💥 ${data.text}`); playAttackAlert(); syncState(); });
     liveSocket.on('crewChat', () => { syncState(); });
+    liveSocket.on('globalChat', () => { syncState(); });
   }
   function disconnectLiveSocket(){
     if(liveSocket){ liveSocket.disconnect(); liveSocket = null; }
@@ -4514,6 +4524,7 @@
     renderInventory();
     renderHouseBox();
     renderCrewChat();
+    renderGlobalChat();
 
     document.getElementById('navTravelSub').textContent = `currently in ${state.location}`;
     document.getElementById('navBlackMarketSub').textContent =
@@ -4857,6 +4868,33 @@
     input.value = '';
     try{
       await apiCall('/api/crew/chat/send', {text});
+      render();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  function renderGlobalChat(){
+    const list = document.getElementById('globalChatMessages');
+    if(!list) return;
+    const messages = state.globalChat || [];
+    const wasNearBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 40;
+    list.innerHTML = messages.length
+      ? messages.map(m => `
+          <div class="crew-chat-msg ${currentUser && m.userId === currentUser.id ? 'you' : ''}">
+            <span class="crew-chat-msg-name">${escapeHtml(m.name)}</span><span class="crew-chat-msg-time">${timeAgo(m.timestamp)}</span>
+            <div>${escapeHtml(m.text)}</div>
+          </div>
+        `).join('')
+      : '<div class="hint">No messages yet — say hello.</div>';
+    if(wasNearBottom) list.scrollTop = list.scrollHeight;
+  }
+
+  async function sendGlobalChatMessage(){
+    const input = document.getElementById('globalChatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = '';
+    try{
+      await apiCall('/api/globalchat/send', {text});
       render();
     } catch(e){ /* toast already shown */ }
   }
@@ -6732,6 +6770,10 @@
   document.getElementById('crewChatSendBtn').addEventListener('click', sendCrewChatMessage);
   document.getElementById('crewChatInput').addEventListener('keydown', (e) => {
     if(e.key === 'Enter') sendCrewChatMessage();
+  });
+  document.getElementById('globalChatSendBtn').addEventListener('click', sendGlobalChatMessage);
+  document.getElementById('globalChatInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') sendGlobalChatMessage();
   });
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('referFriendBtn').addEventListener('click', () => {
