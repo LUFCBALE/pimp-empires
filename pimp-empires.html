@@ -538,14 +538,29 @@
   .cms-val.gold{color:var(--gold);}
   .cms-sub{font-size:0.62rem; color:var(--text-dim); font-weight:400;}
 
-  /* ---- Crew Chat (home page) ---- */
+  /* ---- Crew Chat / Global Chat (home page) ---- */
   .crew-chat-messages{max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px; padding-right:4px;}
-  .crew-chat-msg{background:var(--bg-2); border-radius:8px; padding:7px 10px; font-size:0.82rem; line-height:1.4; word-wrap:break-word;}
-  .crew-chat-msg.you{background:rgba(255,47,120,0.12);}
-  .crew-chat-msg-name{font-weight:700; color:var(--gold); font-size:0.7rem;}
+  .crew-chat-msg{background:var(--bg-2); border-radius:8px; padding:7px 10px; font-size:0.82rem; line-height:1.4; word-wrap:break-word; border-left:3px solid var(--panel-line);}
+  .crew-chat-msg-name{font-weight:700; font-size:0.7rem;}
   .crew-chat-msg-time{color:var(--text-dim); font-size:0.62rem; font-weight:400; margin-left:6px;}
   .crew-chat-input-row{display:flex; gap:8px;}
   .crew-chat-input-row input{flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg-2); color:var(--text); border-radius:4px; font-family:inherit;}
+
+  /* Crew Chat: hot pink theme */
+  .chat-crew{border-color:rgba(255,47,120,0.35);}
+  .chat-crew h3{color:var(--hot);}
+  .chat-crew .crew-chat-msg{border-left-color:rgba(255,47,120,0.4);}
+  .chat-crew .crew-chat-msg.you{background:rgba(255,47,120,0.14);}
+  .chat-crew .crew-chat-msg-name{color:var(--hot);}
+  .chat-crew #crewChatSendBtn{background:linear-gradient(90deg, var(--hot), #ff6b9d); border-color:var(--hot); color:#fff;}
+
+  /* Global Chat: teal theme */
+  .chat-global{border-color:rgba(47,224,192,0.35);}
+  .chat-global h3{color:var(--teal);}
+  .chat-global .crew-chat-msg{border-left-color:rgba(47,224,192,0.4);}
+  .chat-global .crew-chat-msg.you{background:rgba(47,224,192,0.14);}
+  .chat-global .crew-chat-msg-name{color:var(--teal);}
+  .chat-global #globalChatSendBtn{background:linear-gradient(90deg, var(--teal), #6effe0); border-color:var(--teal); color:#06231d;}
 
   /* ---- Crew Leaderboard ---- */
   .crew-stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:20px;}
@@ -1457,7 +1472,7 @@
           <div id="inventoryList"></div>
         </div>
 
-        <div class="panel" id="crewChatBox" style="display:none; margin-top:8px;">
+        <div class="panel chat-crew" id="crewChatBox" style="display:none; margin-top:8px;">
           <h3 style="margin-top:0;">💬 Crew Chat</h3>
           <div class="crew-chat-messages" id="crewChatMessages"></div>
           <div class="crew-chat-input-row">
@@ -1505,7 +1520,7 @@
           <div class="hint" id="bribeHint">Keeps raids off your back for 5 minutes · once every hour · £15 per hoe on the roster</div>
         </div>
 
-        <div class="panel" id="globalChatBox" style="margin-top:8px;">
+        <div class="panel chat-global" id="globalChatBox" style="margin-top:8px;">
           <h3 style="margin-top:0; font-size:0.9rem;">🌍 Global Chat</h3>
           <div class="crew-chat-messages" id="globalChatMessages" style="max-height:120px;"></div>
           <div class="crew-chat-input-row">
