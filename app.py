@@ -417,7 +417,8 @@ def build_human_targets(exclude_user_id):
         except (TypeError, ValueError):
             continue
         h = ge.human_as_bot(row['user_id'], row['pimp_name'], s)
-        h['isOnline'] = is_user_online(row['user_id'])
+        # Never show as online while laying low - that's the whole point.
+        h['isOnline'] = False if ge.is_laying_low(s) else is_user_online(row['user_id'])
         humans.append(h)
     return humans
 
@@ -879,6 +880,12 @@ def api_heist_casino():
 @login_required
 def api_bribe():
     return handle_action(ge.bribe_cops)
+
+
+@app.route('/api/laylow', methods=['POST'])
+@login_required
+def api_lay_low():
+    return handle_action(ge.lay_low)
 
 
 @app.route('/api/attack', methods=['POST'])

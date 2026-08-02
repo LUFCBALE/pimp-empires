@@ -44,6 +44,10 @@ MARKET_HISTORY_CAP = 24
 BRIBE_DURATION_MS = 5 * 60 * 1000
 BRIBE_COOLDOWN_MS = 60 * 60 * 1000
 
+LAY_LOW_DURATION_MS = 15 * 60 * 1000
+LAY_LOW_COOLDOWN_MS = 8 * 60 * 60 * 1000
+LAY_LOW_COST_PCT = 0.10
+
 BOT_COUNT = 19
 # Bots now regen/act on the exact same cadence and cap as a human player -
 # they used to tick 4x faster (every 5 min) with a bigger turn pool (5000
@@ -389,6 +393,8 @@ def default_state(pimp_name="Big Boss"):
         "lastJobHeist": 0,
         "bribeActiveUntil": 0,
         "bribeCooldownUntil": 0,
+        "layLowUntil": 0,
+        "layLowCooldownUntil": 0,
         "crewMembers": [],
         "crewAttackBans": {},
         "crewEmblem": "",
@@ -1539,7 +1545,15 @@ def human_as_bot(user_id, pimp_name, s):
     Field mapping mirrors a bot's cash/hoeCash split: a bot's `hoeCash` is
     its unprotected, raidable pot and `cash` is what funds factories - a
     human has no protected pot at all anymore (the Bank was removed, so
-    every raid targets their entire cash), hence `cash` is fixed at 0 here."""
+    every raid targets their entire cash), hence `cash` is fixed at 0 here.
+
+    City is blanked out entirely while laying low (see lay_low) - other
+    players still see this human on the leaderboard with their real net
+    worth, they just can't tell which city to travel to in order to find
+    them. The real fight_human location check still uses the player's
+    actual s['location'], so a lucky coincidental encounter can still
+    result in a fight - laying low hides you from being tracked down, it
+    doesn't make you unattackable."""
     return {
         "id": HUMAN_ID_OFFSET + user_id,
         "isHuman": True,
@@ -1547,7 +1561,7 @@ def human_as_bot(user_id, pimp_name, s):
         "boss": pimp_name,
         "gang": s.get("gang") or "",
         "archetype": "human",
-        "city": s.get("location", "London"),
+        "city": "" if is_laying_low(s) else s.get("location", "London"),
         "thugs": s.get("thugs", 0),
         "thugNames": [],
         "hoes": s.get("hoes", 0),
@@ -1989,7 +2003,8 @@ def informer_report_human(state, defender):
     state["cash"] -= cost
     add_log(state, f"Paid an informer £{cost} for the lowdown on {defender['name']}.", "info")
     return {
-        "boss": defender["name"], "gang": defender.get("gang", ""), "city": defender.get("location", ""),
+        "boss": defender["name"], "gang": defender.get("gang", ""),
+        "city": "" if is_laying_low(defender) else defender.get("location", ""),
         "cost": cost, "netWorth": nw,
         "cash": defender["cash"],
         "thugs": defender["thugs"], "hoes": defender["hoes"],
@@ -2069,6 +2084,34 @@ def bribe_cops(state):
     state["bribeActiveUntil"] = now + BRIBE_DURATION_MS
     state["bribeCooldownUntil"] = now + BRIBE_COOLDOWN_MS
     add_log(state, f"Paid £{cost} to keep the cops off your back for 5 minutes.", "good")
+    return {"cost": cost}
+
+
+def is_laying_low(state):
+    return now_ms() < state.get("layLowUntil", 0)
+
+
+def lay_low(state):
+    """Goes off the radar for 15 minutes - other players still see you on
+    the leaderboard (net worth intact), but your city shows blank and you
+    never show as online, so nobody can tell where to find you to attack.
+    Doesn't stop you doing anything yourself, including attacking - see
+    human_as_bot for the hidden-city part and build_human_targets (app.py)
+    for the hidden-online part. Priced as a % of your OWN net worth since
+    it's a genuine end-game advantage, not a flat fee."""
+    now = now_ms()
+    if is_laying_low(state):
+        raise GameError("Already lying low")
+    if now < state.get("layLowCooldownUntil", 0):
+        wait_min = math.ceil((state["layLowCooldownUntil"] - now) / 60000)
+        raise GameError(f"Lay Low is on cooldown — try again in {wait_min} min")
+    cost = max(1, jround(total_net_worth(state) * LAY_LOW_COST_PCT))
+    if state["cash"] < cost:
+        raise GameError(f"Need £{cost} to lay low")
+    state["cash"] -= cost
+    state["layLowUntil"] = now + LAY_LOW_DURATION_MS
+    state["layLowCooldownUntil"] = now + LAY_LOW_COOLDOWN_MS
+    add_log(state, f"Paid £{cost} to go off the radar for 15 minutes.", "good")
     return {"cost": cost}
 
 
@@ -3076,6 +3119,10 @@ def apply_catchup(state):
         state["crewEmblem"] = ""
     if "crewChat" not in state:
         state["crewChat"] = []
+    if "layLowUntil" not in state:
+        state["layLowUntil"] = 0
+    if "layLowCooldownUntil" not in state:
+        state["layLowCooldownUntil"] = 0
     if "drug" not in state["factories"]:
         state["factories"]["drug"] = 0
     if "gym" not in state["factories"]:

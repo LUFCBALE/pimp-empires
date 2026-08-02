@@ -1520,6 +1520,11 @@
           <div class="hint" id="bribeHint">Keeps raids off your back for 5 minutes · once every hour · £15 per hoe on the roster</div>
         </div>
 
+        <div class="quick-supplies-panel" style="margin-top:8px;">
+          <button class="cta cta-sm" id="layLowBtn" style="width:100%; background:linear-gradient(90deg, #2a2a3a, #4a4a5e); border-color:#5a5a70; color:#fff;">🕶️ Lay Low — £0</button>
+          <div class="hint" id="layLowHint">Go off the radar for 15 minutes — invisible on the leaderboard as online, city hidden. You can still do everything, including attack · 10% of your net worth · once every 8 hours</div>
+        </div>
+
         <div class="panel chat-global" id="globalChatBox" style="margin-top:8px;">
           <h3 style="margin-top:0; font-size:0.9rem;">🌍 Global Chat</h3>
           <div class="crew-chat-messages" id="globalChatMessages" style="max-height:120px;"></div>
@@ -3109,6 +3114,48 @@
     }
   }
 
+  function layLowCost(){
+    return Math.max(1, Math.round(totalNetWorth() * 0.10));
+  }
+
+  async function layLow(){
+    try{
+      await apiCall('/api/laylow');
+      showToast('🕶️ Off the radar — lying low for 15 minutes.');
+      render();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  function updateLayLowUI(){
+    const btn = document.getElementById('layLowBtn');
+    const hint = document.getElementById('layLowHint');
+    if(!btn || !hint) return;
+    const now = Date.now();
+    const activeRemaining = (state.layLowUntil || 0) - now;
+    const cooldownRemaining = (state.layLowCooldownUntil || 0) - now;
+    const fmtMMSS = ms => {
+      const mins = Math.floor(ms / 60000);
+      const secs = Math.floor((ms % 60000) / 1000);
+      return `${mins}:${secs.toString().padStart(2,'0')}`;
+    };
+    if(activeRemaining > 0){
+      btn.disabled = true;
+      btn.textContent = `🕶️ Lying low (${fmtMMSS(activeRemaining)})`;
+      hint.textContent = `You're off the radar — invisible on the leaderboard, city hidden, for ${fmtMMSS(activeRemaining)} more.`;
+    } else if(cooldownRemaining > 0){
+      btn.disabled = true;
+      const cdMins = Math.floor(cooldownRemaining / 60000);
+      const cdH = Math.floor(cdMins / 60);
+      const cdM = cdMins % 60;
+      btn.textContent = `🕶️ On cooldown (${cdH}h ${cdM}m)`;
+      hint.textContent = `Can't lay low again for ${cdH}h ${cdM}m.`;
+    } else {
+      btn.textContent = `🕶️ Lay Low — ${fmtMoney(layLowCost())}`;
+      btn.disabled = state.cash < layLowCost();
+      hint.textContent = `Go off the radar for 15 minutes — invisible on the leaderboard as online, city hidden. You can still do everything, including attack · 10% of your net worth · once every 8 hours.`;
+    }
+  }
+
   const TRAVEL_COST_PER_THUG = 50;
   const TRAVEL_BASE_FEE = 100;
   const TRAVEL_THUGS_PER_CADILLAC = 4;
@@ -4553,6 +4600,7 @@
     document.getElementById('workBtn').disabled = state.turns < 1;
 
     updateBribeUI();
+    updateLayLowUI();
 
     renderLocation();
     renderLog();
@@ -6093,6 +6141,7 @@
 
     // Bribe status
     updateBribeUI();
+    updateLayLowUI();
 
     // Turn timer
     const remainder = REGEN_MS - ((now - state.lastRegen) % REGEN_MS);
@@ -6802,6 +6851,7 @@
   document.getElementById('mobDollarsSlider').addEventListener('input', updateMobDollarsModal);
   document.getElementById('mobDollarsSpendBtn').addEventListener('click', spendMobDollars);
   document.getElementById('bribeBtn').addEventListener('click', bribeCops);
+  document.getElementById('layLowBtn').addEventListener('click', layLow);
   document.getElementById('crewChatSendBtn').addEventListener('click', sendCrewChatMessage);
   document.getElementById('crewChatInput').addEventListener('keydown', (e) => {
     if(e.key === 'Enter') sendCrewChatMessage();
