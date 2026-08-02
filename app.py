@@ -667,14 +667,16 @@ def signup():
 
         session['user_id'] = user_id
 
+        world = load_world()
+
         state = ge.default_state(pimp_name)
         if valid_referrer_id:
             state["referredBy"] = valid_referrer_id
             state["mobDollars"] += ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS
             ge.add_log(state, f"🪙 +{ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS} Mob Dollars welcome bonus for joining via a referral link!", "good")
         ge.apply_catchup(state)
+        ge.apply_new_player_catchup(state, world)
         save_state(user_id, state)
-        world = load_world()
         attach_world_view(state, world, user_id)
 
         return jsonify({

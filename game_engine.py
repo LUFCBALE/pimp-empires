@@ -571,6 +571,54 @@ REFERRAL_MILESTONE_XP = RANKS[1][2]  # 1000 XP = rank 2, "Street Rat"
 REFERRAL_REWARD_MOB_DOLLARS = 50
 REFERRAL_WELCOME_BONUS_MOB_DOLLARS = 10
 
+# New-player catch-up: everyone shares one season clock (world["seasonEndAt"]),
+# so someone who signs up mid-season would otherwise start from the exact same
+# scratch line as day-one players with far less time to close the gap. Grant a
+# one-time bonus that scales with how much of the season has already elapsed -
+# nothing at hour one, a full grant near the end. Deliberately modest (tiny next
+# to what a genuinely active player accumulates by then) so it helps a late
+# joiner get going without being worth farming via throwaway accounts.
+NEW_PLAYER_CATCHUP_MIN_ELAPSED_FRAC = 0.05
+NEW_PLAYER_CATCHUP_CASH = 8000
+NEW_PLAYER_CATCHUP_TURNS = 2000
+NEW_PLAYER_CATCHUP_THUGS = 6
+NEW_PLAYER_CATCHUP_HOES = 2
+NEW_PLAYER_CATCHUP_MOB_DOLLARS = 15
+
+
+def apply_new_player_catchup(state, world):
+    """One-time late-join bonus on top of default_state, sized by how far
+    into the shared season clock the account was created. Returns the grant
+    dict (for logging/telemetry) or None if no bonus applied."""
+    season_end = world.get("seasonEndAt")
+    if not season_end:
+        return None
+    elapsed = now_ms() - (season_end - GAME_DURATION_MS)
+    frac = max(0.0, min(1.0, elapsed / GAME_DURATION_MS))
+    if frac < NEW_PLAYER_CATCHUP_MIN_ELAPSED_FRAC:
+        return None
+
+    cash = jround(NEW_PLAYER_CATCHUP_CASH * frac)
+    turns = jround(NEW_PLAYER_CATCHUP_TURNS * frac)
+    thugs = jround(NEW_PLAYER_CATCHUP_THUGS * frac)
+    hoes = jround(NEW_PLAYER_CATCHUP_HOES * frac)
+    mob_dollars = jround(NEW_PLAYER_CATCHUP_MOB_DOLLARS * frac)
+    if cash <= 0 and turns <= 0 and thugs <= 0 and hoes <= 0 and mob_dollars <= 0:
+        return None
+
+    state["cash"] += cash
+    state["turns"] = min(state["maxTurns"], state["turns"] + turns)
+    state["thugs"] += thugs
+    state["hoes"] += hoes
+    state["mobDollars"] = state.get("mobDollars", 0) + mob_dollars
+    add_log(
+        state,
+        f"🎁 Late-start bonus: +£{cash}, +{turns} turns, +{thugs} thugs, "
+        f"+{hoes} hoes, +{mob_dollars} Mob Dollars - to help you catch up!",
+        "good",
+    )
+    return {"cash": cash, "turns": turns, "thugs": thugs, "hoes": hoes, "mobDollars": mob_dollars}
+
 
 def check_rank_rewards(state):
     """Called unconditionally from apply_catchup, same 'recompute, don't
