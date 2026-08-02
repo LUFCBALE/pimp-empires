@@ -72,7 +72,7 @@ DAILY_BONUS_MS = 24 * 60 * 60 * 1000
 DAILY_BONUS_AMOUNT = 1000
 
 REALMONEY_COOLDOWN_MS = 12 * 60 * 60 * 1000
-REALMONEY_TURNS = 500
+REALMONEY_MOB_DOLLARS = 50
 
 # Must match GAME_DURATION_MS in pimp-empires.html (the per-player "Game
 # ends in" countdown shown there is cosmetic - this is the authoritative
@@ -96,10 +96,10 @@ HOF_CATEGORIES = [
     ("lifetimeEarnings", "top_earner"),
 ]
 
-# Mob Dollars: a prize currency, never cashable/withdrawable, awarded for
-# achievements and (once built) crew/global season finishes. Spending it on
-# turns is instant with no cooldown, unlike the free buy_turns_with_real_money
-# grant above - that's the "advantage" for having earned some.
+# Mob Dollars is the single currency behind every "get more turns" path -
+# earned free from achievements/referrals, or topped up via the free
+# buy_mob_dollars_with_real_money grant below (gated by a cooldown, unlike
+# spending, which is always instant). Never cashable/withdrawable.
 MOB_DOLLARS_TURNS_PER_UNIT = 10
 ACHIEVEMENT_MOB_DOLLARS_DIVISOR = 10
 ACHIEVEMENT_MOB_DOLLARS_MIN = 5
@@ -3069,20 +3069,19 @@ def set_tutorial_visibility(state, enabled):
     state["showTutorial"] = bool(enabled)
 
 
-def buy_turns_with_real_money(state):
+def buy_mob_dollars_with_real_money(state):
     now = now_ms()
     if now < state["lastRealMoneyPurchase"] + REALMONEY_COOLDOWN_MS:
         raise GameError("On cooldown")
-    state["turns"] = min(state["maxTurns"], state["turns"] + REALMONEY_TURNS)
+    state["mobDollars"] = state.get("mobDollars", 0) + REALMONEY_MOB_DOLLARS
     state["lastRealMoneyPurchase"] = now
-    add_log(state, f"Purchased {REALMONEY_TURNS} turns.", "good")
+    add_log(state, f"Purchased {REALMONEY_MOB_DOLLARS} \U0001fa99 Mob Dollars.", "good")
 
 
 def spend_mob_dollars_on_turns(state, amount):
-    """Mob Dollars is a prize currency (won from achievements, and eventually
-    crew/global season finishes) - it can only ever be spent in-game, never
-    withdrawn or cashed out. Unlike buy_turns_with_real_money above, this has
-    no cooldown, so it's a genuine advantage over waiting for the free grant."""
+    """Mob Dollars is a prize currency (won from achievements, referrals, or
+    bought with real money above) - it can only ever be spent in-game, never
+    withdrawn or cashed out. Spending is always instant, no cooldown."""
     amount = int(amount)
     if amount <= 0:
         raise GameError("Invalid amount")

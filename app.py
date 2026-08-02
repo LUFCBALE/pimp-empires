@@ -1307,10 +1307,10 @@ def api_settings_reset():
     return action_response(user['id'], state, world)
 
 
-@app.route('/api/turns/buy', methods=['POST'])
+@app.route('/api/mobdollars/buy', methods=['POST'])
 @login_required
-def api_turns_buy():
-    return handle_action(ge.buy_turns_with_real_money)
+def api_mobdollars_buy():
+    return handle_action(ge.buy_mob_dollars_with_real_money)
 
 
 @app.route('/api/mobdollars/spend', methods=['POST'])

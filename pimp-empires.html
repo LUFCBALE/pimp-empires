@@ -191,7 +191,7 @@
     text-decoration:none; display:inline-flex; align-items:center; gap:5px;
   }
   .top-strip-account button:hover, .top-strip-account a.strip-link:hover{border-color:var(--hot); color:#fff;}
-  .top-strip-account #buyTurnsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
+  #buyMobDollarsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
   .top-strip-account #mobDollarsBtn{background:linear-gradient(90deg, #3d2b0f, #6b4a17); border-color:var(--gold); color:var(--gold); font-weight:700; display:inline-flex; align-items:center; gap:5px; margin-left:48px;}
   .mob-dollars-icon{width:20px; height:11px; object-fit:cover; border-radius:2px; vertical-align:middle;}
   .top-strip-account #discordLink{background:#5865F2; border-color:#4752C4; color:#fff; font-weight:700; margin-left:auto;}
@@ -1437,8 +1437,6 @@
           <button id="authToggleBtn">Sign Up / Login</button>
           <button id="mobDollarsBtn"><img src="./mob%20dollers.jpg" alt="" class="mob-dollars-icon"> <span id="mobDollarsBalance">0</span> Mob Dollars</button>
           <button id="referFriendBtn" class="strip-link">👥 Refer a Friend, Earn 🪙</button>
-          <button id="buyTurnsBtn">💳 500 Turns for £4</button>
-          <span id="buyTurnsCountdown"></span>
           <a id="discordLink" class="strip-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Join Discord</a>
         </div>
       </div>
@@ -1643,7 +1641,7 @@
     <button id="mobDollarsCloseBtn" style="position:absolute; top:12px; right:12px; background:none; border:none; color:var(--gold); font-size:1.5rem; cursor:pointer;">✕</button>
     <img src="./mob%20dollers.jpg" alt="" style="width:100%; border-radius:8px; margin-bottom:14px;">
     <div style="font-size:1.3rem; font-weight:700; color:var(--gold); margin-bottom:4px; text-align:center;">Mob Dollars</div>
-    <div style="text-align:center; color:var(--text-dim); font-size:0.85rem; margin-bottom:18px;">Prize cash — won from achievements, never withdrawable. Spend it on turns, no cooldown.</div>
+    <div style="text-align:center; color:var(--text-dim); font-size:0.85rem; margin-bottom:18px;">Win it from achievements, or buy a top-up below. Never withdrawable — spend it on turns, no cooldown.</div>
     <div style="text-align:center; margin-bottom:14px;">
       <span style="color:var(--text-dim); font-size:0.85rem;">Balance:</span>
       <b id="mobDollarsModalBalance" style="color:var(--gold); font-size:1.1rem;">0</b>
@@ -1653,6 +1651,11 @@
       <input type="number" id="mobDollarsSlider" min="0" max="0" value="0">
     </div>
     <button class="cta gold" id="mobDollarsSpendBtn" style="width:100%;">Spend on Turns</button>
+    <div style="border-top:1px solid var(--panel-line); margin:18px 0 14px; padding-top:14px;">
+      <div style="text-align:center; color:var(--text-dim); font-size:0.8rem; margin-bottom:10px;">Need more right now?</div>
+      <button id="buyMobDollarsBtn" style="width:100%;">💳 Buy 50 🪙 for £4</button>
+      <div id="buyMobDollarsCountdown" style="text-align:center; font-size:0.75rem; margin-top:6px; color:var(--text-dim);"></div>
+    </div>
   </div>
 </div>
 
@@ -4628,7 +4631,7 @@
       }
     }
 
-    updateBuyTurnsCountdown();
+    updateBuyMobDollarsCountdown();
   }
 
   function render(){
@@ -5340,6 +5343,7 @@
     slider.max = state.mobDollars || 0;
     slider.value = 0;
     updateMobDollarsModal();
+    updateBuyMobDollarsCountdown();
     document.getElementById('mobDollarsModal').classList.remove('hidden');
   }
 
@@ -6772,7 +6776,7 @@
   document.getElementById('openHeistBtn').addEventListener('click', () => navigateTo('page-heist'));
   document.getElementById('openRealEstateBtn').addEventListener('click', () => navigateTo('page-realestate'));
   document.getElementById('openBlackMarketBtn').addEventListener('click', () => navigateTo('page-blackmarket'));
-  document.getElementById('buyTurnsBtn').addEventListener('click', buyTurnsWithRealMoney);
+  document.getElementById('buyMobDollarsBtn').addEventListener('click', buyMobDollars);
   // authToggleBtn's click handler is fully managed by updateAuthUI() below
   // (opens the sign-up modal when logged out, signs out when logged in) -
   // do not also bind it here or both handlers fire on every click.
@@ -6795,17 +6799,21 @@
       }
     });
   }
-  async function buyTurnsWithRealMoney(){
+  async function buyMobDollars(){
     try{
-      await apiCall('/api/turns/buy');
-      showToast('✅ 500 turns purchased!');
+      await apiCall('/api/mobdollars/buy');
+      showToast('✅ 50 🪙 Mob Dollars purchased!');
       render();
+      const slider = document.getElementById('mobDollarsSlider');
+      if(slider) slider.max = state.mobDollars || 0;
+      updateMobDollarsModal();
+      updateBuyMobDollarsCountdown();
     } catch(e){ /* toast already shown */ }
   }
 
-  function updateBuyTurnsCountdown(){
-    const btn = document.getElementById('buyTurnsBtn');
-    const countdown = document.getElementById('buyTurnsCountdown');
+  function updateBuyMobDollarsCountdown(){
+    const btn = document.getElementById('buyMobDollarsBtn');
+    const countdown = document.getElementById('buyMobDollarsCountdown');
     if(!btn || !countdown) return;
 
     const now = Date.now();
