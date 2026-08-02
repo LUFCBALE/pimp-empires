@@ -538,6 +538,26 @@
   .cms-val.gold{color:var(--gold);}
   .cms-sub{font-size:0.62rem; color:var(--text-dim); font-weight:400;}
 
+  /* ---- Lay Low overlay ---- */
+  .lay-low-overlay{
+    position:fixed; inset:0; z-index:500; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.72) 100%);
+    opacity:0; transition:opacity 0.8s ease;
+  }
+  .lay-low-overlay.active{opacity:1;}
+  .lay-low-badge{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-60px);
+    z-index:501; pointer-events:none;
+    display:flex; align-items:center; gap:8px;
+    background:rgba(10,8,14,0.9); border:1px solid rgba(180,180,200,0.4);
+    color:#e8e8f0; font-family:'IBM Plex Mono',monospace; font-size:0.8rem; letter-spacing:0.04em;
+    padding:8px 16px; border-radius:99px;
+    box-shadow:0 0 20px rgba(0,0,0,0.6);
+    opacity:0; transition:opacity 0.5s ease, transform 0.5s ease;
+  }
+  .lay-low-badge.active{opacity:1; transform:translateX(-50%) translateY(0);}
+  .lay-low-badge b{color:#fff; font-weight:700;}
+
   /* ---- Crew Chat / Global Chat (home page) ---- */
   .crew-chat-messages{max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px; padding-right:4px;}
   .crew-chat-msg{background:var(--bg-2); border-radius:8px; padding:7px 10px; font-size:0.82rem; line-height:1.4; word-wrap:break-word; border-left:3px solid var(--panel-line);}
@@ -1065,6 +1085,8 @@
 </style>
 </head>
 <body>
+<div class="lay-low-overlay" id="layLowOverlay" aria-hidden="true"></div>
+<div class="lay-low-badge" id="layLowBadge">🕶️ <span>Lying low</span> <b id="layLowBadgeTime"></b></div>
 <div class="bg-scene" aria-hidden="true">
   <svg viewBox="0 0 1600 500" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -3138,10 +3160,16 @@
       const secs = Math.floor((ms % 60000) / 1000);
       return `${mins}:${secs.toString().padStart(2,'0')}`;
     };
+    const overlay = document.getElementById('layLowOverlay');
+    const badge = document.getElementById('layLowBadge');
+    const badgeTime = document.getElementById('layLowBadgeTime');
     if(activeRemaining > 0){
       btn.disabled = true;
       btn.textContent = `🕶️ Lying low (${fmtMMSS(activeRemaining)})`;
       hint.textContent = `You're off the radar — invisible on the leaderboard, city hidden, for ${fmtMMSS(activeRemaining)} more.`;
+      if(overlay) overlay.classList.add('active');
+      if(badge) badge.classList.add('active');
+      if(badgeTime) badgeTime.textContent = fmtMMSS(activeRemaining);
     } else if(cooldownRemaining > 0){
       btn.disabled = true;
       const cdMins = Math.floor(cooldownRemaining / 60000);
@@ -3149,10 +3177,14 @@
       const cdM = cdMins % 60;
       btn.textContent = `🕶️ On cooldown (${cdH}h ${cdM}m)`;
       hint.textContent = `Can't lay low again for ${cdH}h ${cdM}m.`;
+      if(overlay) overlay.classList.remove('active');
+      if(badge) badge.classList.remove('active');
     } else {
       btn.textContent = `🕶️ Lay Low — ${fmtMoney(layLowCost())}`;
       btn.disabled = state.cash < layLowCost();
       hint.textContent = `Go off the radar for 15 minutes — invisible on the leaderboard as online, city hidden. You can still do everything, including attack · 10% of your net worth · once every 8 hours.`;
+      if(overlay) overlay.classList.remove('active');
+      if(badge) badge.classList.remove('active');
     }
   }
 
