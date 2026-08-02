@@ -514,6 +514,7 @@
   .lb-tab-btn.active{opacity:1;}
   .lb-header.lb-crewview, .lb-row.lb-crewview{grid-template-columns: 30px 1.5fr 70px 60px 60px 60px 0.8fr;}
   .lb-header.lb-respectview, .lb-row.lb-respectview{grid-template-columns: 44px 1.7fr 1fr 0.8fr;}
+  .lb-header.lb-onlineview, .lb-row.lb-onlineview{grid-template-columns: 1.6fr 0.9fr 1fr 1.2fr;}
   .lb-respect{color:var(--gold); font-weight:700; text-align:right;}
   .lb-city{color:var(--text-dim);}
   .lb-stat{color:var(--text-dim);}
@@ -1410,6 +1411,7 @@
         <button class="sidebar-link" data-page="page-bounties">🎯<span>Bounties</span></button>
         <button class="sidebar-link" data-page="page-informer">🕵️<span>Informer</span></button>
         <button class="sidebar-link" data-page="page-leaderboard">🏆<span>Leaderboard</span></button>
+        <button class="sidebar-link" data-page="page-online">🟢<span>Online</span></button>
         <button class="sidebar-link" data-page="page-respect">🎖️<span>Respect</span></button>
         <button class="sidebar-link" data-page="page-achievements">🎖️<span>Achievements/Prizes</span></button>
         <button class="sidebar-link" data-page="page-settings">⚙️<span>Settings</span></button>
@@ -2224,6 +2226,20 @@
         <div>#</div><div>Player</div><div>Crew</div><div>City</div><div>Hoes</div><div>Thugs</div><div>Cars</div><div style="text-align:right;">Net Worth</div>
       </div>
       <div class="lb-list" id="lbList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-online">
+  <button class="back-btn" data-back>← Back to the block</button>
+  <h2 class="page-title">Online</h2>
+  <div class="page-subtitle">Who's actually on right now, and what they're up to. Anyone lying low won't show here.</div>
+  <div class="panel">
+    <div class="lb-wrap">
+      <div class="lb-header lb-onlineview" id="onlineHeader">
+        <div>Player</div><div>City</div><div style="text-align:right;">Net Worth</div><div>Currently</div>
+      </div>
+      <div class="lb-list" id="onlineList"></div>
     </div>
   </div>
 </div>
@@ -4328,6 +4344,33 @@
     list.querySelectorAll('[data-profile-id]').forEach(el => {
       el.addEventListener('click', () => openProfile(parseInt(el.dataset.profileId)));
     });
+  }
+
+  async function renderOnlinePlayers(){
+    const list = document.getElementById('onlineList');
+    if(!list) return;
+    list.innerHTML = '<div class="hint">Loading...</div>';
+    try{
+      const res = await fetch('/api/online');
+      const data = await res.json();
+      if(!data.success){
+        list.innerHTML = `<div class="hint">${escapeHtml(data.error || 'Could not load')}</div>`;
+        return;
+      }
+      const entries = data.online || [];
+      list.innerHTML = entries.length
+        ? entries.map(r => `
+            <div class="lb-row lb-onlineview">
+              <div class="lb-name"><span class="lb-presence-dot online"></span>${escapeHtml(r.name)}</div>
+              <div class="lb-city">${escapeHtml(r.city)}</div>
+              <div class="lb-nw">${fmtMoney(r.netWorth)}</div>
+              <div class="lb-stat">${escapeHtml(r.page)}</div>
+            </div>
+          `).join('')
+        : '<div class="hint">Nobody\'s online right now (or everyone currently on is lying low).</div>';
+    } catch(e){
+      list.innerHTML = '<div class="hint">Could not load who\'s online.</div>';
+    }
   }
 
   const HEIST_JOB_COOLDOWN_HOURS = 6;
@@ -6638,6 +6681,7 @@
     'page-messages': renderMessages,
     'page-leaderboard': renderLeaderboard,
     'page-respect': renderRespectLeaderboard,
+    'page-online': renderOnlinePlayers,
     'page-achievements': renderAchievements,
     'page-settings': renderSettings,
   };
@@ -6648,6 +6692,16 @@
     showPage(pageId);
     const fn = PAGE_RENDERERS[pageId];
     if(fn) fn();
+
+    // Fire-and-forget - lets the Online Players page show what everyone's
+    // currently looking at. Plain fetch (not apiCall) so a failed ping never
+    // pops an error toast, and never awaited so it can't block navigation.
+    if(currentUser){
+      fetch('/api/activity/ping', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({page: pageId}),
+      }).catch(() => {});
+    }
 
     // Leaderboard pages show everyone else's progress, which can change
     // between polls - paint instantly with whatever's cached, then refresh

@@ -72,6 +72,25 @@ socketio = SocketIO(app, async_mode='threading', manage_session=False)
 _sid_to_user = {}
 _online_counts = {}
 
+# What page each online user is currently looking at, for the Online Players
+# page - same in-memory-only reasoning as the presence dicts above. Updated
+# by a lightweight ping the client fires on every page navigation, so it's
+# always a bit stale but never more than one nav-click behind.
+_user_activity = {}
+
+PAGE_LABELS = {
+    'page-main': 'Home', 'page-travel': 'Travel Agent', 'page-heist': 'Pull a Job',
+    'page-heist-result': 'Pull a Job', 'page-realestate': 'Real Estate',
+    'page-production': 'Production', 'page-blackmarket': 'Black Market',
+    'page-dealer': 'Dope Dealer', 'page-crew': 'Crew',
+    'page-crew-leaderboard': 'Crew Leaderboard', 'page-attacks': 'Attacks',
+    'page-bounties': 'Bounties', 'page-informer': 'Informer',
+    'page-leaderboard': 'Leaderboard', 'page-respect': 'Respect',
+    'page-achievements': 'Achievements/Prizes', 'page-settings': 'Settings',
+    'page-about': 'About', 'page-faq': 'FAQ', 'page-messages': 'Messages',
+    'page-profile': 'Viewing a Profile', 'page-results': 'Working the Block',
+}
+
 
 @socketio.on('connect')
 def handle_socket_connect():
@@ -1353,6 +1372,46 @@ def api_leaderboard():
     world = load_world()
     save_world(world)
     return jsonify({'success': True, 'leaderboard': ge.leaderboard(state, world)})
+
+
+@app.route('/api/activity/ping', methods=['POST'])
+@login_required
+def api_activity_ping():
+    data = request.get_json() or {}
+    page = data.get('page', '')
+    user = get_current_user()
+    _user_activity[user['id']] = {'page': page, 't': ge.now_ms()}
+    return jsonify({'success': True})
+
+
+@app.route('/api/online', methods=['GET'])
+@login_required
+def api_online():
+    """Who's actually online right now, what page they're on, and their
+    public stats - laying low hides you from this exactly like it hides
+    you from the leaderboard's online dot and city."""
+    online_ids = list(_online_counts.keys())
+    humans = fetch_all_humans()
+    by_id = {uid: (name, s) for uid, name, s in humans}
+
+    entries = []
+    for uid in online_ids:
+        found = by_id.get(uid)
+        if not found:
+            continue
+        name, s = found
+        if ge.is_laying_low(s):
+            continue
+        activity = _user_activity.get(uid)
+        page = activity['page'] if activity else 'page-main'
+        entries.append({
+            'name': name,
+            'netWorth': ge.total_net_worth(s),
+            'city': s.get('location', ''),
+            'page': PAGE_LABELS.get(page, 'Home'),
+        })
+    entries.sort(key=lambda e: e['netWorth'], reverse=True)
+    return jsonify({'success': True, 'online': entries})
 
 
 @app.route('/api/dm/send', methods=['POST'])
