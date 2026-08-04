@@ -370,6 +370,13 @@ def fetch_all_humans():
     return humans
 
 
+
+# Current season is a beta test run - the user does not want anyone credited
+# real Hall of Fame achievements/Mob Dollars off the back of it. Flip this
+# back to True for the first real season.
+SEASON_END_PRIZES_ENABLED = False
+
+
 def maybe_award_season_end_prizes(world):
     """Once, when the shared season clock (world['seasonEndAt']) expires,
     snapshot each Hall of Fame category and permanently award its #1 human
@@ -378,6 +385,8 @@ def maybe_award_season_end_prizes(world):
     comment in attach_world_view - only here, exactly once per season.
     Cheap on every other request: the seasonPrizesAwarded flag short-circuits
     before any DB scan once it's already run."""
+    if not SEASON_END_PRIZES_ENABLED:
+        return
     if world.get("seasonPrizesAwarded"):
         return
     if ge.now_ms() < world.get("seasonEndAt", float("inf")):
