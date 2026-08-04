@@ -3239,7 +3239,12 @@ def apply_world_catchup(world):
     if "records" not in world:
         world["records"] = {}
     if "seasonEndAt" not in world:
-        world["seasonEndAt"] = SEASON_1_END_MS
+        # SEASON_1_END_MS was only correct immediately after the original
+        # 2026-07-14 reset - once that date passes, backfilling to it again
+        # (e.g. after a later world wipe) would hand every player an
+        # already-expired countdown. Backfill to a fresh "now + duration"
+        # season instead; SEASON_1_END_MS is kept only as a historical record.
+        world["seasonEndAt"] = now + GAME_DURATION_MS
     if "seasonPrizesAwarded" not in world:
         world["seasonPrizesAwarded"] = False
     # One-time migration: bots created before the 4-crew system had unique
