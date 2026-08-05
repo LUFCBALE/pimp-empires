@@ -2970,10 +2970,10 @@ THE_JOB_ROLE_LABELS = {"don": "The Don", "gunman": "Gunman", "driver": "Driver",
 # The Don pays cash to plan it; the other three donate straight out of their
 # own stockpile instead of paying cash - guns/cars/bombs are all slow to
 # accumulate, so this is a real contribution, not just a shopping trip.
-THE_JOB_DON_COST = 50_000_000
-THE_JOB_GUN_DONATION = 1_000
-THE_JOB_CAR_DONATION = 50
-THE_JOB_BOMB_DONATION = 150
+THE_JOB_DON_COST = 250_000_000
+THE_JOB_GUN_DONATION = 10_000
+THE_JOB_CAR_DONATION = 300
+THE_JOB_BOMB_DONATION = 500
 THE_JOB_PRIZE_MIN_M = 1_000  # whole millions, so the rolled prize is a clean number
 THE_JOB_PRIZE_MAX_M = 10_000
 THE_JOB_SUCCESS_CHANCE = 0.70

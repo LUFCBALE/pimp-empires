@@ -6365,14 +6365,14 @@
   const THE_MINT_ROLE_LABELS = {don: 'The Don', gunman: 'Gunman', driver: 'Driver', bomber: 'Bomber'};
 
   function theMintRequirement(role){
-    if(role === 'don') return {have: state.cash || 0, need: 50000000, unit: 'cash', text: n => `£${n.toLocaleString()}`};
+    if(role === 'don') return {have: state.cash || 0, need: 250000000, unit: 'cash', text: n => `£${n.toLocaleString()}`};
     if(role === 'gunman'){
       const guns = state.guns || {};
       const have = (guns.pistol9mm || 0) + (guns.shotgun12gauge || 0) + (guns.ak47 || 0) + (guns.m249 || 0);
-      return {have, need: 1000, unit: 'guns', text: n => `${n.toLocaleString()} guns`};
+      return {have, need: 10000, unit: 'guns', text: n => `${n.toLocaleString()} guns`};
     }
-    if(role === 'driver') return {have: state.cadillacs || 0, need: 50, unit: 'cars', text: n => `${n.toLocaleString()} cars`};
-    return {have: state.bombs || 0, need: 150, unit: 'bombs', text: n => `${n.toLocaleString()} bombs`};
+    if(role === 'driver') return {have: state.cadillacs || 0, need: 300, unit: 'cars', text: n => `${n.toLocaleString()} cars`};
+    return {have: state.bombs || 0, need: 500, unit: 'bombs', text: n => `${n.toLocaleString()} bombs`};
   }
 
   function renderTheMint(){
