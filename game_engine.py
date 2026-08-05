@@ -31,8 +31,8 @@ import time
 # Constants
 # ---------------------------------------------------------------------------
 
-REGEN_AMOUNT = 40
-REGEN_MS = 20 * 60 * 1000
+REGEN_AMOUNT = 80
+REGEN_MS = 10 * 60 * 1000
 
 FACTORY_MS = 30 * 60 * 1000
 
@@ -245,9 +245,9 @@ CASINO_JOB = {
 }
 
 FACTORY_COSTS = {
-    "medical": 940000, "gun": 25000000, "car": 30000000, "drug": 14000000,
-    "explosive": 32000000, "counterfeit": 23000000, "gym": 10000000,
-    "warehouse": 20000000,
+    "medical": 470000, "gun": 12500000, "car": 15000000, "drug": 7000000,
+    "explosive": 16000000, "counterfeit": 11500000, "gym": 5000000,
+    "warehouse": 10000000,
 }
 
 # Explicit per-factory sell/refund price (not a flat % of cost - each type

@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Hustle">
@@ -36,6 +37,12 @@
     --buy-green-light: #2fe08a;
     --sell-red: #b32020;
     --sell-red-light: #ff4d4d;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0; overflow-x:hidden;}
@@ -45,9 +52,9 @@
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 28px 16px calc(60px + env(safe-area-inset-bottom));
-  padding-left: calc(16px + env(safe-area-inset-left));
-  padding-right: calc(16px + env(safe-area-inset-right));
+  padding: var(--space-5) var(--space-4) calc(80px + env(safe-area-inset-bottom));
+  padding-left: calc(var(--space-4) + env(safe-area-inset-left));
+  padding-right: calc(var(--space-4) + env(safe-area-inset-right));
   position:relative;
   -webkit-text-size-adjust:100%;
 }
@@ -146,7 +153,7 @@
   .wrap{max-width:980px;margin:0;flex:1;min-width:0;}
 
   /* ---- App shell / sidebar ---- */
-  .app-shell{display:flex; align-items:flex-start; gap:22px; max-width:1260px; margin:0 auto;}
+  .app-shell{display:flex; align-items:flex-start; gap:var(--space-5); max-width:1260px; margin:0 auto;}
   .nav-section .sidebar-links{display:flex; flex-direction:column; gap:0px; padding:0px;}
   .sidebar-link{
     display:flex; align-items:center; justify-content:flex-start; gap:10px; width:100%; text-align:left;
@@ -180,87 +187,109 @@
     max-width:1260px; margin:0 auto;
     box-shadow:0 6px 14px rgba(0,0,0,0.35);
   }
-  .top-strip-row1{
+  .top-strip-micro{
     display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
-    padding:6px 12px;
+    padding:var(--space-2) var(--space-3); background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.05);
+    font-size:0.65rem;
   }
-  .top-strip b{color:var(--gold); font-weight:700;}
-  .top-strip-info{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-  .top-strip-account{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-  .top-strip-account #authDisplay{color:var(--gold); font-weight:700;}
-  .top-strip-account button, .top-strip-account a.strip-link{
-    background:var(--panel); border:1px solid var(--panel-line); color:var(--text); cursor:pointer;
-    font-family:'IBM Plex Mono',monospace; font-size:0.68rem; padding:5px 10px; border-radius:6px; transition:all 0.15s;
-    text-decoration:none; display:inline-flex; align-items:center; gap:5px;
+  .micro-left, .micro-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .top-strip-micro b{color:var(--gold); font-weight:700;}
+  .top-strip-micro .divider{color:var(--text-dim); opacity:0.5;}
+  .top-strip-micro #authDisplay{color:var(--gold); font-weight:700;}
+  .micro-btn, .micro-link{
+    background:none; border:none; color:var(--text-dim); cursor:pointer; padding:0; margin:0;
+    font-family:'IBM Plex Mono',monospace; font-size:0.65rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px;
+    transition:color 0.15s;
   }
-  .top-strip-account button:hover, .top-strip-account a.strip-link:hover{border-color:var(--hot); color:#fff;}
-  #buyMobDollarsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
-  .top-strip-account #mobDollarsBtn{background:linear-gradient(90deg, #3d2b0f, #6b4a17); border-color:var(--gold); color:var(--gold); font-weight:700; display:inline-flex; align-items:center; gap:5px; margin-left:48px;}
+  .micro-btn:hover, .micro-link:hover{color:#fff;}
+
+  /* --- Player Identity Row --- */
+  .top-strip-identity{
+    display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap;
+    padding:10px 12px;
+  }
+  .identity-xp-section{
+    display:flex; align-items:center; gap:12px; flex:1; min-width:250px;
+  }
+  .identity-level-badge{
+    font-family:'Anton',sans-serif; font-size:1rem; letter-spacing:0.02em;
+    color:var(--gold); white-space:nowrap; text-shadow:0 0 10px rgba(255,200,0,0.3);
+  }
+  .identity-xp-container{
+    display:flex; flex-direction:column; gap:2px; flex:1;
+  }
+  .xp-bar-track{
+    height:6px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;
+  }
+  .xp-bar-fill{
+    height:100%; width:0%; background:linear-gradient(90deg, var(--hot), var(--gold)); 
+    box-shadow:0 0 8px var(--hot); transition:width 0.3s ease;
+  }
+  .xp-next{
+    font-family:'IBM Plex Mono',monospace; font-size:0.55rem; color:var(--text-dim); white-space:nowrap;
+  }
+  .premium-btn{
+    background:linear-gradient(90deg, #3d2b0f, #6b4a17); border:1px solid var(--gold); border-radius:6px;
+    color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:0.7rem; font-weight:700;
+    padding:6px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    box-shadow:0 0 10px rgba(255,200,0,0.15); transition:all 0.15s;
+  }
+  .premium-btn:hover{box-shadow:0 0 15px rgba(255,200,0,0.3); color:#fff;}
   .mob-dollars-icon{width:20px; height:11px; object-fit:cover; border-radius:2px; vertical-align:middle;}
-  .top-strip-account #discordLink{background:#5865F2; border-color:#4752C4; color:#fff; font-weight:700; margin-left:auto;}
-  .top-strip-account #discordLink:hover{background:#4752C4; color:#fff;}
-  .top-strip-account #referFriendBtn{background:linear-gradient(90deg, #3d2b0f, #6b4a17); border-color:var(--gold); color:var(--gold); font-weight:700;}
+  #buyMobDollarsBtn{background:linear-gradient(90deg, var(--buy-green), var(--buy-green-light)); border-color:var(--buy-green-light); color:#04160c; font-weight:700;}
 
-  .top-strip-xp{
-    display:flex; align-items:center; gap:10px;
-    padding:6px 12px;
-    border-top:1px solid var(--panel-line);
-  }
-  .top-strip-xp .xp-rank{
-    font-family:'Anton',sans-serif; font-size:0.78rem; letter-spacing:0.02em;
-    color:var(--gold); white-space:nowrap; flex-shrink:0;
-  }
-  .top-strip-xp .xp-bar-track{
-    flex:1; height:8px; background:var(--bg); border:1px solid var(--panel-line); border-radius:4px; overflow:hidden;
-  }
-  .top-strip-xp .xp-bar-fill{
-    height:100%; width:0%; background:linear-gradient(90deg, var(--hot), var(--gold)); transition:width 0.3s ease;
-  }
-  .top-strip-xp .xp-next{
-    font-family:'IBM Plex Mono',monospace; font-size:0.62rem; color:var(--text-dim); white-space:nowrap; flex-shrink:0;
-  }
-  @media (max-width:640px){
-    .top-strip-xp{flex-wrap:wrap;}
-    .top-strip-xp .xp-bar-track{order:3; flex-basis:100%;}
-  }
-
-  .top-strip-stats{
+  /* --- Core Stats Grid (Glassmorphism) --- */
+  .modern-stats{
     display:grid; grid-template-columns:repeat(4,1fr);
-    border-top:1px solid var(--panel-line);
-    background:var(--panel);
+    background:rgba(20,14,26,0.6); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-top:1px solid rgba(255,255,255,0.05);
   }
-  .ts-stat{
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    padding:6px 8px;
-    border-right:1px solid var(--panel-line);
-    min-width:0;
+  .ts-stat-card{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:10px; position:relative;
+    border-right:1px solid rgba(255,255,255,0.05);
   }
-  .ts-stat:last-child{border-right:none;}
-  .ts-stat .ts-icon{font-size:0.85rem; flex-shrink:0;}
-  .ts-stat .ts-icon img{width:38px; height:38px; object-fit:cover; object-position:top center; border-radius:50%; display:block;}
-  .ts-stat .ts-main{min-width:0; overflow:hidden;}
-  .ts-stat .ts-label{
-    font-family:'IBM Plex Mono',monospace; font-size:0.58rem; letter-spacing:0.08em; text-transform:uppercase;
-    color:var(--text-dim); line-height:1.1;
+  .ts-stat-card:last-child{border-right:none;}
+  .ts-stat-card::before{
+    content:""; position:absolute; inset:0; opacity:0.1; pointer-events:none; transition:opacity 0.2s;
+  }
+  .ts-stat-card:hover::before{opacity:0.2;}
+  .ts-icon{font-size:1.2rem; flex-shrink:0;}
+  .ts-icon img{width:42px; height:42px; object-fit:cover; object-position:top center; border-radius:50%; box-shadow:0 0 10px rgba(0,0,0,0.5);}
+  .ts-main{min-width:0; display:flex; flex-direction:column; justify-content:center;}
+  .ts-label{
+    font-family:'IBM Plex Mono',monospace; font-size:0.55rem; letter-spacing:0.1em; text-transform:uppercase;
+    color:rgba(255,255,255,0.5); line-height:1; margin-bottom:2px;
+  }
+  .ts-value{
+    font-family:'Anton',sans-serif; font-size:1.1rem; letter-spacing:0.02em; line-height:1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 2px 4px rgba(0,0,0,0.5);
+  }
+  .ts-sub{
+    font-family:'IBM Plex Mono',monospace; font-size:0.55rem; color:rgba(255,255,255,0.4); line-height:1; margin-top:2px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .ts-stat .ts-value{
-    font-family:'Anton',sans-serif; font-size:0.95rem; letter-spacing:0.01em; line-height:1.1;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  .ts-stat .ts-sub{
-    font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--text-dim); line-height:1.1;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  .ts-stat.cash .ts-value{color:var(--gold);}
-  .ts-stat.hoes .ts-value{color:var(--hot);}
-  .ts-stat.thugs .ts-value{color:#c9adf5;}
-  .ts-stat.turns .ts-value{color:var(--teal);}
+
+  /* Specific Card Glows */
+  .cash-card .ts-value{color:var(--gold);}
+  .cash-card::before{background:var(--gold);}
+  .hoes-card .ts-value{color:var(--hot);}
+  .hoes-card::before{background:var(--hot);}
+  .thugs-card .ts-value{color:#c9adf5;}
+  .thugs-card::before{background:#c9adf5;}
+  .turns-card .ts-value{color:var(--teal);}
+  .turns-card::before{background:var(--teal);}
+
   @media (max-width:640px){
-    .top-strip-stats{grid-template-columns:repeat(2,1fr);}
-    .ts-stat:nth-child(2){border-right:none;}
-    .ts-stat{border-bottom:1px solid var(--panel-line);}
-    .ts-stat:nth-last-child(-n+2){border-bottom:none;}
+    .top-strip-identity{flex-direction:column; align-items:stretch;}
+    .identity-currency-section{display:flex; justify-content:center;}
+    .premium-btn{justify-content:center;}
+    .modern-stats{grid-template-columns:repeat(2,1fr);}
+    .ts-stat-card:nth-child(2){border-right:none;}
+    .ts-stat-card{border-bottom:1px solid rgba(255,255,255,0.05); padding:var(--space-2) var(--space-1);}
+    .ts-stat-card:nth-last-child(-n+2){border-bottom:none;}
+    .ts-icon img{width:32px; height:32px;}
+    .ts-value{font-size:0.95rem;}
   }
 
   /* ---- Top bar: logo + stats + work-the-block widget ---- */
@@ -335,17 +364,141 @@
   .work-panel .cta:not(.secondary){padding:10px; margin-top:4px;}
   .work-block-col{display:flex; flex-direction:column; gap:12px; width:100%; max-width:420px;}
 
-  @media (max-width:900px){
+  .bottom-nav-bar, .more-drawer, .more-drawer-overlay { display: none; }
+
+  @media (max-width:1100px){
+    #musicToggleBtn { bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
     .app-shell{flex-direction:column;}
     .left-sidebar{width:100%; box-sizing:border-box;}
-    .sidebar-logo{height:100px;}
-    .sidebar-links{
-      flex-direction:row; flex-shrink:0; align-items:center; gap:10px;
-      overflow-x:auto; -webkit-overflow-scrolling:touch;
+    .sidebar-logo{height:60px;}
+    .sidebar-section{padding:var(--space-2) var(--space-3);}
+    .nav-section { display: none; }
+    
+    /* SPA Navigation Redesign: Hide dashboard elements on mobile unless on home page */
+    body:not(.home-active) .left-sidebar,
+    body:not(.home-active) .topbar {
+      display: none !important;
     }
-    .sidebar-link{flex-shrink:0; padding:10px 12px; border-left:none; border-bottom:3px solid transparent;}
-    .sidebar-link.active{border-left-color:transparent; border-bottom-color:var(--hot);}
-    .sidebar-link span{display:none;}
+    
+    .bottom-nav-bar {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 14, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid var(--panel-line);
+      z-index: 1000;
+      padding-bottom: env(safe-area-inset-bottom);
+      justify-content: space-around;
+      align-items: center;
+      height: 60px;
+    }
+    .bnav-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      flex: 1;
+      height: 100%;
+      justify-content: center;
+      transition: color 0.15s ease;
+    }
+    .bnav-btn:hover, .bnav-btn.active { color: #fff; }
+    .bnav-icon {
+      width: 24px;
+      height: 24px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1px solid var(--panel-line);
+    }
+    .bnav-icon-svg {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bnav-icon-svg svg {
+      width: 100%;
+      height: 100%;
+      stroke: var(--text-dim);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .bnav-btn:hover .bnav-icon-svg svg, .bnav-btn.active .bnav-icon-svg svg { stroke: #fff; }
+
+    .more-drawer-overlay {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1001;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .more-drawer-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .more-drawer {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 75vh;
+      background: var(--bg-2);
+      border-top: 1px solid var(--panel-line);
+      border-radius: 20px 20px 0 0;
+      z-index: 1002;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .more-drawer.active { transform: translateY(0); }
+    .more-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--panel-line);
+    }
+    .more-drawer-header h3 {
+      margin: 0;
+      font-family: 'Anton', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.02em;
+    }
+    .more-drawer-header button {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 2rem;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+    }
+    .more-drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 0;
+    }
+    .drawer-link { width: 100%; border-radius: 0; padding: 14px 20px; }
+    .drawer-link span { display: inline !important; font-size: 1rem; }
     .topbar{flex-direction:column; align-items:stretch;}
     .topbar-left{max-width:100%;}
     .topbar .work-panel{max-width:100%;}
@@ -701,7 +854,7 @@
     -webkit-backdrop-filter:blur(18px) saturate(1.3);
     border:3px solid var(--card-border);
     border-radius:14px;
-    padding:18px 20px;
+    padding:var(--space-4) var(--space-5);
     box-shadow:0 0 20px rgba(91,15,15,0.35), inset 0 0 8px rgba(91,15,15,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
   }
   /* ---- Results page ---- */
@@ -953,7 +1106,7 @@
   /* ---- Terminal log ---- */
   .terminal{
     background:var(--bg-2); border:1px solid var(--panel-line); border-radius:12px;
-    padding:12px 14px; height:200px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:var(--space-3) var(--space-4); height:200px; overflow-y:auto; -webkit-overflow-scrolling:touch;
     font-family:'IBM Plex Mono',monospace; font-size:0.72rem; line-height:1.6;
     box-shadow:0 4px 14px rgba(0,0,0,0.3);
   }
@@ -1427,55 +1580,65 @@
 
   <div class="wrap">
     <div class="top-strip">
-      <div class="top-strip-row1">
-        <div class="top-strip-info">
+      <div class="top-strip-micro">
+        <div class="micro-left">
           <span id="worldTime">00:00 GMT</span>
-          <span>·</span>
-          <span>Game ends in <b id="gameCountdown">7d 0h 0m</b></span>
-          <span>·</span>
-          <span>Bonus in <b id="bonusCountdown">23h 45m 30s</b></span>
+          <span class="divider">|</span>
+          <span>End: <b id="gameCountdown">7d 0h 0m</b></span>
+          <span class="divider">|</span>
+          <span>Bonus: <b id="bonusCountdown">23h 45m 30s</b></span>
         </div>
-        <div class="top-strip-account">
+        <div class="micro-right">
           <span id="authDisplay">Not logged in</span>
-          <button id="authToggleBtn">Sign Up / Login</button>
-          <button id="mobDollarsBtn"><img src="./mob%20dollers.jpg" alt="" class="mob-dollars-icon"> <span id="mobDollarsBalance">0</span> Mob Dollars</button>
-          <button id="referFriendBtn" class="strip-link">👥 Refer a Friend, Earn 🪙</button>
-          <a id="discordLink" class="strip-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Join Discord</a>
+          <button id="authToggleBtn" class="micro-btn">Sign Up / Login</button>
+          <span class="divider">|</span>
+          <button id="referFriendBtn" class="micro-link">👥 Invite</button>
+          <span class="divider">|</span>
+          <a id="discordLink" class="micro-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Discord</a>
         </div>
       </div>
-      <div class="top-strip-xp">
-        <span class="xp-rank" id="xpRankName">Lv.1 Junkie</span>
-        <div class="xp-bar-track">
-          <div class="xp-bar-fill" id="xpBarFill"></div>
+
+      <div class="top-strip-identity">
+        <div class="identity-xp-section">
+          <div class="identity-level-badge" id="xpRankName">Lv.1 Junkie</div>
+          <div class="identity-xp-container">
+            <div class="xp-bar-track">
+              <div class="xp-bar-fill" id="xpBarFill"></div>
+            </div>
+            <span class="xp-next" id="xpNextLabel">0 XP to next rank</span>
+          </div>
         </div>
-        <span class="xp-next" id="xpNextLabel">0 XP to next rank</span>
+        <div class="identity-currency-section">
+          <button id="mobDollarsBtn" class="premium-btn"><img src="./mob%20dollers.jpg" alt="" class="mob-dollars-icon"> <span id="mobDollarsBalance">0</span> Mob Dollars</button>
+        </div>
       </div>
-      <div class="top-strip-stats">
-        <div class="ts-stat cash">
-          <span class="ts-icon"><img src="./cash-icon.jpg" alt="Cash"></span>
+
+      <div class="top-strip-stats modern-stats">
+        <div class="ts-stat-card cash-card">
+          <div class="ts-icon"><img src="./cash-icon.jpg" alt="Cash"></div>
           <div class="ts-main">
             <div class="ts-label">Cash</div>
             <div class="ts-value" id="statCash">£0</div>
           </div>
         </div>
-        <div class="ts-stat hoes">
-          <span class="ts-icon"><img src="./hoes-icon.png" alt="Hoes"></span>
+        <div class="ts-stat-card hoes-card">
+          <div class="ts-icon"><img src="./hoes-icon.png" alt="Hoes"></div>
           <div class="ts-main">
             <div class="ts-label">Hoes</div>
             <div class="ts-value" id="statHoes">0</div>
             <div class="ts-sub" id="statHoesSub">earning per shift</div>
           </div>
         </div>
-        <div class="ts-stat thugs">
-          <span class="ts-icon"><img src="./thug-icon.jpg" alt="Thugs"></span>
+        <div class="ts-stat-card thugs-card">
+          <div class="ts-icon"><img src="./thug-icon.jpg" alt="Thugs"></div>
           <div class="ts-main">
             <div class="ts-label">Thugs</div>
             <div class="ts-value" id="statThugs">0</div>
             <div class="ts-sub" id="statThugsSub">50% happy</div>
           </div>
         </div>
-        <div class="ts-stat turns">
-          <span class="ts-icon">⏳</span>
+        <div class="ts-stat-card turns-card">
+          <div class="ts-icon">⏳</div>
           <div class="ts-main">
             <div class="ts-label">Turns</div>
             <div class="ts-value" id="statTurns">0 / 0</div>
@@ -6622,6 +6785,7 @@
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.toggle('active', l.dataset.page === id));
+    document.body.classList.toggle('home-active', id === 'page-main');
     window.scrollTo({top:0, behavior:'smooth'});
   }
 
@@ -6693,6 +6857,7 @@
     'page-settings': renderSettings,
   };
 
+  window.navigateTo = navigateTo;
   function navigateTo(pageId){
     // show the page FIRST so its container has real dimensions before any renderer
     // (e.g. the Leaflet map) measures itself — sizing against a display:none box breaks it
@@ -7106,5 +7271,67 @@
   });
 })();
 </script>
+  <div class="bottom-nav-bar" id="mobileBottomNav">
+    <button class="bnav-btn" data-page="page-main"><img class="bnav-icon" src="./house.jpg" alt=""><span>Home</span></button>
+    <button class="bnav-btn" data-page="page-heist"><img class="bnav-icon" src="./pull-a-job-bg.jpg" alt=""><span>Work</span></button>
+    <button class="bnav-btn" data-page="page-crew"><img class="bnav-icon" src="./thug%20blue.jpg" alt="" style="object-position:center 15%;"><span>Crew</span></button>
+    <button class="bnav-btn" id="openMoreDrawerBtn">
+      <span class="bnav-icon-svg"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></span>
+      <span>More</span>
+    </button>
+  </div>
+
+  <div class="more-drawer-overlay" id="moreDrawerOverlay"></div>
+  <div class="more-drawer" id="moreDrawer">
+    <div class="more-drawer-header">
+      <h3>Menu</h3>
+      <button id="closeMoreDrawerBtn">&times;</button>
+    </div>
+    <div class="more-drawer-content">
+      <button class="sidebar-link drawer-link" data-page="page-travel"><img class="sidebar-icon" src="./travel-bg.jpg" alt=""><span>Travel</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-realestate"><img class="sidebar-icon" src="./real-estate-bg.jpg" alt=""><span>Real Estate</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-production"><img class="sidebar-icon" src="./warehouse.jpg" alt=""><span>Production</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-blackmarket"><img class="sidebar-icon" src="./black-market-bg.jpg" alt=""><span>Black Market</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-dealer"><img class="sidebar-icon" src="./corner%20shop.jpg" alt=""><span>Dope Dealer</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-attacks"><img class="sidebar-icon" src="./Ak47.jpg" alt=""><span>Attacks</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-bounties"><img class="sidebar-icon" src="./cash.jpg" alt=""><span>Bounties</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-informer"><img class="sidebar-icon" src="./informer.jpg" alt=""><span>Informer</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-leaderboard"><img class="sidebar-icon" src="./top%20ten.jpg" alt=""><span>Leaderboard</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-online"><span class="sidebar-icon-svg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.25a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"></path></svg></span><span>Online</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-respect"><img class="sidebar-icon" src="./xp%20badge.jpg" alt=""><span>Respect</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-achievements"><img class="sidebar-icon" src="./mob%20dollers.jpg" alt=""><span>Achievements</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-settings"><span class="sidebar-icon-svg"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span><span>Settings</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-about"><span class="sidebar-icon-svg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span><span>About</span></button>
+      <button class="sidebar-link drawer-link" data-page="page-faq"><span class="sidebar-icon-svg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span><span>FAQ</span></button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.bnav-btn[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        navigateTo(btn.dataset.page);
+        closeMoreDrawer();
+      });
+    });
+    document.querySelectorAll('.drawer-link').forEach(btn => {
+      btn.addEventListener('click', closeMoreDrawer);
+    });
+
+    const moreDrawer = document.getElementById('moreDrawer');
+    const moreDrawerOverlay = document.getElementById('moreDrawerOverlay');
+    
+    document.getElementById('openMoreDrawerBtn').addEventListener('click', () => {
+      moreDrawer.classList.add('active');
+      moreDrawerOverlay.classList.add('active');
+    });
+    
+    function closeMoreDrawer() {
+      moreDrawer.classList.remove('active');
+      moreDrawerOverlay.classList.remove('active');
+    }
+    
+    document.getElementById('closeMoreDrawerBtn').addEventListener('click', closeMoreDrawer);
+    moreDrawerOverlay.addEventListener('click', closeMoreDrawer);
+  </script>
 </body>
 </html>
