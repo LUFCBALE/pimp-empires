@@ -1959,6 +1959,15 @@
       <button class="cta extreme" id="doCasinoBtn">Execute Casino Heist</button>
     </div>
 
+    <div class="panel" id="theMintPanel" style="grid-column:1/-1; border-color:var(--gold);">
+      <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
+        <img src="./THE%20MINT.jpg" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px;">
+        The Mint
+      </h3>
+      <div class="hint" id="theMintHint" style="margin-bottom:10px;"></div>
+      <div id="theMintBody"></div>
+    </div>
+
   </div>
 </div>
 
@@ -2472,14 +2481,6 @@
     <div id="crewEmblemPicker" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
   </div>
   <button class="cta gold" id="crewPowerBtn" style="width:100%; margin-bottom:20px;">📊 View Crew Power</button>
-  <div class="panel" id="theMintPanel" style="display:none; margin-bottom:16px; border-color:var(--gold);">
-    <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
-      <img src="./THE%20MINT.jpg" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px;">
-      The Mint
-    </h3>
-    <div class="hint" id="theMintHint" style="margin-bottom:10px;"></div>
-    <div id="theMintBody"></div>
-  </div>
   <div class="panel" id="pendingInvitesPanel" style="display:none; margin-bottom:16px;">
     <h3 style="margin-top:0;">✉️ Crew Invites For You</h3>
     <div id="pendingInvitesList" style="display:flex; flex-direction:column; gap:10px;"></div>
@@ -6268,11 +6269,8 @@
       members.innerHTML = '<div class="hint">🚨 You haven\'t created a crew name yet! Set one above to start recruiting.</div>';
       available.innerHTML = '<div class="hint">Create a crew name above to invite members.</div>';
       subtitle.textContent = '0 / 5 members';
-      renderTheMint();
       return;
     }
-
-    renderTheMint();
 
     if(isMember){
       subtitle.textContent = `Member of "${state.gang}"`;
@@ -6374,7 +6372,6 @@
     const body = document.getElementById('theMintBody');
     const hint = document.getElementById('theMintHint');
     if(!panel || !body || !hint) return;
-    if(!state.gang){ panel.style.display = 'none'; return; }
     panel.style.display = 'block';
 
     const roster = state.crewRoster || {};
@@ -6383,6 +6380,15 @@
     const now = Date.now();
     const myId = myUserId();
     const myRank = (state.rankInfo && state.rankInfo.level) || 1;
+
+    // Always visible, even with no crew or too low a rank - it's meant to
+    // be an aspirational "here's the endgame" teaser everyone can see, just
+    // not everyone can act on yet.
+    if(!state.gang){
+      hint.textContent = 'One massive, once-a-day crew job: rob the Royal Mint gold vault for £1bn-£10bn. Needs a Don (rank 13, THE DON), a Gunman, a Driver, and a Bomber.';
+      body.innerHTML = `<div class="hint">🔒 You need to be in a crew to attempt this. Form or join one from the Crew page first.</div>`;
+      return;
+    }
 
     if(!job){
       hint.textContent = 'One massive, once-a-day crew job: rob the Royal Mint gold vault for £1bn-£10bn. Needs a Don (rank 13, THE DON), a Gunman, a Driver, and a Bomber.';
@@ -6921,6 +6927,8 @@
     const casinoHi = Math.max(casinoJob.maxCash, Math.round(crewNetWorth * casinoJob.netWorthPct.max));
     const casinoCashEl = document.getElementById('casinoCash');
     if(casinoCashEl) casinoCashEl.textContent = `${fmtMoney(casinoLo)} – ${fmtMoney(casinoHi)}`;
+
+    renderTheMint();
   }
 
   // ---- Page navigation ----
