@@ -500,7 +500,13 @@ def build_crew_roster(user_id, state, world):
                 'cars': bot.get('cadillacs', 0),
                 'netWorth': ge.bot_net_worth(bot),
             })
-    return {'emblem': leader_state.get('crewEmblem', ''), 'members': members, 'chat': leader_state.get('crewChat', [])}
+    return {
+        'emblem': leader_state.get('crewEmblem', ''),
+        'members': members,
+        'chat': leader_state.get('crewChat', []),
+        'theJob': leader_state.get('theJob'),
+        'theJobCooldownUntil': leader_state.get('theJobCooldownUntil', 0),
+    }
 
 
 def crew_protected_ids(user_id, state, world):
@@ -1260,6 +1266,106 @@ def api_crew_chat_send():
             continue
         notify_user(m['botId'] - ge.HUMAN_ID_OFFSET, 'crewChat', {'from': state['name']})
     return action_response(user['id'], state, world)
+
+
+def _notify_crew_of_job_update(user, state, world):
+    roster = build_crew_roster(user['id'], state, world)
+    for m in roster['members']:
+        if m['isYou'] or m['botId'] < ge.HUMAN_ID_OFFSET:
+            continue
+        notify_user(m['botId'] - ge.HUMAN_ID_OFFSET, 'theJobUpdate', {'from': state['name']})
+
+
+@app.route('/api/thejob/start', methods=['POST'])
+@login_required
+def api_thejob_start():
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        if not state.get('gang'):
+            raise ge.GameError('You need a crew first')
+        leader_id = state.get('crewLeaderUserId')
+        if leader_id is None:
+            leader_state, leader_user_id = state, user['id']
+        else:
+            leader_state, leader_user_id = load_state(leader_id), leader_id
+        ge.start_the_job(leader_state, user['id'], user['pimp_name'])
+        if leader_user_id != user['id']:
+            save_state(leader_user_id, leader_state)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+
+    _notify_crew_of_job_update(user, state, world)
+    return action_response(user['id'], state, world)
+
+
+@app.route('/api/thejob/split', methods=['POST'])
+@login_required
+def api_thejob_split():
+    data = request.get_json() or {}
+    splits = data.get('splits', {})
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    try:
+        if not state.get('gang'):
+            raise ge.GameError('You need a crew first')
+        leader_id = state.get('crewLeaderUserId')
+        if leader_id is None:
+            leader_state, leader_user_id = state, user['id']
+        else:
+            leader_state, leader_user_id = load_state(leader_id), leader_id
+        ge.set_job_split(leader_state, user['id'], splits)
+        if leader_user_id != user['id']:
+            save_state(leader_user_id, leader_state)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+
+    _notify_crew_of_job_update(user, state, world)
+    return action_response(user['id'], state, world)
+
+
+@app.route('/api/thejob/claim', methods=['POST'])
+@login_required
+def api_thejob_claim():
+    data = request.get_json() or {}
+    role = data.get('role', '')
+    hire_npc = bool(data.get('hireNpc'))
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    result = None
+    try:
+        if not state.get('gang'):
+            raise ge.GameError('You need a crew first')
+        leader_id = state.get('crewLeaderUserId')
+        if leader_id is None:
+            leader_state, leader_user_id = state, user['id']
+        else:
+            leader_state, leader_user_id = load_state(leader_id), leader_id
+
+        result = ge.claim_job_role(leader_state, role, state, user['id'], user['pimp_name'], hire_npc=hire_npc)
+
+        if result.get('complete') and result.get('payouts'):
+            for payout_user_id, amount in result['payouts'].items():
+                if payout_user_id == user['id']:
+                    ge.credit_the_job_payout(state, amount)
+                elif payout_user_id == leader_user_id:
+                    ge.credit_the_job_payout(leader_state, amount)
+                else:
+                    other_state = load_state(payout_user_id)
+                    ge.credit_the_job_payout(other_state, amount)
+                    save_state(payout_user_id, other_state)
+                    notify_user(payout_user_id, 'theJobUpdate', {'from': 'The Job'})
+
+        if leader_user_id != user['id']:
+            save_state(leader_user_id, leader_state)
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+
+    _notify_crew_of_job_update(user, state, world)
+    return action_response(user['id'], state, world, {'result': result})
 
 
 @app.route('/api/globalchat/send', methods=['POST'])

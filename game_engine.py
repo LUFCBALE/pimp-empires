@@ -405,6 +405,9 @@ def default_state(pimp_name="Big Boss"):
         # send_crew_chat_message below.
         "crewChat": [],
         "pendingCrewInvites": [],
+        # theJob (The Job) is leader-authoritative too - see start_the_job.
+        "theJob": None,
+        "theJobCooldownUntil": 0,
         "thugsInHospital": 0,
         "thugsHospitalReadyAt": 0,
         "drugs": {d["id"]: 0 for d in DOPE_DEALER_DRUGS},
@@ -2962,6 +2965,149 @@ def accept_crew_invite(state, my_user_id, inviter_state, from_user_id):
     return {"gang": invite["fromGang"]}
 
 
+THE_JOB_ROLES = ["don", "gunman", "driver", "bomber"]
+THE_JOB_ROLE_LABELS = {"don": "The Don", "gunman": "Gunman", "driver": "Driver", "bomber": "Bomber"}
+# Buy-in per role - deliberately steep relative to everything else in the
+# game (a top-tier factory runs £10-30M), since this is a once-a-day,
+# crew-wide, billion-pound swing with a real chance of losing it all.
+THE_JOB_ROLE_COSTS = {"don": 50_000_000, "gunman": 15_000_000, "driver": 10_000_000, "bomber": 20_000_000}
+THE_JOB_PRIZE_MIN_M = 1_000  # whole millions, so the rolled prize is a clean number
+THE_JOB_PRIZE_MAX_M = 10_000
+THE_JOB_SUCCESS_CHANCE = 0.70
+THE_JOB_COOLDOWN_MS = 24 * 60 * 60 * 1000
+# "The Don" is both the role name and the top rank's name on purpose - only
+# a player who's actually reached rank 13 can plan the job, which is what
+# stops this from being doable "at the start of the game."
+THE_JOB_DON_RANK_REQUIRED = 13
+
+
+def start_the_job(leader_state, starter_user_id, starter_name):
+    """Any crew member can post The Job - it doesn't have to be the crew
+    leader. Rolls a random £1bn-£10bn prize up front (so everyone can see
+    the stakes before buying into a role) and opens all 4 roles for anyone
+    in the crew to claim. See claim_job_role for how roles fill and
+    resolve_the_job for how it pays out."""
+    if leader_state.get("theJob"):
+        raise GameError("The Job is already in motion for your crew")
+    now = now_ms()
+    cooldown = leader_state.get("theJobCooldownUntil", 0)
+    if now < cooldown:
+        wait_hours = math.ceil((cooldown - now) / (60 * 60 * 1000))
+        raise GameError(f"Your crew just pulled a job - try again in {wait_hours}h")
+    prize = random.randint(THE_JOB_PRIZE_MIN_M, THE_JOB_PRIZE_MAX_M) * 1_000_000
+    job = {
+        "startedByUserId": starter_user_id,
+        "startedByName": starter_name,
+        "prize": prize,
+        "createdAt": now,
+        "splits": {role: 25 for role in THE_JOB_ROLES},
+        "roles": {role: {"userId": None, "name": None, "npc": False} for role in THE_JOB_ROLES},
+    }
+    leader_state["theJob"] = job
+    add_log(leader_state, f"{starter_name} is planning a £{prize:,} job. The crew needs a Don, Gunman, Driver, and Bomber.", "good")
+    return job
+
+
+def set_job_split(leader_state, requester_user_id, splits):
+    """Only whoever currently holds the Don role can set the payout split -
+    matches "the Don is the planner" from how this was designed. Can be
+    changed any time before the job resolves."""
+    job = leader_state.get("theJob")
+    if not job:
+        raise GameError("No job in progress")
+    if job["roles"]["don"].get("userId") != requester_user_id:
+        raise GameError("Only the Don can set the split")
+    if set(splits.keys()) != set(THE_JOB_ROLES):
+        raise GameError("Split must cover all 4 roles")
+    try:
+        clean = {role: int(splits[role]) for role in THE_JOB_ROLES}
+    except (TypeError, ValueError):
+        raise GameError("Split percentages must be whole numbers")
+    if any(v < 0 for v in clean.values()) or sum(clean.values()) != 100:
+        raise GameError("Split percentages must be 0 or more and add up to 100")
+    job["splits"] = clean
+    return job
+
+
+def claim_job_role(leader_state, role, claimant_state, claimant_user_id, claimant_name, hire_npc=False):
+    """Fills one of the 4 open roles, either personally (claimant pays the
+    buy-in and collects that role's cut on success) or by hiring outside
+    help (same buy-in, but the role's cut just isn't paid to anyone - the
+    escape hatch for a crew too small to field 4 real players, without
+    letting one player quietly claim every role and cut themselves in
+    everywhere). Automatically resolves the job the moment the last role
+    fills - see resolve_the_job."""
+    job = leader_state.get("theJob")
+    if not job:
+        raise GameError("No job in progress")
+    if role not in THE_JOB_ROLES:
+        raise GameError("Invalid role")
+    role_data = job["roles"][role]
+    if role_data.get("userId") is not None or role_data.get("npc"):
+        raise GameError(f"{THE_JOB_ROLE_LABELS[role]} is already filled")
+    label = THE_JOB_ROLE_LABELS[role]
+    cost = THE_JOB_ROLE_COSTS[role]
+
+    if hire_npc:
+        if role == "don":
+            raise GameError("You can't hire outside help to plan the job - it needs a real Don")
+        if claimant_state["cash"] < cost:
+            raise GameError(f"Need £{cost:,} to hire outside help as {label}")
+        claimant_state["cash"] -= cost
+        role_data["userId"] = None
+        role_data["name"] = "Hired Help"
+        role_data["npc"] = True
+        add_log(claimant_state, f"Paid £{cost:,} to hire outside help as {label} for The Job.", "info")
+    else:
+        if role == "don" and rank_info(claimant_state.get("xp", 0))["level"] < THE_JOB_DON_RANK_REQUIRED:
+            raise GameError("Only a player ranked THE DON can plan the job")
+        if any(r.get("userId") == claimant_user_id for r in job["roles"].values()):
+            raise GameError("You already have a role in this job")
+        if claimant_state["cash"] < cost:
+            raise GameError(f"Need £{cost:,} to take the {label} role")
+        claimant_state["cash"] -= cost
+        role_data["userId"] = claimant_user_id
+        role_data["name"] = claimant_name
+        role_data["npc"] = False
+        add_log(claimant_state, f"Paid £{cost:,} to take the {label} role in The Job.", "good")
+
+    if all(r.get("userId") is not None or r.get("npc") for r in job["roles"].values()):
+        return resolve_the_job(leader_state)
+    return {"complete": False, "job": job}
+
+
+def resolve_the_job(leader_state):
+    """Called the instant all 4 roles are filled. Rolls success once, then
+    computes (but does not itself apply) a payout per human-held role - the
+    caller (app.py) is responsible for crediting each recipient's own saved
+    state, since a job's participants are rarely all the same account."""
+    job = leader_state["theJob"]
+    success = random.random() < THE_JOB_SUCCESS_CHANCE
+    payouts = {}
+    if success:
+        for role, data in job["roles"].items():
+            user_id = data.get("userId")
+            if user_id is None:
+                continue
+            amount = jround(job["prize"] * job["splits"].get(role, 0) / 100)
+            if amount > 0:
+                payouts[user_id] = payouts.get(user_id, 0) + amount
+
+    leader_state["theJob"] = None
+    leader_state["theJobCooldownUntil"] = now_ms() + THE_JOB_COOLDOWN_MS
+    if success:
+        add_log(leader_state, f"The Job came off clean - £{job['prize']:,} split between the crew.", "good")
+    else:
+        add_log(leader_state, "The Job went sideways. Everyone's buy-in is gone.", "bad")
+
+    return {"complete": True, "success": success, "prize": job["prize"], "payouts": payouts, "roles": job["roles"]}
+
+
+def credit_the_job_payout(state, amount):
+    state["cash"] = state.get("cash", 0) + amount
+    add_log(state, f"Your cut of The Job: £{amount:,}.", "good")
+
+
 def remove_from_crew(state, bot_id, member_state=None):
     member = next((m for m in state["crewMembers"] if m["botId"] == bot_id), None)
     state["crewMembers"] = [m for m in state["crewMembers"] if m["botId"] != bot_id]
@@ -3206,6 +3352,10 @@ def apply_catchup(state):
         state["statsTurnsWorked"] = 0
     if "lastJobHeist" not in state:
         state["lastJobHeist"] = 0
+    if "theJob" not in state:
+        state["theJob"] = None
+    if "theJobCooldownUntil" not in state:
+        state["theJobCooldownUntil"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     # Bank feature removed - fold any balance still sitting in it back into

@@ -2472,6 +2472,14 @@
     <div id="crewEmblemPicker" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
   </div>
   <button class="cta gold" id="crewPowerBtn" style="width:100%; margin-bottom:20px;">📊 View Crew Power</button>
+  <div class="panel" id="theMintPanel" style="display:none; margin-bottom:16px; border-color:var(--gold);">
+    <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
+      <img src="./THE%20MINT.jpg" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px;">
+      The Mint
+    </h3>
+    <div class="hint" id="theMintHint" style="margin-bottom:10px;"></div>
+    <div id="theMintBody"></div>
+  </div>
   <div class="panel" id="pendingInvitesPanel" style="display:none; margin-bottom:16px;">
     <h3 style="margin-top:0;">✉️ Crew Invites For You</h3>
     <div id="pendingInvitesList" style="display:flex; flex-direction:column; gap:10px;"></div>
@@ -6260,8 +6268,11 @@
       members.innerHTML = '<div class="hint">🚨 You haven\'t created a crew name yet! Set one above to start recruiting.</div>';
       available.innerHTML = '<div class="hint">Create a crew name above to invite members.</div>';
       subtitle.textContent = '0 / 5 members';
+      renderTheMint();
       return;
     }
+
+    renderTheMint();
 
     if(isMember){
       subtitle.textContent = `Member of "${state.gang}"`;
@@ -6352,6 +6363,138 @@
         el.addEventListener('click', () => openProfile(parseInt(el.dataset.profileId)));
       });
     }
+  }
+
+  const THE_MINT_ROLE_ORDER = ['don', 'gunman', 'driver', 'bomber'];
+  const THE_MINT_ROLE_LABELS = {don: 'The Don', gunman: 'Gunman', driver: 'Driver', bomber: 'Bomber'};
+  const THE_MINT_ROLE_COSTS = {don: 50000000, gunman: 15000000, driver: 10000000, bomber: 20000000};
+
+  function renderTheMint(){
+    const panel = document.getElementById('theMintPanel');
+    const body = document.getElementById('theMintBody');
+    const hint = document.getElementById('theMintHint');
+    if(!panel || !body || !hint) return;
+    if(!state.gang){ panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+
+    const roster = state.crewRoster || {};
+    const job = roster.theJob;
+    const cooldownUntil = roster.theJobCooldownUntil || 0;
+    const now = Date.now();
+    const myId = myUserId();
+    const myRank = (state.rankInfo && state.rankInfo.level) || 1;
+
+    if(!job){
+      hint.textContent = 'One massive, once-a-day crew job: rob the Royal Mint gold vault for £1bn-£10bn. Needs a Don (rank 13, THE DON), a Gunman, a Driver, and a Bomber.';
+      if(now < cooldownUntil){
+        const hrs = Math.ceil((cooldownUntil - now) / (60 * 60 * 1000));
+        body.innerHTML = `<div class="hint">Your crew just pulled a job — try again in ${hrs}h.</div>`;
+      } else {
+        body.innerHTML = `<button class="cta gold" id="startTheMintBtn" style="width:100%;">🏆 Plan The Mint</button>`;
+        document.getElementById('startTheMintBtn').addEventListener('click', startTheMint);
+      }
+      return;
+    }
+
+    hint.innerHTML = `<b style="color:var(--gold);">£${job.prize.toLocaleString()}</b> up for grabs — started by ${escapeHtml(job.startedByName)}. The moment all 4 roles are filled and paid, the job fires (70% success chance — fail and every buy-in is lost).`;
+
+    const isDon = job.roles.don.userId === myId;
+    const rows = THE_MINT_ROLE_ORDER.map(role => {
+      const r = job.roles[role];
+      const label = THE_MINT_ROLE_LABELS[role];
+      const cost = THE_MINT_ROLE_COSTS[role];
+      const pct = job.splits[role];
+      let statusHtml;
+      if(r.userId != null){
+        statusHtml = `<b style="color:var(--teal);">${escapeHtml(r.name)}</b>${r.userId === myId ? ' (you)' : ''}`;
+      } else if(r.npc){
+        statusHtml = `<span style="color:var(--text-dim);">Hired Help — no cut</span>`;
+      } else {
+        const canClaimDon = role !== 'don' || myRank >= 13;
+        statusHtml = `<span style="color:var(--text-dim);">Open</span>
+          <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+            ${canClaimDon
+              ? `<button class="cta gold" data-claim-role="${role}" style="flex:1; font-size:0.72rem; padding:6px;">Take role — £${cost.toLocaleString()}</button>`
+              : `<span class="hint" style="font-size:0.7rem;">Needs rank 13 (THE DON)</span>`}
+            ${role !== 'don' ? `<button class="cta secondary" data-hire-role="${role}" style="flex:1; font-size:0.72rem; padding:6px;">Hire help — £${cost.toLocaleString()}</button>` : ''}
+          </div>`;
+      }
+      return `
+        <div class="panel" style="margin-bottom:8px; padding:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>${label}</b>
+            <span style="color:var(--gold);">${pct}%</span>
+          </div>
+          <div style="margin-top:6px; font-size:0.85rem;">${statusHtml}</div>
+        </div>
+      `;
+    }).join('');
+
+    let splitEditor = '';
+    if(isDon){
+      splitEditor = `
+        <div class="panel" style="margin-top:10px; padding:10px;">
+          <div style="font-size:0.85rem; margin-bottom:8px;">You're the Don — set the split (must add up to 100):</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${THE_MINT_ROLE_ORDER.map(role => `
+              <label style="display:flex; flex-direction:column; font-size:0.7rem; color:var(--text-dim); gap:2px;">
+                ${THE_MINT_ROLE_LABELS[role]}
+                <input type="number" min="0" max="100" id="mintSplit_${role}" value="${job.splits[role]}" style="width:60px; padding:4px; background:var(--bg-2); border:1px solid var(--panel-line); color:var(--text); border-radius:4px;">
+              </label>
+            `).join('')}
+          </div>
+          <button class="cta gold" id="saveMintSplitBtn" style="width:100%; margin-top:8px;">Save Split</button>
+        </div>
+      `;
+    }
+
+    body.innerHTML = rows + splitEditor;
+
+    body.querySelectorAll('[data-claim-role]').forEach(btn => {
+      btn.addEventListener('click', () => claimMintRole(btn.dataset.claimRole, false));
+    });
+    body.querySelectorAll('[data-hire-role]').forEach(btn => {
+      btn.addEventListener('click', () => claimMintRole(btn.dataset.hireRole, true));
+    });
+    if(isDon){
+      document.getElementById('saveMintSplitBtn').addEventListener('click', saveMintSplit);
+    }
+  }
+
+  async function startTheMint(){
+    try{
+      await apiCall('/api/thejob/start', {});
+      showToast('🏆 The Mint job is on! Fill all 4 roles to pull it off.');
+      render();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  async function claimMintRole(role, hireNpc){
+    try{
+      const r = await apiCall('/api/thejob/claim', {role, hireNpc});
+      if(r && r.result && r.result.complete){
+        if(r.result.success){
+          showToast(`🎉 The Mint came off clean! £${r.result.prize.toLocaleString()} split between the crew.`);
+        } else {
+          showToast("💥 The Mint went sideways. Everyone's buy-in is gone.");
+        }
+      } else {
+        showToast(hireNpc ? 'Hired outside help for that role.' : 'Role taken!');
+      }
+      render();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  async function saveMintSplit(){
+    const splits = {};
+    THE_MINT_ROLE_ORDER.forEach(role => {
+      splits[role] = parseInt(document.getElementById(`mintSplit_${role}`).value) || 0;
+    });
+    try{
+      await apiCall('/api/thejob/split', {splits});
+      showToast('Split updated.');
+      render();
+    } catch(e){ /* toast already shown */ }
   }
 
   async function resetGame(){
