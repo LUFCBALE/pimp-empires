@@ -1959,12 +1959,9 @@
       <button class="cta extreme" id="doCasinoBtn">Execute Casino Heist</button>
     </div>
 
-    <div class="panel" id="theMintPanel" style="grid-column:1/-1; border-color:var(--gold);">
-      <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
-        <img src="./THE%20MINT.jpg" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px;">
-        The Mint
-      </h3>
-      <div class="hint" id="theMintHint" style="margin-bottom:10px;"></div>
+    <div class="panel" id="theMintPanel" style="grid-column:1/-1; border-color:var(--gold); position:relative; overflow:hidden; background-image:linear-gradient(180deg, rgba(8,7,11,0.35) 0%, rgba(8,7,11,0.75) 55%, var(--bg-2) 100%), url('./THE%20MINT.jpg'); background-size:cover; background-position:center 30%; min-height:220px;">
+      <h3 style="margin-top:0; text-shadow:0 1px 4px rgba(0,0,0,0.95), 0 1px 10px rgba(0,0,0,0.9); font-size:1.3rem;">The Mint</h3>
+      <div class="hint" id="theMintHint" style="margin-bottom:10px; text-shadow:0 1px 6px rgba(0,0,0,0.9);"></div>
       <div id="theMintBody"></div>
     </div>
 
@@ -2983,6 +2980,7 @@
     liveSocket.on('attacked', (data) => { if(data.text) showToast(`💥 ${data.text}`); playAttackAlert(); syncState(); });
     liveSocket.on('crewChat', () => { syncState(); });
     liveSocket.on('globalChat', () => { syncState(); });
+    liveSocket.on('theJobUpdate', () => { syncState(); });
   }
   function disconnectLiveSocket(){
     if(liveSocket){ liveSocket.disconnect(); liveSocket = null; }
@@ -6365,7 +6363,17 @@
 
   const THE_MINT_ROLE_ORDER = ['don', 'gunman', 'driver', 'bomber'];
   const THE_MINT_ROLE_LABELS = {don: 'The Don', gunman: 'Gunman', driver: 'Driver', bomber: 'Bomber'};
-  const THE_MINT_ROLE_COSTS = {don: 50000000, gunman: 15000000, driver: 10000000, bomber: 20000000};
+
+  function theMintRequirement(role){
+    if(role === 'don') return {have: state.cash || 0, need: 50000000, unit: 'cash', text: n => `£${n.toLocaleString()}`};
+    if(role === 'gunman'){
+      const guns = state.guns || {};
+      const have = (guns.pistol9mm || 0) + (guns.shotgun12gauge || 0) + (guns.ak47 || 0) + (guns.m249 || 0);
+      return {have, need: 1000, unit: 'guns', text: n => `${n.toLocaleString()} guns`};
+    }
+    if(role === 'driver') return {have: state.cadillacs || 0, need: 50, unit: 'cars', text: n => `${n.toLocaleString()} cars`};
+    return {have: state.bombs || 0, need: 150, unit: 'bombs', text: n => `${n.toLocaleString()} bombs`};
+  }
 
   function renderTheMint(){
     const panel = document.getElementById('theMintPanel');
@@ -6380,18 +6388,19 @@
     const now = Date.now();
     const myId = myUserId();
     const myRank = (state.rankInfo && state.rankInfo.level) || 1;
+    const teaserText = 'One massive, once-a-day crew job: rob the Royal Mint gold vault for £1bn-£10bn. Needs a Don (rank 13, THE DON) who pays cash to plan it, plus a Gunman, Driver, and Bomber who each donate guns, cars, and bombs straight from their own stockpile. Once it fires, it takes a couple of minutes to actually go down.';
 
     // Always visible, even with no crew or too low a rank - it's meant to
     // be an aspirational "here's the endgame" teaser everyone can see, just
     // not everyone can act on yet.
     if(!state.gang){
-      hint.textContent = 'One massive, once-a-day crew job: rob the Royal Mint gold vault for £1bn-£10bn. Needs a Don (rank 13, THE DON), a Gunman, a Driver, and a Bomber.';
+      hint.textContent = teaserText;
       body.innerHTML = `<div class="hint">🔒 You need to be in a crew to attempt this. Form or join one from the Crew page first.</div>`;
       return;
     }
 
     if(!job){
-      hint.textContent = 'One massive, once-a-day crew job: rob the Royal Mint gold vault for £1bn-£10bn. Needs a Don (rank 13, THE DON), a Gunman, a Driver, and a Bomber.';
+      hint.textContent = teaserText;
       if(now < cooldownUntil){
         const hrs = Math.ceil((cooldownUntil - now) / (60 * 60 * 1000));
         body.innerHTML = `<div class="hint">Your crew just pulled a job — try again in ${hrs}h.</div>`;
@@ -6402,28 +6411,39 @@
       return;
     }
 
-    hint.innerHTML = `<b style="color:var(--gold);">£${job.prize.toLocaleString()}</b> up for grabs — started by ${escapeHtml(job.startedByName)}. The moment all 4 roles are filled and paid, the job fires (70% success chance — fail and every buy-in is lost).`;
+    if(job.executesAt){
+      const remaining = Math.max(0, job.executesAt - now);
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      hint.innerHTML = `<b style="color:var(--gold);">£${job.prize.toLocaleString()}</b> on the line. All 4 roles are in — The Job is underway.`;
+      body.innerHTML = `<div class="hint" style="font-size:1rem;">⏳ Results in ${mins}:${String(secs).padStart(2, '0')}...</div>`;
+      return;
+    }
+
+    hint.innerHTML = `<b style="color:var(--gold);">£${job.prize.toLocaleString()}</b> up for grabs — started by ${escapeHtml(job.startedByName)}. Once all 4 roles are filled, it takes a couple of minutes to go down (70% success chance — fail and every donation is lost).`;
 
     const isDon = job.roles.don.userId === myId;
     const rows = THE_MINT_ROLE_ORDER.map(role => {
       const r = job.roles[role];
       const label = THE_MINT_ROLE_LABELS[role];
-      const cost = THE_MINT_ROLE_COSTS[role];
       const pct = job.splits[role];
+      const req = theMintRequirement(role);
       let statusHtml;
       if(r.userId != null){
         statusHtml = `<b style="color:var(--teal);">${escapeHtml(r.name)}</b>${r.userId === myId ? ' (you)' : ''}`;
-      } else if(r.npc){
-        statusHtml = `<span style="color:var(--text-dim);">Hired Help — no cut</span>`;
       } else {
         const canClaimDon = role !== 'don' || myRank >= 13;
-        statusHtml = `<span style="color:var(--text-dim);">Open</span>
-          <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
-            ${canClaimDon
-              ? `<button class="cta gold" data-claim-role="${role}" style="flex:1; font-size:0.72rem; padding:6px;">Take role — £${cost.toLocaleString()}</button>`
-              : `<span class="hint" style="font-size:0.7rem;">Needs rank 13 (THE DON)</span>`}
-            ${role !== 'don' ? `<button class="cta secondary" data-hire-role="${role}" style="flex:1; font-size:0.72rem; padding:6px;">Hire help — £${cost.toLocaleString()}</button>` : ''}
-          </div>`;
+        const canAfford = req.have >= req.need;
+        let actionHtml;
+        if(!canClaimDon){
+          actionHtml = `<span class="hint" style="font-size:0.7rem;">Needs rank 13 (THE DON)</span>`;
+        } else if(!canAfford){
+          actionHtml = `<span class="hint" style="font-size:0.7rem;">Need ${req.text(req.need)} (you have ${req.text(req.have)})</span>`;
+        } else {
+          actionHtml = `<button class="cta gold" data-claim-role="${role}" style="width:100%; font-size:0.72rem; padding:6px;">Donate ${req.text(req.need)} — take role</button>`;
+        }
+        statusHtml = `<span style="color:var(--text-dim);">Open — needs ${req.text(req.need)}</span>
+          <div style="margin-top:6px;">${actionHtml}</div>`;
       }
       return `
         <div class="panel" style="margin-bottom:8px; padding:10px;">
@@ -6457,10 +6477,7 @@
     body.innerHTML = rows + splitEditor;
 
     body.querySelectorAll('[data-claim-role]').forEach(btn => {
-      btn.addEventListener('click', () => claimMintRole(btn.dataset.claimRole, false));
-    });
-    body.querySelectorAll('[data-hire-role]').forEach(btn => {
-      btn.addEventListener('click', () => claimMintRole(btn.dataset.hireRole, true));
+      btn.addEventListener('click', () => claimMintRole(btn.dataset.claimRole));
     });
     if(isDon){
       document.getElementById('saveMintSplitBtn').addEventListener('click', saveMintSplit);
@@ -6475,17 +6492,13 @@
     } catch(e){ /* toast already shown */ }
   }
 
-  async function claimMintRole(role, hireNpc){
+  async function claimMintRole(role){
     try{
-      const r = await apiCall('/api/thejob/claim', {role, hireNpc});
-      if(r && r.result && r.result.complete){
-        if(r.result.success){
-          showToast(`🎉 The Mint came off clean! £${r.result.prize.toLocaleString()} split between the crew.`);
-        } else {
-          showToast("💥 The Mint went sideways. Everyone's buy-in is gone.");
-        }
+      const r = await apiCall('/api/thejob/claim', {role});
+      if(r && r.result && r.result.executing){
+        showToast('🏆 All 4 roles are filled — The Job is underway!');
       } else {
-        showToast(hireNpc ? 'Hired outside help for that role.' : 'Role taken!');
+        showToast('Role taken!');
       }
       render();
     } catch(e){ /* toast already shown */ }
@@ -7348,6 +7361,10 @@
         const lbPage = document.getElementById('page-leaderboard');
         if(lbPage && lbPage.classList.contains('active')){
           renderLeaderboard();
+        }
+        const heistPage = document.getElementById('page-heist');
+        if(heistPage && heistPage.classList.contains('active')){
+          renderTheMint();
         }
       }
     } catch(e){ /* silent - next tick retries */ }

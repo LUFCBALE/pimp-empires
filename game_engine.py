@@ -2967,18 +2967,42 @@ def accept_crew_invite(state, my_user_id, inviter_state, from_user_id):
 
 THE_JOB_ROLES = ["don", "gunman", "driver", "bomber"]
 THE_JOB_ROLE_LABELS = {"don": "The Don", "gunman": "Gunman", "driver": "Driver", "bomber": "Bomber"}
-# Buy-in per role - deliberately steep relative to everything else in the
-# game (a top-tier factory runs £10-30M), since this is a once-a-day,
-# crew-wide, billion-pound swing with a real chance of losing it all.
-THE_JOB_ROLE_COSTS = {"don": 50_000_000, "gunman": 15_000_000, "driver": 10_000_000, "bomber": 20_000_000}
+# The Don pays cash to plan it; the other three donate straight out of their
+# own stockpile instead of paying cash - guns/cars/bombs are all slow to
+# accumulate, so this is a real contribution, not just a shopping trip.
+THE_JOB_DON_COST = 50_000_000
+THE_JOB_GUN_DONATION = 1_000
+THE_JOB_CAR_DONATION = 50
+THE_JOB_BOMB_DONATION = 150
 THE_JOB_PRIZE_MIN_M = 1_000  # whole millions, so the rolled prize is a clean number
 THE_JOB_PRIZE_MAX_M = 10_000
 THE_JOB_SUCCESS_CHANCE = 0.70
 THE_JOB_COOLDOWN_MS = 24 * 60 * 60 * 1000
+# Once the last role fills, the job isn't instant - it takes this long to
+# actually go down, same wait for everyone regardless of who triggers the
+# check (see maybe_resolve_the_job).
+THE_JOB_EXECUTION_DELAY_MS = 2 * 60 * 1000
 # "The Don" is both the role name and the top rank's name on purpose - only
 # a player who's actually reached rank 13 can plan the job, which is what
 # stops this from being doable "at the start of the game."
 THE_JOB_DON_RANK_REQUIRED = 13
+
+GUN_TYPES = ("pistol9mm", "shotgun12gauge", "ak47", "m249")
+
+
+def _total_guns(state):
+    return sum(state.get("guns", {}).values())
+
+
+def _take_guns(state, amount):
+    remaining = amount
+    for gun_type in GUN_TYPES:
+        have = state["guns"].get(gun_type, 0)
+        take = min(have, remaining)
+        state["guns"][gun_type] -= take
+        remaining -= take
+        if remaining <= 0:
+            break
 
 
 def start_the_job(leader_state, starter_user_id, starter_name):
@@ -2986,7 +3010,7 @@ def start_the_job(leader_state, starter_user_id, starter_name):
     leader. Rolls a random £1bn-£10bn prize up front (so everyone can see
     the stakes before buying into a role) and opens all 4 roles for anyone
     in the crew to claim. See claim_job_role for how roles fill and
-    resolve_the_job for how it pays out."""
+    maybe_resolve_the_job for how it eventually pays out."""
     if leader_state.get("theJob"):
         raise GameError("The Job is already in motion for your crew")
     now = now_ms()
@@ -3000,8 +3024,9 @@ def start_the_job(leader_state, starter_user_id, starter_name):
         "startedByName": starter_name,
         "prize": prize,
         "createdAt": now,
+        "executesAt": None,
         "splits": {role: 25 for role in THE_JOB_ROLES},
-        "roles": {role: {"userId": None, "name": None, "npc": False} for role in THE_JOB_ROLES},
+        "roles": {role: {"userId": None, "name": None} for role in THE_JOB_ROLES},
     }
     leader_state["theJob"] = job
     add_log(leader_state, f"{starter_name} is planning a £{prize:,} job. The crew needs a Don, Gunman, Driver, and Bomber.", "good")
@@ -3029,59 +3054,71 @@ def set_job_split(leader_state, requester_user_id, splits):
     return job
 
 
-def claim_job_role(leader_state, role, claimant_state, claimant_user_id, claimant_name, hire_npc=False):
-    """Fills one of the 4 open roles, either personally (claimant pays the
-    buy-in and collects that role's cut on success) or by hiring outside
-    help (same buy-in, but the role's cut just isn't paid to anyone - the
-    escape hatch for a crew too small to field 4 real players, without
-    letting one player quietly claim every role and cut themselves in
-    everywhere). Automatically resolves the job the moment the last role
-    fills - see resolve_the_job."""
+def claim_job_role(leader_state, role, claimant_state, claimant_user_id, claimant_name):
+    """Fills one of the 4 open roles - always personally, no hiring outside
+    help. The Don pays cash to plan it; Gunman/Driver/Bomber each donate a
+    stockpile of guns/cars/bombs straight out of their own supply. Once the
+    last role fills, the job doesn't fire immediately - it goes into motion
+    and resolves itself after THE_JOB_EXECUTION_DELAY_MS (see
+    maybe_resolve_the_job)."""
     job = leader_state.get("theJob")
     if not job:
         raise GameError("No job in progress")
+    if job.get("executesAt"):
+        raise GameError("The Job is already underway")
     if role not in THE_JOB_ROLES:
         raise GameError("Invalid role")
     role_data = job["roles"][role]
-    if role_data.get("userId") is not None or role_data.get("npc"):
+    if role_data.get("userId") is not None:
         raise GameError(f"{THE_JOB_ROLE_LABELS[role]} is already filled")
-    label = THE_JOB_ROLE_LABELS[role]
-    cost = THE_JOB_ROLE_COSTS[role]
+    if any(r.get("userId") == claimant_user_id for r in job["roles"].values()):
+        raise GameError("You already have a role in this job")
 
-    if hire_npc:
-        if role == "don":
-            raise GameError("You can't hire outside help to plan the job - it needs a real Don")
-        if claimant_state["cash"] < cost:
-            raise GameError(f"Need £{cost:,} to hire outside help as {label}")
-        claimant_state["cash"] -= cost
-        role_data["userId"] = None
-        role_data["name"] = "Hired Help"
-        role_data["npc"] = True
-        add_log(claimant_state, f"Paid £{cost:,} to hire outside help as {label} for The Job.", "info")
-    else:
-        if role == "don" and rank_info(claimant_state.get("xp", 0))["level"] < THE_JOB_DON_RANK_REQUIRED:
+    if role == "don":
+        if rank_info(claimant_state.get("xp", 0))["level"] < THE_JOB_DON_RANK_REQUIRED:
             raise GameError("Only a player ranked THE DON can plan the job")
-        if any(r.get("userId") == claimant_user_id for r in job["roles"].values()):
-            raise GameError("You already have a role in this job")
-        if claimant_state["cash"] < cost:
-            raise GameError(f"Need £{cost:,} to take the {label} role")
-        claimant_state["cash"] -= cost
-        role_data["userId"] = claimant_user_id
-        role_data["name"] = claimant_name
-        role_data["npc"] = False
-        add_log(claimant_state, f"Paid £{cost:,} to take the {label} role in The Job.", "good")
+        if claimant_state["cash"] < THE_JOB_DON_COST:
+            raise GameError(f"Need £{THE_JOB_DON_COST:,} to plan the job")
+        claimant_state["cash"] -= THE_JOB_DON_COST
+        add_log(claimant_state, f"Paid £{THE_JOB_DON_COST:,} to plan The Job as the Don.", "good")
+    elif role == "gunman":
+        if _total_guns(claimant_state) < THE_JOB_GUN_DONATION:
+            raise GameError(f"Need {THE_JOB_GUN_DONATION:,} guns (any type) to arm the crew")
+        _take_guns(claimant_state, THE_JOB_GUN_DONATION)
+        add_log(claimant_state, f"Donated {THE_JOB_GUN_DONATION:,} guns to The Job.", "good")
+    elif role == "driver":
+        if claimant_state.get("cadillacs", 0) < THE_JOB_CAR_DONATION:
+            raise GameError(f"Need {THE_JOB_CAR_DONATION:,} cars to be the getaway driver")
+        claimant_state["cadillacs"] -= THE_JOB_CAR_DONATION
+        add_log(claimant_state, f"Donated {THE_JOB_CAR_DONATION:,} cars to The Job.", "good")
+    else:  # bomber
+        if claimant_state.get("bombs", 0) < THE_JOB_BOMB_DONATION:
+            raise GameError(f"Need {THE_JOB_BOMB_DONATION:,} bombs to breach the vault")
+        claimant_state["bombs"] -= THE_JOB_BOMB_DONATION
+        add_log(claimant_state, f"Donated {THE_JOB_BOMB_DONATION:,} bombs to The Job.", "good")
 
-    if all(r.get("userId") is not None or r.get("npc") for r in job["roles"].values()):
-        return resolve_the_job(leader_state)
-    return {"complete": False, "job": job}
+    role_data["userId"] = claimant_user_id
+    role_data["name"] = claimant_name
+
+    if all(r.get("userId") is not None for r in job["roles"].values()):
+        job["executesAt"] = now_ms() + THE_JOB_EXECUTION_DELAY_MS
+        add_log(leader_state, "All 4 roles filled - The Job is underway. Results in a couple of minutes.", "good")
+        return {"complete": False, "job": job, "executing": True}
+    return {"complete": False, "job": job, "executing": False}
 
 
-def resolve_the_job(leader_state):
-    """Called the instant all 4 roles are filled. Rolls success once, then
-    computes (but does not itself apply) a payout per human-held role - the
-    caller (app.py) is responsible for crediting each recipient's own saved
-    state, since a job's participants are rarely all the same account."""
-    job = leader_state["theJob"]
+def maybe_resolve_the_job(leader_state):
+    """Checked opportunistically on every request (see attach_world_view in
+    app.py) rather than tied to any single action - the job resolves itself
+    once its execution delay has passed, whichever crew member happens to
+    trigger the check. Returns the resolution dict if it just resolved,
+    else None. Doesn't itself credit payouts - the caller is responsible
+    for crediting each recipient's own saved state, since a job's
+    participants are rarely all the same account."""
+    job = leader_state.get("theJob")
+    if not job or not job.get("executesAt") or now_ms() < job["executesAt"]:
+        return None
+
     success = random.random() < THE_JOB_SUCCESS_CHANCE
     payouts = {}
     if success:

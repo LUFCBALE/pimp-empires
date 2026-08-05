@@ -534,6 +534,38 @@ def attach_world_view(state, world, user_id):
     state['crewRoster'] = build_crew_roster(user_id, state, world)
     state['rankInfo'] = ge.rank_info(state.get('xp', 0))
 
+    # The Job resolves itself once its execution delay passes - checked
+    # opportunistically here (on every request, for every crew member) so it
+    # doesn't depend on the leader specifically being the one to trigger it.
+    job = state['crewRoster'].get('theJob')
+    if job and job.get('executesAt') and ge.now_ms() >= job['executesAt']:
+        leader_id = state.get('crewLeaderUserId')
+        if leader_id is None:
+            leader_state, leader_user_id = state, user_id
+        else:
+            leader_state, leader_user_id = load_state(leader_id), leader_id
+        result = ge.maybe_resolve_the_job(leader_state)
+        if result:
+            participant_ids = {r['userId'] for r in result['roles'].values() if r.get('userId') is not None}
+            for pid in participant_ids:
+                if pid == user_id:
+                    target_state = state
+                elif pid == leader_user_id:
+                    target_state = leader_state
+                else:
+                    target_state = load_state(pid)
+                amount = result['payouts'].get(pid, 0)
+                if amount:
+                    ge.credit_the_job_payout(target_state, amount)
+                if pid not in (user_id, leader_user_id):
+                    save_state(pid, target_state)
+                if pid != user_id:
+                    notify_user(pid, 'theJobUpdate', {'from': 'The Job'})
+            if leader_user_id != user_id:
+                save_state(leader_user_id, leader_state)
+            save_state(user_id, state)
+            state['crewRoster'] = build_crew_roster(user_id, state, world)
+
     # Leaderboard-position achievements need visibility into every other
     # player's net worth, which only exists once state['bots'] is built
     # above - can't be checked in apply_catchup like the other milestone
@@ -1331,7 +1363,6 @@ def api_thejob_split():
 def api_thejob_claim():
     data = request.get_json() or {}
     role = data.get('role', '')
-    hire_npc = bool(data.get('hireNpc'))
     user = get_current_user()
     state = load_state(user['id'], user['pimp_name'])
     world = load_world()
@@ -1345,19 +1376,7 @@ def api_thejob_claim():
         else:
             leader_state, leader_user_id = load_state(leader_id), leader_id
 
-        result = ge.claim_job_role(leader_state, role, state, user['id'], user['pimp_name'], hire_npc=hire_npc)
-
-        if result.get('complete') and result.get('payouts'):
-            for payout_user_id, amount in result['payouts'].items():
-                if payout_user_id == user['id']:
-                    ge.credit_the_job_payout(state, amount)
-                elif payout_user_id == leader_user_id:
-                    ge.credit_the_job_payout(leader_state, amount)
-                else:
-                    other_state = load_state(payout_user_id)
-                    ge.credit_the_job_payout(other_state, amount)
-                    save_state(payout_user_id, other_state)
-                    notify_user(payout_user_id, 'theJobUpdate', {'from': 'The Job'})
+        result = ge.claim_job_role(leader_state, role, state, user['id'], user['pimp_name'])
 
         if leader_user_id != user['id']:
             save_state(leader_user_id, leader_state)
