@@ -7314,7 +7314,10 @@
       });
     });
     document.querySelectorAll('.drawer-link').forEach(btn => {
-      btn.addEventListener('click', closeMoreDrawer);
+      btn.addEventListener('click', () => {
+        navigateTo(btn.dataset.page);
+        closeMoreDrawer();
+      });
     });
 
     const moreDrawer = document.getElementById('moreDrawer');
