@@ -31,8 +31,8 @@ import time
 # Constants
 # ---------------------------------------------------------------------------
 
-REGEN_AMOUNT = 80
-REGEN_MS = 10 * 60 * 1000
+REGEN_AMOUNT = 40
+REGEN_MS = 20 * 60 * 1000
 
 FACTORY_MS = 30 * 60 * 1000
 
@@ -223,39 +223,39 @@ WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS = {
 HOE_WAGE_PCT = 0.10
 
 HEIST_JOBS = {
-    "shop": {"minThugs": 200, "turnCost": 10, "minCash": 1600, "maxCash": 8000,
+    "shop": {"minThugs": 200, "turnCost": 10, "minCash": 25000, "maxCash": 75000,
              "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35),
-             "netWorthPct": (0.005, 0.015)},
-    "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 16000, "maxCash": 70000,
+             "netWorthPct": (0.00005, 0.00015)},
+    "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 150000, "maxCash": 400000,
                   "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55),
-                  "netWorthPct": (0.02, 0.06)},
-    "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 120000, "maxCash": 500000,
+                  "netWorthPct": (0.0002, 0.0006)},
+    "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 750000, "maxCash": 2500000,
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
-             "netWorthPct": (0.08, 0.25)},
+             "netWorthPct": (0.0008, 0.0025)},
 }
 HEIST_JOB_COOLDOWN_MS = 6 * 3600 * 1000
 CASINO_JOB = {
-    "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 500000, "maxCash": 2000000,
+    "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 5000000, "maxCash": 15000000,
     "successChance": 0.35, "casualtyPct": (0.15, 0.30), "failCasualtyPct": (0.50, 0.90),
     "cooldownHours": 24,
     # Scales off the WHOLE crew's combined net worth (player + every crew
     # member), not just the player's own - the biggest heist in the game
     # should actually reflect how loaded the crew pulling it off is.
-    "netWorthPct": (0.05, 0.15),
+    "netWorthPct": (0.0005, 0.0015),
 }
 
 FACTORY_COSTS = {
-    "medical": 470000, "gun": 12500000, "car": 15000000, "drug": 7000000,
-    "explosive": 16000000, "counterfeit": 11500000, "gym": 5000000,
-    "warehouse": 10000000,
+    "medical": 500000, "gun": 10000000, "car": 25000000, "drug": 50000000,
+    "explosive": 75000000, "counterfeit": 100000000, "gym": 2000000,
+    "warehouse": 5000000,
 }
 
 # Explicit per-factory sell/refund price (not a flat % of cost - each type
 # has its own resale value now).
 FACTORY_SELL_PRICES = {
-    "medical": 170000, "gun": 14000000, "car": 13000000, "drug": 3000000,
-    "explosive": 9000000, "counterfeit": 6000000, "gym": 5000000,
-    "warehouse": 9000000,
+    "medical": 250000, "gun": 5000000, "car": 12500000, "drug": 25000000,
+    "explosive": 37500000, "counterfeit": 50000000, "gym": 1000000,
+    "warehouse": 2500000,
 }
 
 # Real Estate is a progression ladder, not a shopping list you can max out
@@ -271,11 +271,11 @@ FACTORY_UNLOCK_RANK = {
 # All factory output rates below are boosted 30% over their original values,
 # since a single factory's produce was worth very little next to what it
 # actually costs.
-DRUG_FACTORY_RATE = 2079  # cocaine produced per factory per tick
+DRUG_FACTORY_RATE = 2525  # cocaine produced per factory per tick
 
-MEDICAL_KIT_RATE = 130  # safety kits produced per factory per tick
+MEDICAL_KIT_RATE = 133  # safety kits produced per factory per tick
 EXPLOSIVE_BOMB_RATE = 65  # bombs produced per factory per tick
-COUNTERFEIT_CASH_RATE = 48750  # cash printed per factory per tick
+COUNTERFEIT_CASH_RATE = 1000000  # cash printed per factory per tick
 GYM_THUG_RATE = 10  # thugs recruited per factory per tick
 
 # Car factories split their output between cadillacs (high-volume, more
@@ -284,9 +284,9 @@ GYM_THUG_RATE = 10  # thugs recruited per factory per tick
 # all-in on cadillacs (46 cadillacs + 4 trucks per factory per tick), 0.0 is
 # all-in on trucks (3 cadillacs + 13 trucks per factory per tick), and
 # everything between is a straight linear blend.
-CAR_FACTORY_CADILLAC_AT_MAX = 46
+CAR_FACTORY_CADILLAC_AT_MAX = 16
 CAR_FACTORY_CADILLAC_AT_MIN = 3
-CAR_FACTORY_ARMORED_AT_MAX = 4
+CAR_FACTORY_ARMORED_AT_MAX = 0
 CAR_FACTORY_ARMORED_AT_MIN = 13
 
 
@@ -303,14 +303,14 @@ def car_factory_output_rates(ratio):
 # a 0.0-1.0 slider: 0.0 is "volume" (39 pistols, 26 shotguns, 13 AKs, 3
 # M249s per factory per tick), 1.0 is "elite" (3 pistols, 7 shotguns, 13
 # AKs, 4 M249s), everything between is a straight linear blend.
-GUN_FACTORY_PISTOL_AT_VOLUME = 39
+GUN_FACTORY_PISTOL_AT_VOLUME = 25
 GUN_FACTORY_PISTOL_AT_ELITE = 3
-GUN_FACTORY_SHOTGUN_AT_VOLUME = 26
-GUN_FACTORY_SHOTGUN_AT_ELITE = 7
-GUN_FACTORY_AK_AT_VOLUME = 13
-GUN_FACTORY_AK_AT_ELITE = 13
-GUN_FACTORY_M249_AT_VOLUME = 3
-GUN_FACTORY_M249_AT_ELITE = 4
+GUN_FACTORY_SHOTGUN_AT_VOLUME = 15
+GUN_FACTORY_SHOTGUN_AT_ELITE = 5
+GUN_FACTORY_AK_AT_VOLUME = 8
+GUN_FACTORY_AK_AT_ELITE = 10
+GUN_FACTORY_M249_AT_VOLUME = 1
+GUN_FACTORY_M249_AT_ELITE = 3
 
 
 def gun_factory_output_rates(ratio):
@@ -490,17 +490,17 @@ def check_hoe_attrition(state):
 RANKS = [
     (1, "Junkie", 0),
     (2, "Street Rat", 1000),
-    (3, "Foot Soldier", 4000),
-    (4, "Associate", 12000),
-    (5, "Gang Member", 30000),
-    (6, "Gang Leader", 70000),
-    (7, "Mob Boss", 150000),
-    (8, "Underboss", 300000),
-    (9, "Consigliere", 550000),
-    (10, "Capo", 950000),
-    (11, "Boss of Bosses", 1600000),
-    (12, "Kingpin", 2750000),
-    (13, "THE DON", 5000000),
+    (3, "Foot Soldier", 3000),
+    (4, "Associate", 10000),
+    (5, "Gang Member", 25000),
+    (6, "Gang Leader", 60000),
+    (7, "Mob Boss", 120000),
+    (8, "Underboss", 250000),
+    (9, "Consigliere", 450000),
+    (10, "Capo", 750000),
+    (11, "Boss of Bosses", 1150000),
+    (12, "Kingpin", 1750000),
+    (13, "THE DON", 2500000),
 ]
 
 XP_PER_TURN_SPENT = 1
@@ -1063,34 +1063,51 @@ def bot_attack_bot(attacker, defender, now):
 
     if defender_gun_score == 0 and attacker_gun_score > 0:
         won = True
+        attacker_base_power = max(1, attacker["thugs"])
+        defender_base_power = 0
     elif attacker_gun_score == 0 and defender_gun_score > 0:
         won = False
+        attacker_base_power = 0
+        defender_base_power = max(1, defender["thugs"])
     else:
         attacker_mult = 1 + attacker_gun_score / max(1, attacker["thugs"])
         defender_mult = 1 + defender_gun_score / max(1, defender["thugs"])
-        attacker_power = attacker["thugs"] * attacker_mult * (0.85 + random.random() * 0.3)
-        defender_power = defender["thugs"] * defender_mult * (0.85 + random.random() * 0.3)
+        attacker_base_power = attacker["thugs"] * attacker_mult
+        defender_base_power = defender["thugs"] * defender_mult
+        attacker_power = attacker_base_power * (0.85 + random.random() * 0.3)
+        defender_power = defender_base_power * (0.85 + random.random() * 0.3)
         won = attacker_power >= defender_power
 
+    power_ratio = defender_base_power / max(1, attacker_base_power)
+
     if won:
-        cash_cut = 0.15 + random.random() * 0.2
+        cash_cut = 0.05 + random.random() * 0.10
         cash_won = jround(defender["hoeCash"] * cash_cut)
         defender["hoeCash"] = max(0, defender["hoeCash"] - cash_won)
         attacker["hoeCash"] += cash_won
 
-        thugs_wiped = defender["thugs"]
+        inv_ratio = attacker_base_power / max(1, defender_base_power)
+        defender_loss_pct = 0.10 * min(2.5, inv_ratio)
+        thugs_wiped = jround(defender["thugs"] * defender_loss_pct)
+        
         hospital_pct = ATTACK_HOSPITAL_PCT_MIN + random.random() * (ATTACK_HOSPITAL_PCT_MAX - ATTACK_HOSPITAL_PCT_MIN)
         thugs_hospitalized = jround(thugs_wiped * hospital_pct)
-        defender["thugs"] = 0
+        defender["thugs"] = max(0, defender["thugs"] - thugs_wiped)
         defender["thugsInHospital"] = defender.get("thugsInHospital", 0) + thugs_hospitalized
         defender["thugsHospitalReadyAt"] = now + ATTACK_HOSPITAL_RECOVERY_MS
 
-        your_thugs_lost_pct = 0.85 + random.random() * 0.08
-        your_thugs_lost = min(attacker["thugs"], jround(thugs_wiped * your_thugs_lost_pct))
+        attacker_loss_pct = 0.05 * min(1.0, power_ratio)
+        your_thugs_lost = jround(attacker["thugs"] * attacker_loss_pct)
         attacker["thugs"] = max(0, attacker["thugs"] - your_thugs_lost)
     else:
-        thugs_lost_pct = 0.1 + random.random() * 0.15
-        thugs_lost = jround(attacker["thugs"] * thugs_lost_pct)
+        cash_cut = 0.05 + random.random() * 0.10
+        cash_lost_amt = jround(attacker["hoeCash"] * cash_cut)
+        attacker["hoeCash"] = max(0, attacker["hoeCash"] - cash_lost_amt)
+        defender["hoeCash"] += cash_lost_amt
+
+        inv_ratio = defender_base_power / max(1, attacker_base_power)
+        attacker_loss_pct = 0.10 * min(2.5, inv_ratio)
+        thugs_lost = jround(attacker["thugs"] * attacker_loss_pct)
         attacker["thugs"] = max(0, attacker["thugs"] - thugs_lost)
 
 
@@ -1443,42 +1460,45 @@ def fight_bot(state, bot_id, world):
     their_gun_score = gun_score(bot.get("guns", {}), bot["thugs"])
 
     if their_gun_score == 0 and your_gun_score > 0:
-        # An unarmed crew loses outright, no matter how many thugs they field
         won = True
+        your_base_power = max(1, state["thugs"])
+        their_base_power = 0
     elif your_gun_score == 0 and their_gun_score > 0:
         won = False
+        your_base_power = 0
+        their_base_power = max(1, bot["thugs"])
     else:
-        # Both armed (or both unarmed) - guns still add to your effective
-        # power per thug, on top of the usual thug-count/morale comparison
         your_gun_mult = 1 + your_gun_score / max(1, state["thugs"])
         their_gun_mult = 1 + their_gun_score / max(1, bot["thugs"])
-        your_power = state["thugs"] * your_gun_mult * thug_morale_mult(state) * (0.85 + random.random() * 0.3)
-        their_power = bot["thugs"] * their_gun_mult * (0.85 + random.random() * 0.3)
+        your_base_power = state["thugs"] * your_gun_mult * thug_morale_mult(state)
+        their_base_power = bot["thugs"] * their_gun_mult
+        your_power = your_base_power * (0.85 + random.random() * 0.3)
+        their_power = their_base_power * (0.85 + random.random() * 0.3)
         won = your_power >= their_power
 
+    power_ratio = their_base_power / max(1, your_base_power)
+
     if won:
-        hoe_cash_cut = 0.2 + random.random() * 0.25
-        cash_won = jround(bot["hoeCash"] * hoe_cash_cut)
+        cash_cut = 0.05 + random.random() * 0.10
+        cash_won = jround(bot["hoeCash"] * cash_cut)
         bot["hoeCash"] = max(0, bot["hoeCash"] - cash_won)
         state["cash"] += cash_won
         state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + cash_won
 
-        # A win wipes the defender's whole crew - most are dead/scattered
-        # for good, but a chunk just got hospitalized and walks back in
-        # after ATTACK_HOSPITAL_RECOVERY_MS.
-        thugs_wiped = bot["thugs"]
+        inv_ratio = your_base_power / max(1, their_base_power)
+        defender_loss_pct = 0.10 * min(2.5, inv_ratio)
+        thugs_wiped = jround(bot["thugs"] * defender_loss_pct)
+        
         hospital_pct = ATTACK_HOSPITAL_PCT_MIN + random.random() * (ATTACK_HOSPITAL_PCT_MAX - ATTACK_HOSPITAL_PCT_MIN)
         thugs_hospitalized = jround(thugs_wiped * hospital_pct)
-        bot["thugs"] = 0
+        bot["thugs"] = max(0, bot["thugs"] - thugs_wiped)
         bot["thugsInHospital"] = bot.get("thugsInHospital", 0) + thugs_hospitalized
         bot["thugsHospitalReadyAt"] = now + ATTACK_HOSPITAL_RECOVERY_MS
 
-        # Winning isn't free - they get shots off before going down. Your
-        # losses scale off how big THEIR crew was (~89% of it), not yours -
-        # attacking a bigger crew costs you more, even in a win.
-        your_thugs_lost_pct = 0.85 + random.random() * 0.08
-        your_thugs_lost = min(state["thugs"], jround(thugs_wiped * your_thugs_lost_pct))
+        attacker_loss_pct = 0.05 * min(1.0, power_ratio)
+        your_thugs_lost = jround(state["thugs"] * attacker_loss_pct)
         state["thugs"] = max(0, state["thugs"] - your_thugs_lost)
+        
         state["statsThugsKilled"] = state.get("statsThugsKilled", 0) + thugs_wiped
         state["statsMoneyStolen"] = state.get("statsMoneyStolen", 0) + cash_won
 
@@ -1488,26 +1508,26 @@ def fight_bot(state, bot_id, world):
         award_achievement(state, "first_blood")
         return {"won": True, "cashWon": cash_won, "thugsWiped": thugs_wiped, "thugsHospitalized": thugs_hospitalized, "yourThugsLost": your_thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
     else:
-        thugs_lost_pct = 0.1 + random.random() * 0.15
-        cash_lost_amt = jround(state["cash"] * (0.05 + random.random() * 0.1))
-        thugs_lost = jround(state["thugs"] * thugs_lost_pct)
-        state["thugs"] = max(0, state["thugs"] - thugs_lost)
+        cash_cut = 0.05 + random.random() * 0.10
+        cash_lost_amt = jround(state["cash"] * cash_cut)
         state["cash"] = max(0, state["cash"] - cash_lost_amt)
+        
+        inv_ratio = their_base_power / max(1, your_base_power)
+        attacker_loss_pct = 0.10 * min(2.5, inv_ratio)
+        thugs_lost = jround(state["thugs"] * attacker_loss_pct)
+        state["thugs"] = max(0, state["thugs"] - thugs_lost)
+        
         add_log(state, f"Attacked by {bot['boss']} of \"{bot['gang']}\" — they took £{cash_lost_amt} and {thugs_lost} thugs.", "bad")
         recalc_morale(state)
         add_xp(state, 30 * XP_PER_TURN_SPENT + ATTACK_XP_LOSS)
         return {"won": False, "cashLost": cash_lost_amt, "thugsLost": thugs_lost, "boss": bot["boss"], "gang": bot["gang"]}
 
 
-# Deliberately steep - one explosive factory produces ~50 bombs per 30-min
-# tick, so these costs are meant to take multiple ticks of pure stockpiling
-# to afford even a single hit, not let one bombing run wipe out a bot's
-# whole factory portfolio in one sitting. "drug" only ever shows up on real
-# player targets - bots never build drug factories. Priced by factory tier
-# (see the Real Estate page's TIER labels), not individually per type:
-# Tier 1 (Medical) = 100, Tier 2 (Gym/Warehouse/Gun) = 250,
-# Tier 3 (Car/Drug) = 450, Tier 4 (Explosive) = 700, Tier 5 (Counterfeit) = 1000.
-BOMB_COST_BY_FACTORY = {"medical": 100, "gym": 250, "warehouse": 250, "gun": 250, "car": 450, "drug": 450, "explosive": 700, "counterfeit": 1000}
+# Bomb costs scale perfectly linearly with the factory's cash cost.
+# 1 bomb = $10,000 of damage. This means an Explosive factory (65 bombs/tick)
+# takes 115 ticks to destroy $75,000,000 of enemy net worth, perfectly matching
+# the cash ROI of the rest of the factory economy.
+BOMB_COST_BY_FACTORY = {"medical": 50, "gym": 200, "warehouse": 500, "gun": 1000, "car": 2500, "drug": 5000, "explosive": 7500, "counterfeit": 10000}
 BOMB_TURN_COST = 20
 
 # Stealing cars needs bodies on the ground to drive them out, not bombs -
@@ -2523,7 +2543,7 @@ def run_heist(state, job_id):
         state["thugs"] = max(0, state["thugs"] - thugs_lost)
         add_log(state, f"{job_id.title()} heist scored £{cash_won}! Lost {thugs_lost} thugs.", "good")
         recalc_morale(state)
-        add_xp(state, job["turnCost"] * XP_PER_TURN_SPENT)
+        add_xp(state, job["turnCost"] * XP_PER_TURN_SPENT + jround(cash_won * SELL_XP_PER_POUND))
         award_achievement(state, "pulled_a_job")
         return {"won": True, "cashWon": cash_won, "thugsLost": thugs_lost}
     else:
@@ -2581,7 +2601,7 @@ def run_casino_heist(state, world):
                 bot["cash"] += crew_share_per_member
         add_log(state, f"Casino heist scored £{player_share} for you!", "good")
         recalc_morale(state)
-        add_xp(state, turns_needed * XP_PER_TURN_SPENT)
+        add_xp(state, turns_needed * XP_PER_TURN_SPENT + jround(player_share * SELL_XP_PER_POUND))
         award_achievement(state, "high_roller")
         return {"won": True, "playerShare": player_share, "thugsLost": thugs_lost}
     else:
