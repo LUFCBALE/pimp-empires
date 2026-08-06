@@ -2285,15 +2285,11 @@
       <div style="color:var(--text-dim); font-size:0.85rem;">Cocaine — sell it at the Dope Dealer.</div>
     </div>
     <div style="margin:8px 0 12px 0; font-size:0.85rem;">Producing: <b id="prodDrugOutput" style="color:var(--text);">0 Cocaine / 30 mins</b> · Stashed: <b id="prodCokeStock">0</b></div>
-
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; margin-bottom:8px; border:1px solid var(--card-border); border-radius:6px;">
-      <div style="font-size:0.85rem;">Dealer pays <b id="prodCokeDealerPrice">£0</b> per unit. Safe, guaranteed.</div>
-      <button class="cta cta-sm cta-teal" id="sellAllCokeDealerBtn">Sell All (Dealer)</button>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="cta cta-sm secondary" id="sellAllCokeDealerBtn" style="flex:1;">Sell All (Dealer)</button>
+      <button class="cta cta-sm gold" id="sellOverseasCokeBtn" style="flex:1;">Sell Overseas</button>
     </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border:1px solid var(--danger); border-radius:6px;">
-      <div style="font-size:0.85rem;">Overseas pays <b id="prodCokeOverseasPrice">£0</b> per unit (+35%). 72% chance of a clean sale — 28% chance customs seizes everything and you get <b>£0</b>.</div>
-      <button class="cta cta-sm cta-red" id="sellOverseasCokeBtn">Sell Overseas</button>
-    </div>
+    <div class="hint" style="margin-top:6px; font-size:0.72rem;">Dealer pays <b id="prodCokeDealerPrice">£0</b>/unit, guaranteed. Overseas pays <b id="prodCokeOverseasPrice">£0</b>/unit (+35%) but only 72% chance of a clean sale — fail and customs seizes everything.</div>
   </div>
 
   <div class="panel" style="margin-bottom:16px;">
