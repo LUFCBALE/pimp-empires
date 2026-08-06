@@ -382,6 +382,7 @@ def default_state(pimp_name="Big Boss"):
         "statsTurnsWorked": 0,
         "lastAttackedBy": None,
         "counterfeitEarnings": 0,
+        "counterfeitStock": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0, "warehouse": 0},
         "carFactoryRatio": 1.0,
         "gunFactoryRatio": 0.0,
@@ -2483,11 +2484,46 @@ def run_factories(state, ticks):
     if bombs > 0:
         state["bombs"] += bombs
     if counterfeit_cash > 0:
-        state["cash"] += counterfeit_cash
-        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + counterfeit_cash
-        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + counterfeit_cash
+        state["counterfeitStock"] = state.get("counterfeitStock", 0) + counterfeit_cash
     if gym_thugs > 0:
         state["thugs"] = state.get("thugs", 0) + gym_thugs
+
+
+# Counterfeit factories no longer pay straight to cash - the printed money
+# piles up as a "dirty" stockpile (counterfeitStock) that has to be actively
+# collected or washed from the Production page. Collecting is a guaranteed
+# 1:1 conversion; washing risks the whole stash for a bigger payout.
+COUNTERFEIT_WASH_SUCCESS_CHANCE = 0.83
+COUNTERFEIT_WASH_MULTIPLIER = 1.5
+
+
+def collect_counterfeit_cash(state):
+    amount = state.get("counterfeitStock", 0)
+    if amount <= 0:
+        raise GameError("No counterfeit cash to collect")
+    state["counterfeitStock"] = 0
+    state["cash"] += amount
+    state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + amount
+    state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + amount
+    add_log(state, f"Collected £{amount:,} in counterfeit cash - still dirty, but it spends.", "good")
+    return {"collected": amount}
+
+
+def wash_counterfeit_cash(state):
+    amount = state.get("counterfeitStock", 0)
+    if amount <= 0:
+        raise GameError("No counterfeit cash to wash")
+    state["counterfeitStock"] = 0
+    success = random.random() < COUNTERFEIT_WASH_SUCCESS_CHANCE
+    if success:
+        payout = jround(amount * COUNTERFEIT_WASH_MULTIPLIER)
+        state["cash"] += payout
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + payout
+        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + payout
+        add_log(state, f"Washed £{amount:,} dirty into £{payout:,} clean.", "good")
+        return {"success": True, "washed": amount, "payout": payout}
+    add_log(state, f"The wash got busted - £{amount:,} in counterfeit cash seized.", "bad")
+    return {"success": False, "washed": amount, "payout": 0}
 
 
 # ---------------------------------------------------------------------------
@@ -3393,6 +3429,8 @@ def apply_catchup(state):
         state["theJob"] = None
     if "theJobCooldownUntil" not in state:
         state["theJobCooldownUntil"] = 0
+    if "counterfeitStock" not in state:
+        state["counterfeitStock"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     # Bank feature removed - fold any balance still sitting in it back into

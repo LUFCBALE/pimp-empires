@@ -854,6 +854,18 @@ def api_factory_gunratio():
     return handle_action(ge.set_gun_factory_ratio, data.get('ratio', 0))
 
 
+@app.route('/api/counterfeit/collect', methods=['POST'])
+@login_required
+def api_counterfeit_collect():
+    return handle_action(ge.collect_counterfeit_cash)
+
+
+@app.route('/api/counterfeit/wash', methods=['POST'])
+@login_required
+def api_counterfeit_wash():
+    return handle_action(ge.wash_counterfeit_cash)
+
+
 @app.route('/api/cadillacs/sellall', methods=['POST'])
 @login_required
 def api_cadillacs_sellall():

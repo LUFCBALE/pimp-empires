@@ -2311,9 +2311,14 @@
     <h3 style="margin-top:0;">Counterfeit Factories</h3>
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div>Owned: <b id="prodCounterfeitOwned">0</b></div>
-      <div style="color:var(--text-dim); font-size:0.85rem;">Cash, straight to your pocket.</div>
+      <div style="color:var(--text-dim); font-size:0.85rem;">Dirty cash — piles up until you collect or wash it.</div>
     </div>
-    <div style="margin-top:8px; font-size:0.85rem;">Producing: <b id="prodCounterfeitOutput" style="color:var(--text);">£0 / 30 mins</b> · Stashed: <b id="prodCashStock">£0</b></div>
+    <div style="margin-top:8px; font-size:0.85rem;">Producing: <b id="prodCounterfeitOutput" style="color:var(--text);">£0 / 30 mins</b> · Dirty stash: <b id="prodCounterfeitStock">£0</b></div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="cta cta-sm secondary" id="collectCounterfeitBtn" style="flex:1;">Collect (safe, £0)</button>
+      <button class="cta cta-sm gold" id="washCounterfeitBtn" style="flex:1;">Wash — 83% for 1.5x</button>
+    </div>
+    <div class="hint" style="margin-top:6px; font-size:0.72rem;">Washing risks the whole stash — fail the 83% roll and it's seized, no payout.</div>
   </div>
 
   <div class="panel">
@@ -2685,7 +2690,7 @@
     <h3>The Informer</h3>
     <p>The only way to see someone's actual numbers — cash, factories, guns, everything. Costs 12% of their known net worth, paid straight to the informer.</p>
     <h3>Real Estate / Factories</h3>
-    <p>Seven factory types, each producing something automatically every 30 minutes: Medical (safety kits for your hoes), Gun (weapons, mix tunable), Car (Cadillacs/Armored Trucks, mix tunable), Drug (cocaine to sell), Explosive (bombs), Counterfeit (straight cash — highest risk/reward tier), and Gym (recruits thugs straight into your crew). All factories can be sold back at 50% of build cost, except Explosive.</p>
+    <p>Seven factory types, each producing something automatically every 30 minutes: Medical (safety kits for your hoes), Gun (weapons, mix tunable), Car (Cadillacs/Armored Trucks, mix tunable), Drug (cocaine to sell), Explosive (bombs), Counterfeit (dirty cash that piles up until you collect or wash it), and Gym (recruits thugs straight into your crew). All factories can be sold back at 50% of build cost, except Explosive.</p>
     <h3>Crew</h3>
     <p>Recruit bots into your crew instantly. Recruiting a real player instead sends them a pending invite they have to accept — nobody gets pulled into a crew without agreeing to it. Drop someone from your crew and they're protected from you specifically for an hour before you can attack them again.</p>
     <h3>Leaderboard arrows</h3>
@@ -6704,6 +6709,26 @@
     } catch(e){ /* toast already shown */ }
   }
 
+  async function collectCounterfeit(){
+    try{
+      const data = await apiCall('/api/counterfeit/collect', {});
+      showToast(`Collected ${fmtMoney(data.result.collected)} in counterfeit cash.`);
+      render(); renderProduction();
+    } catch(e){ /* toast already shown */ }
+  }
+
+  async function washCounterfeit(){
+    try{
+      const data = await apiCall('/api/counterfeit/wash', {});
+      if(data.result.success){
+        showToast(`✅ Washed clean! ${fmtMoney(data.result.washed)} became ${fmtMoney(data.result.payout)}.`);
+      } else {
+        showToast(`🚨 The wash got busted! Lost ${fmtMoney(data.result.washed)} for nothing.`);
+      }
+      render(); renderProduction();
+    } catch(e){ /* toast already shown */ }
+  }
+
   async function sellAllArmoredTrucks(){
     try{
       const data = await apiCall('/api/trucks/sellall', {});
@@ -6768,7 +6793,14 @@
     document.getElementById('prodBombsStock').textContent = Math.floor(state.bombs || 0).toLocaleString('en-GB');
     document.getElementById('prodCounterfeitOwned').textContent = f.counterfeit;
     document.getElementById('prodCounterfeitOutput').textContent = `${fmtMoney((f.counterfeit || 0) * COUNTERFEIT_CASH_RATE)} / 30 mins`;
-    document.getElementById('prodCashStock').textContent = fmtMoney(state.cash || 0);
+    const counterfeitStock = Math.floor(state.counterfeitStock || 0);
+    document.getElementById('prodCounterfeitStock').textContent = fmtMoney(counterfeitStock);
+    const collectBtn = document.getElementById('collectCounterfeitBtn');
+    const washBtn = document.getElementById('washCounterfeitBtn');
+    collectBtn.disabled = counterfeitStock < 1;
+    washBtn.disabled = counterfeitStock < 1;
+    collectBtn.textContent = `Collect (safe, ${fmtMoney(counterfeitStock)})`;
+    washBtn.textContent = `Wash — 83% for ${fmtMoney(Math.round(counterfeitStock * 1.5))}`;
     document.getElementById('prodGymOwned').textContent = f.gym || 0;
     document.getElementById('prodGymOutput').textContent = `${((f.gym || 0) * GYM_THUG_RATE).toLocaleString('en-GB')} Thugs / 30 mins`;
     document.getElementById('prodThugsStock').textContent = Math.floor(state.thugs || 0).toLocaleString('en-GB');
@@ -7181,6 +7213,8 @@
   document.getElementById('sellAllMedsBtn').addEventListener('click', sellAllMeds);
   document.getElementById('sellAllCokeDealerBtn').addEventListener('click', sellAllCokeDealer);
   document.getElementById('sellOverseasCokeBtn').addEventListener('click', sellCokeOverseas);
+  document.getElementById('collectCounterfeitBtn').addEventListener('click', collectCounterfeit);
+  document.getElementById('washCounterfeitBtn').addEventListener('click', washCounterfeit);
   document.querySelectorAll('.lb-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => setLbTab(btn.dataset.lbtab));
   });
