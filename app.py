@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, send_from_directory, abort
+from flask import Flask, request, jsonify, session, send_from_directory, abort, Response
 from flask_socketio import SocketIO, join_room
 from werkzeug.security import generate_password_hash, check_password_hash
 from pywebpush import webpush, WebPushException
@@ -169,6 +169,21 @@ def send_push_notification(user_id, title, body, url='/'):
 @app.route('/')
 def index():
     return send_from_directory(BASE_DIR, 'pimp-empires.html')
+
+
+@app.route('/constants.js')
+def serve_constants():
+    lines = []
+    for attr in dir(ge):
+        if attr.isupper() and not attr.startswith('_'):
+            val = getattr(ge, attr)
+            try:
+                json_val = json.dumps(val)
+                lines.append(f"const {attr} = {json_val};")
+            except TypeError:
+                pass
+    js_content = "\n".join(lines)
+    return Response(js_content, mimetype='application/javascript')
 
 
 @app.route('/<path:filename>')
@@ -888,6 +903,18 @@ def api_cocaine_sellall():
 @login_required
 def api_cocaine_sellall_overseas():
     return handle_action(ge.sell_cocaine_overseas)
+
+
+@app.route('/api/fakemoney/wash', methods=['POST'])
+@login_required
+def api_fakemoney_wash():
+    return handle_action(ge.wash_fake_money)
+
+
+@app.route('/api/fakemoney/wash/overseas', methods=['POST'])
+@login_required
+def api_fakemoney_wash_overseas():
+    return handle_action(ge.wash_fake_money_overseas)
 
 
 @app.route('/api/trucks/sellall', methods=['POST'])

@@ -12,6 +12,7 @@
 <link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <title>THE HUSTLE // a street hustle sim</title>
+<script src="/constants.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -2724,8 +2725,7 @@
 <script src="./socket.io.min.js"></script>
 <script>
 (function(){
-  const REGEN_AMOUNT = 40;
-  const REGEN_MS = 20 * 60 * 1000;
+
   const STORAGE_KEY = 'pimpempires-save';
 
   let state = null;
@@ -2735,28 +2735,6 @@
     return item.stockKey.split('.').reduce((v, p) => (v || {})[p], state) || 0;
   }
 
-  const BLACKMARKET_ITEMS = [
-    {key:'pistol9mm', name:'9mm Pistols', img:'9 mill.jpg', price:240, stockKey:'guns.pistol9mm'},
-    {key:'shotgun12gauge', name:'12 Gauge Shotguns', img:'shotgun.jpg', price:1050, stockKey:'guns.shotgun12gauge'},
-    {key:'ak47', name:'AK-47s', img:'Ak47.jpg', price:1800, stockKey:'guns.ak47'},
-    {key:'meds', name:'Safety Kits', img:'meds.jpg', price:15, stockKey:'medsStock'},
-    {key:'thugs', name:'Thugs', img:'thugs.jpg', price:100, stockKey:'thugs'},
-    {key:'cars', name:'Cadillacs', img:'cadalac.jpg', price:9600, stockKey:'cadillacs'},
-    {key:'m249', name:'M249s', img:'m249.jpg', price:8000, stockKey:'guns.m249', sellOnly:true},
-    {key:'trucks', name:'Armored Trucks', img:'armoued truck.jpg', price:18000, stockKey:'armoredTrucks', sellOnly:true},
-  ];
-
-  const DOPE_DEALER_DRUGS = [
-    {id:'weed', name:'Weed', icon:'🍃', baseBuyPrice:12, baseSellPrice:20},
-    {id:'xanax', name:'Xanax', icon:'💊', baseBuyPrice:20, baseSellPrice:32},
-    {id:'lsd', name:'LSD', icon:'🎨', baseBuyPrice:35, baseSellPrice:55},
-    {id:'ecstasy', name:'Ecstasy', icon:'🔮', baseBuyPrice:50, baseSellPrice:80},
-    {id:'mdma', name:'MDMA', icon:'🌈', baseBuyPrice:60, baseSellPrice:95},
-    {id:'coke', name:'Cocaine', icon:'⚪', baseBuyPrice:110, baseSellPrice:170},
-    {id:'ketamine', name:'Ketamine', icon:'🧪', baseBuyPrice:120, baseSellPrice:185},
-    {id:'meth', name:'Meth', icon:'⚗️', baseBuyPrice:160, baseSellPrice:245},
-    {id:'heroin', name:'Heroin', icon:'💉', baseBuyPrice:220, baseSellPrice:340},
-  ];
 
   function defaultState(){
     const randomCity = CITIES[Math.floor(Math.random() * CITIES.length)];
@@ -3220,18 +3198,7 @@
   // anymore, so there is nothing left for this to persist.
   async function save(){}
 
-  const FACTORY_MS = 30 * 60 * 1000; // 30 minutes
 
-  // All time-based catch-up (turn regen, factory production, market drift,
-  // bot regen) now runs server-side in game_engine.apply_catchup()
-  // every time state is loaded or an action is taken. This is a no-op shim
-  // kept so any remaining call site doesn't error.
-  function applyOfflineRegen(){}
-
-  const MARKET_MS = 60 * 60 * 1000; // 1 hour
-  const MARKET_MIN_MULT = 0.5;
-  const MARKET_MAX_MULT = 1.8;
-  const MARKET_HISTORY_CAP = 24;
 
   function ensureMarket(){
     if(!state.market) state.market = {};
@@ -3282,12 +3249,6 @@
     return Math.max(100, Math.round(price));
   }
 
-  const BRIBE_DURATION_MS = 5 * 60 * 1000; // 5 minutes of no raids
-  const BRIBE_COOLDOWN_MS = 60 * 60 * 1000; // usable once an hour
-  const BRIBE_COST_PER_HOE = 15;
-
-  function isBribed(){
-    return Date.now() < (state.bribeActiveUntil || 0);
   }
 
   function bribeCost(){
@@ -3381,38 +3342,13 @@
     }
   }
 
-  const TRAVEL_COST_PER_THUG = 50;
-  const TRAVEL_BASE_FEE = 100;
-  const TRAVEL_THUGS_PER_CADILLAC = 4;
-  const TRAVEL_THUGS_PER_ARMORED_TRUCK = 6;
+
 
   function travelCapacity(){
     return (state.cadillacs || 0) * TRAVEL_THUGS_PER_CADILLAC + (state.armoredTrucks || 0) * TRAVEL_THUGS_PER_ARMORED_TRUCK;
   }
 
-  const CITIES = [
-    {name:'London'},
-    {name:'Bristol'},
-    {name:'Birmingham'},
-    {name:'Manchester'},
-    {name:'Leeds'},
-    {name:'Liverpool'},
-    {name:'Amsterdam'},
-    {name:'Dublin'},
-  ];
-  const GANG_NAMES = ['The Players Club', 'Gang of London', 'Mighty Ducks', 'Mafia'];
 
-  const BOSS_NICKNAMES = [
-    'Big Tony','Fat Sal','Mad Mikey','Slick Rick','Diesel','Knuckles','Vinnie Two-Times','Bishop','Reno','Preacher',
-    'Junior','Spider','Tank','Cassius','Duke','Prince','Smooth Eddie','King Cobra','Lil Rome','Ghostface Greg',
-  ];
-
-  const THUG_NICKNAMES = [
-    'Bruno','Tiny','Chains','Razor','Snake','Hammer','Bones','Wolf','Ghost','Ace',
-    'Rocco','Spike','Bull','Cutter','Torque','Reaper','Mack','Deuce','Sledge','Fang',
-  ];
-
-  const BOT_COUNT = 19;
 
   // NOTE: bots (and now other real players) are entirely server-authoritative -
   // every response from the Flask backend already carries a complete, correct
@@ -4084,11 +4020,7 @@
 
   const FACTORY_TYPE_LABELS = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym', warehouse: 'Warehouse'};
   const FACTORY_EMOJI = {medical: '🏥', gun: '🏭', car: '🏗️', drug: '❄️', explosive: '💣', counterfeit: '💰', gym: '🏋️', warehouse: '📦'};
-  const BOMB_TURN_COST = 20; // Must match BOMB_TURN_COST in game_engine.py.
 
-  async function bombBot(botId, factoryType, qty){
-    try{
-      const data = await apiCall('/api/bomb', {botId, factoryType, qty});
       showExplosionAnimation();
       playBombSound();
       showBombResultModal(data.result);
@@ -4152,10 +4084,8 @@
     modal.classList.remove('hidden');
   }
 
-  const CAR_TYPE_LABELS = {cadillac: 'Cadillac', armoredTruck: 'Armored Truck'};
   // Must match STEAL_CARS_THUGS_PER_CAR / STEAL_CARS_TURN_COST in game_engine.py.
-  const STEAL_CARS_THUGS_PER_CAR = 4;
-  const STEAL_CARS_TURN_COST = 20;
+
 
   async function stealCars(botId, carType, qty){
     try{
@@ -4170,7 +4100,6 @@
     } catch(e){ /* toast already shown */ }
   }
 
-  const INFORMER_COST_PCT = 0.12;
   const GUN_LABELS = {pistol9mm: '9mm', shotgun12gauge: 'Shotgun', ak47: 'AK-47', m249: 'M249'};
 
   function renderInformer(){
@@ -4304,28 +4233,6 @@
     } catch(e){ /* toast already shown */ }
   }
 
-  const ACHIEVEMENTS = [
-    {id:'first_blood', name:'First Blood', emoji:'🔰', img:'badges/first_blood.png', desc:'Win your first attack', xp:100},
-    {id:'demolition_man', name:'Demolition Man', emoji:'💣', img:'badges/demolition_man.png', desc:'Complete your first bombing run', xp:100},
-    {id:'pulled_a_job', name:'Pulled a Job', emoji:'🕶️', img:'badges/pulled_a_job.png', desc:'Win your first heist', xp:100},
-    {id:'high_roller', name:'High Roller', emoji:'🎰', img:'badges/high_roller.png', desc:'Win your first Casino Heist', xp:250},
-    {id:'real_estate_mogul', name:'Real Estate Mogul', emoji:'🏭', img:'badges/real_estate_mogul.png', desc:'Own your first factory', xp:100},
-    {id:'armed_to_the_teeth', name:'Armed to the Teeth', emoji:'🔫', img:'badges/armed_to_the_teeth.png', desc:'Own at least one of every gun type', xp:150},
-    {id:'crew_cut', name:'Crew Cut', emoji:'🤝', img:'badges/crew_cut.png', desc:'Join or form a crew', xp:50},
-    {id:'gang_leader_rank', name:'Gang Leader', emoji:'👑', img:'badges/gang_leader_rank.png', desc:'Reach rank 6 (Gang Leader)', xp:300},
-    {id:'millionaire', name:'Millionaire', emoji:'💰', img:'badges/millionaire.png', desc:'Hit £1,000,000 net worth', xp:300},
-    {id:'tycoon', name:'Tycoon', emoji:'🏦', img:'badges/tycoon.png', desc:'Hit £100,000,000 net worth', xp:750},
-    {id:'the_don', name:'THE DON', emoji:'😈', img:'badges/the_don.png', desc:'Reach max rank', xp:1000},
-    {id:'top_of_the_charts', name:'Top of the Charts', emoji:'🥇', img:'badges/top_of_the_charts.png', desc:'Reach #1 on the global leaderboard', xp:500},
-    {id:'top_ten', name:'Top Ten', emoji:'🥈', img:'badges/top_ten.png', desc:'Reach the top 10 on the global leaderboard', xp:200},
-    {id:'most_thugs_killed', name:'Body Count King', emoji:'💀', img:'badges/most_thugs_killed.png', desc:'Hold the #1 spot for Most Thugs Killed', xp:400},
-    {id:'most_money_stolen', name:'Grand Larcenist', emoji:'💸', img:'badges/most_money_stolen.png', desc:'Hold the #1 spot for Most Money Stolen', xp:400},
-    {id:'most_factories_destroyed', name:'Wrecking Ball', emoji:'🧨', img:'badges/most_factories_destroyed.png', desc:'Hold the #1 spot for Most Factories Destroyed', xp:400},
-    {id:'most_hoes', name:'Easy Money', emoji:'👠', desc:'Hold the #1 spot for Most Hoes', xp:400},
-    {id:'most_cars_stolen', name:'Chop Shop King', emoji:'🚗', desc:'Hold the #1 spot for Most Cars Stolen', xp:400},
-    {id:'top_earner', name:'Top Earner', emoji:'📈', desc:'Hold the #1 spot for All Time Earnings', xp:400},
-  ];
-  const ACHIEVEMENTS_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
 
   // Must match ACHIEVEMENT_MOB_DOLLARS_MIN/DIVISOR in game_engine.py.
   function achievementMobDollars(xp){
@@ -4333,7 +4240,7 @@
   }
 
   // Must match RANK_UP_CASH_REWARDS / RANKS in game_engine.py.
-  const RANK_UP_CASH_REWARDS = {2: 5000, 3: 25000, 4: 100000, 5: 500000, 6: 2000000, 7: 10000000, 8: 30000000, 9: 60000000, 10: 100000000, 11: 200000000, 12: 400000000, 13: 1000000000};
+
 
   function renderAchievements(){
     const earned = new Set(state.achievements || []);
@@ -4551,51 +4458,7 @@
   }
 
   const HEIST_JOB_COOLDOWN_HOURS = 6;
-  const HEIST_JOBS = {
-    shop: {
-      name:'Corner Shop', emoji:'🏪',
-      minThugs:200, maxThugs:400, turnCost:10,
-      minCash:1600, maxCash:8000,
-      netWorthPct:{min:0.005, max:0.015},
-      successChance:0.60,
-      casualtyPct:{min:0.05, max:0.15},
-      failCasualtyPct:{min:0.15, max:0.35},
-      heatMsg:['Light', 'Light', 'Moderate'],
-    },
-    jewellery: {
-      name:'Jewellery Store', emoji:'💎',
-      minThugs:1000, maxThugs:2000, turnCost:50,
-      minCash:16000, maxCash:70000,
-      netWorthPct:{min:0.02, max:0.06},
-      successChance:0.42,
-      casualtyPct:{min:0.10, max:0.25},
-      failCasualtyPct:{min:0.30, max:0.55},
-      heatMsg:['Moderate', 'High', 'High'],
-    },
-    bank: {
-      name:'National Bank', emoji:'🏦',
-      minThugs:5000, maxThugs:10000, turnCost:150,
-      minCash:120000, maxCash:500000,
-      netWorthPct:{min:0.08, max:0.25},
-      successChance:0.28,
-      casualtyPct:{min:0.20, max:0.40},
-      failCasualtyPct:{min:0.45, max:0.80},
-      heatMsg:['EXTREME', 'EXTREME', 'EXTREME'],
-    },
-    casino: {
-      name:'Casino Heist', emoji:'🎰',
-      crew:true,
-      thugsPerMember:10000,
-      turnsPerMember:100,
-      minCash:500000, maxCash:2000000,
-      netWorthPct:{min:0.05, max:0.15},
-      successChance:0.35,
-      casualtyPct:{min:0.15, max:0.30},
-      failCasualtyPct:{min:0.50, max:0.90},
-      heatMsg:['LEGENDARY', 'LEGENDARY', 'LEGENDARY'],
-      cooldownHours:24,
-    },
-  };
+
 
   async function runHeist(jobId){
     const job = HEIST_JOBS[jobId];
@@ -4698,20 +4561,6 @@
     _numberAnimFrames.set(el, requestAnimationFrame(step));
   }
 
-  const DRUG_FACTORY_RATE = 2079; // cocaine per factory per 30 mins
-  const MEDICAL_KIT_RATE = 130; // safety kits per factory per 30 mins
-  const EXPLOSIVE_BOMB_RATE = 65; // bombs per factory per 30 mins
-  const COUNTERFEIT_CASH_RATE = 48750; // cash printed per factory per 30 mins
-  const GYM_THUG_RATE = 10; // thugs recruited per factory per 30 mins
-
-  // Net worth is what your factories would actually sell for right now,
-  // plus every thug's muscle value. Produce sitting in storage (guns,
-  // cars/trucks, meds, cocaine) doesn't count - cash, hoes and bombs don't
-  // count either.
-  const THUG_NET_WORTH_VALUE = 500;
-  function calcNetWorth(){
-    return factorySellValue(state.factories)
-      + (state.thugs || 0) * THUG_NET_WORTH_VALUE;
   }
 
   function totalNetWorth(){
@@ -4766,7 +4615,7 @@
     // actually decides when Hall of Fame prizes get awarded (see
     // maybe_award_season_end_prizes in app.py); fall back to the old
     // per-player calc only if it hasn't loaded from the server yet.
-    const GAME_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
     const seasonEnd = state.seasonEndAt || ((state.gameStartTime || Date.now()) + GAME_DURATION_MS);
     const remaining = Math.max(0, seasonEnd - Date.now());
 
@@ -5061,33 +4910,14 @@
   function thugMoraleMult(){ return 0.5 + (state.thugMorale / 100); }
 
   // every 10 turns worked, gain 1-3 new hoes (flat rate, independent of current roster size)
-  const HOE_RECRUIT_TURN_BLOCK = 10;
-  const HOE_RECRUIT_MIN = 1, HOE_RECRUIT_MAX = 3;
 
-  const NIGHT_TURNS = 150; // a "full night" = a max-length shift
-  const HOE_NIGHTLY_CAP = 2000; // a hoe at 100% happiness earns up to this per full night
-
-  const WORK_LOCATIONS = {
-    redlight: {name: '🔴 Red Light District', bustRisk: 1.5, thugRecruitMult: 0.7, desc: 'Highest earnings, low recruitment, high risk'},
-    nightclub: {name: '🍻 Nightclub', bustRisk: 0.7, thugRecruitMult: 1.0, desc: 'Medium earnings & recruitment, medium risk'},
-    pullup: {name: '🚗 Pull Up', bustRisk: 0.4, thugRecruitMult: 1.1, desc: 'Low earnings, high recruitment, low risk'},
-  };
-
-  const CAR_FACTORY_CADILLAC_AT_MAX = 46, CAR_FACTORY_CADILLAC_AT_MIN = 3;
-  const CAR_FACTORY_ARMORED_AT_MAX = 4, CAR_FACTORY_ARMORED_AT_MIN = 13;
-
-  function carFactoryOutputRates(ratio){
-    ratio = Math.max(0, Math.min(1, ratio));
     return {
       cadillacRate: CAR_FACTORY_CADILLAC_AT_MIN + (CAR_FACTORY_CADILLAC_AT_MAX - CAR_FACTORY_CADILLAC_AT_MIN) * ratio,
       armoredRate: CAR_FACTORY_ARMORED_AT_MIN + (CAR_FACTORY_ARMORED_AT_MAX - CAR_FACTORY_ARMORED_AT_MIN) * ratio,
     };
   }
 
-  const GUN_FACTORY_PISTOL_AT_VOLUME = 39, GUN_FACTORY_PISTOL_AT_ELITE = 3;
-  const GUN_FACTORY_SHOTGUN_AT_VOLUME = 26, GUN_FACTORY_SHOTGUN_AT_ELITE = 7;
-  const GUN_FACTORY_AK_AT_VOLUME = 13, GUN_FACTORY_AK_AT_ELITE = 13;
-  const GUN_FACTORY_M249_AT_VOLUME = 3, GUN_FACTORY_M249_AT_ELITE = 4;
+
 
   function gunFactoryOutputRates(ratio){
     ratio = Math.max(0, Math.min(1, ratio));
@@ -5510,7 +5340,6 @@
     render();
   }
 
-  const MOB_DOLLARS_TURNS_PER_UNIT = 10;
 
   function openMobDollarsModal(){
     const slider = document.getElementById('mobDollarsSlider');
@@ -6592,14 +6421,12 @@
   }
 
   // Must match WAREHOUSE_BASE_CAPACITY / WAREHOUSE_CAPACITY_PER_UNIT in game_engine.py.
-  const WAREHOUSE_BASE_CAPACITY = 5000;
-  const WAREHOUSE_CAPACITY_PER_UNIT = 20000;
-  const FACTORY_COSTS = {medical: 940000, gun: 25000000, car: 30000000, drug: 14000000, explosive: 32000000, counterfeit: 23000000, gym: 10000000, warehouse: 20000000};
-  const FACTORY_SELL_PRICES = {medical: 170000, gun: 14000000, car: 13000000, drug: 3000000, explosive: 9000000, counterfeit: 6000000, gym: 5000000, warehouse: 9000000};
+
+
   const FACTORY_ID_SUFFIX = {medical: 'Medical', gun: 'Gun', car: 'Car', drug: 'Drug', explosive: 'Explosive', counterfeit: 'Counterfeit', gym: 'Gym', warehouse: 'Warehouse'};
   // Must match FACTORY_UNLOCK_RANK / RANKS in game_engine.py - Real Estate is
   // a progression ladder, not a shopping list you can max out from Rank 1.
-  const FACTORY_UNLOCK_RANK = {medical: 1, gym: 2, warehouse: 2, gun: 3, car: 4, drug: 5, explosive: 6, counterfeit: 7};
+
   const RANK_NAMES = ['', 'Junkie', 'Street Rat', 'Foot Soldier', 'Associate', 'Gang Member', 'Gang Leader', 'Mob Boss', 'Underboss', 'Consigliere', 'Capo', 'Boss of Bosses', 'Kingpin', 'THE DON'];
 
   function isFactoryUnlocked(type){
