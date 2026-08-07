@@ -43,6 +43,7 @@ MARKET_HISTORY_CAP = 24
 
 BRIBE_DURATION_MS = 5 * 60 * 1000
 BRIBE_COOLDOWN_MS = 60 * 60 * 1000
+BRIBE_COST_PER_HOE = 15
 
 LAY_LOW_DURATION_MS = 15 * 60 * 1000
 LAY_LOW_COOLDOWN_MS = 8 * 60 * 60 * 1000
@@ -2129,7 +2130,7 @@ def bribe_cops(state):
         raise GameError("Already bribed")
     if now < state["bribeCooldownUntil"]:
         raise GameError("Bribe on cooldown")
-    cost = jround(state["hoes"] * 15)
+    cost = jround(state["hoes"] * BRIBE_COST_PER_HOE)
     if state["cash"] < cost:
         raise GameError("Not enough cash")
     state["cash"] -= cost
