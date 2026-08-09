@@ -226,13 +226,13 @@ HOE_WAGE_PCT = 0.10
 HEIST_JOBS = {
     "shop": {"minThugs": 200, "turnCost": 10, "minCash": 25000, "maxCash": 75000,
              "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35),
-             "netWorthPct": (0.00005, 0.00015)},
+             "netWorthPct": {"min": 0.00005, "max": 0.00015}},
     "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 150000, "maxCash": 400000,
                   "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55),
-                  "netWorthPct": (0.0002, 0.0006)},
+                  "netWorthPct": {"min": 0.0002, "max": 0.0006}},
     "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 750000, "maxCash": 2500000,
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
-             "netWorthPct": (0.0008, 0.0025)},
+             "netWorthPct": {"min": 0.0008, "max": 0.0025}},
 }
 HEIST_JOB_COOLDOWN_MS = 6 * 3600 * 1000
 CASINO_JOB = {
@@ -242,7 +242,7 @@ CASINO_JOB = {
     # Scales off the WHOLE crew's combined net worth (player + every crew
     # member), not just the player's own - the biggest heist in the game
     # should actually reflect how loaded the crew pulling it off is.
-    "netWorthPct": (0.0005, 0.0015),
+    "netWorthPct": {"min": 0.0005, "max": 0.0015},
 }
 
 FACTORY_COSTS = {
@@ -2572,7 +2572,7 @@ def run_heist(state, job_id):
 
     if won:
         flat_cash = jround(job["minCash"] + random.random() * (job["maxCash"] - job["minCash"]))
-        nw_lo, nw_hi = job["netWorthPct"]
+        nw_lo, nw_hi = job["netWorthPct"]["min"], job["netWorthPct"]["max"]
         scaled_cash = jround(total_net_worth(state) * (nw_lo + random.random() * (nw_hi - nw_lo)))
         cash_won = max(flat_cash, scaled_cash)
         lo, hi = job["casualtyPct"]

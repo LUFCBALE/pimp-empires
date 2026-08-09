@@ -1607,7 +1607,7 @@
           <span class="divider">|</span>
           <button id="referFriendBtn" class="micro-link">👥 Invite</button>
           <span class="divider">|</span>
-          <a id="voteTopLink" class="micro-link" href="#" target="_blank" rel="noopener noreferrer">🗳️ Vote <span style="color:var(--gold); font-size:0.8em;">(+15 🪙)</span></a>
+          <a id="voteTopLink" class="micro-link" href="#" target="_blank" rel="noopener noreferrer">🗳️ Vote <span style="color:var(--gold); font-size:0.8em;">(+15 💵)</span></a>
           <span class="divider">|</span>
           <a id="discordLink" class="micro-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Discord</a>
         </div>
@@ -2654,12 +2654,12 @@
     </div>
     <h3>🗳️ Vote For Us</h3>
     <div style="margin-bottom:20px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
-      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Support the game! Vote for us on BrowserGameStop.com and get <b>15 🪙 Mob Dollars</b> every 24 hours.</div>
+      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Support the game! Vote for us on BrowserGameStop.com and get <b>15 💵 Mob Dollars</b> every 24 hours.</div>
       <a href="#" id="voteLink" target="_blank" class="cta gold" style="display:inline-block; text-decoration:none; text-align:center;">Vote Now</a>
     </div>
     <h3>🪙 Invite Friends</h3>
     <div style="margin-bottom:20px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
-      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Share your link. You get <b>50 🪙 Mob Dollars</b> once a friend you invite reaches Street Rat (rank 2) — they get <b>10 🪙</b> instantly just for signing up with it.</div>
+      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Share your link. You get <b>50 💵 Mob Dollars</b> once a friend you invite reaches Street Rat (rank 2) — they get <b>10 💵</b> instantly just for signing up with it.</div>
       <div style="display:flex; gap:10px;">
         <input type="text" id="referralLinkInput" readonly style="flex:1; padding:8px; border:1px solid var(--panel-line); background:var(--bg); color:var(--text); border-radius:4px; font-size:0.8rem;">
         <button class="cta gold" id="copyReferralLinkBtn">Copy</button>
@@ -2718,7 +2718,7 @@
     <h3>Gang Wars — Live Feed</h3>
     <p>A live, global log of who attacked who and when, on the Attacks page — every real player's attacks, plus rival bot crews going to war with each other in the background. Bots never attack real players, only rival gangs.</p>
     <h3>Inviting Friends</h3>
-    <p>Grab your personal link from Settings and send it around. Anyone who signs up with it gets 10 🪙 Mob Dollars instantly, and you get 50 🪙 once they reach Street Rat (rank 2) — no limit on how many friends you can invite.</p>
+    <p>Grab your personal link from Settings and send it around. Anyone who signs up with it gets 10 💵 Mob Dollars instantly, and you get 50 💵 once they reach Street Rat (rank 2) — no limit on how many friends you can invite.</p>
   </div>
 </div>
 
@@ -4285,7 +4285,7 @@
           <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(a.name)}</div>
           <div style="font-size:0.78rem; color:var(--text-dim); margin-bottom:6px;">${escapeHtml(a.desc)}</div>
           <div style="font-size:0.72rem; color:var(--gold);">${got ? `✅ Earned +${a.xp} XP` : `🔒 +${a.xp} XP`}</div>
-          <div style="font-size:0.72rem; color:var(--gold); margin-top:2px;">${got ? '✅' : '🔒'} +${mobDollars} 🪙 Mob Dollars</div>
+          <div style="font-size:0.72rem; color:var(--gold); margin-top:2px;">${got ? '✅' : '🔒'} +${mobDollars} 💵 Mob Dollars</div>
         </div>
       `;
     }).join('');
@@ -4385,7 +4385,7 @@
         : '';
       const ach = ACHIEVEMENTS_BY_ID[board.achievementId];
       const prizeLine = (!winner && ach)
-        ? `<div style="font-size:0.72rem; color:var(--gold); margin-bottom:8px;">🔒 Season prize: +${ach.xp} XP · +${achievementMobDollars(ach.xp)} 🪙 Mob Dollars</div>`
+        ? `<div style="font-size:0.72rem; color:var(--gold); margin-bottom:8px;">🔒 Season prize: +${ach.xp} XP · +${achievementMobDollars(ach.xp)} 💵 Mob Dollars</div>`
         : '';
       return `
         <div style="border:1px solid ${winner ? 'var(--gold)' : 'var(--panel-line)'}; border-radius:10px; overflow:hidden; background:var(--bg-2);">
@@ -5407,7 +5407,7 @@
     if(amt < 1) return;
     try{
       await apiCall('/api/mobdollars/spend', {amount: amt});
-      showToast(`Spent ${amt} 🪙 Mob Dollars on turns.`);
+      showToast(`Spent ${amt} 💵 Mob Dollars on turns.`);
       render();
       openMobDollarsModal();
     } catch(e){ /* toast already shown */ }
@@ -5943,7 +5943,7 @@
     },
     {
       target: '#mobDollarsBtn',
-      title: '🪙 Mob Dollars',
+      title: '💵 Mob Dollars',
       body: "A prize currency you earn from achievements and Hall of Fame wins — never cashable, but spend it right here for an instant turns top-up with no cooldown. Invite friends with your referral link (also in the top bar) to earn even more.",
     },
     {
@@ -7043,7 +7043,7 @@
   async function buyMobDollars(){
     try{
       await apiCall('/api/mobdollars/buy');
-      showToast('✅ 50 🪙 Mob Dollars purchased!');
+      showToast('✅ 50 💵 Mob Dollars purchased!');
       render();
       const slider = document.getElementById('mobDollarsSlider');
       if(slider) slider.max = state.mobDollars || 0;
@@ -7206,7 +7206,7 @@
     }
     const link = `${window.location.origin}/?ref=${currentUser.id}`;
     if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(link).then(() => showToast('🪙 Invite link copied! Share it to earn Mob Dollars.'));
+      navigator.clipboard.writeText(link).then(() => showToast('💵 Invite link copied! Share it to earn Mob Dollars.'));
     }
     navigateTo('page-settings');
   });

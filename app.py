@@ -370,7 +370,7 @@ def maybe_pay_referral_reward(user_id, state):
     if row:
         ref_state = json.loads(row['state_json'])
         ref_state["mobDollars"] = ref_state.get("mobDollars", 0) + ge.REFERRAL_REWARD_MOB_DOLLARS
-        ge.add_log(ref_state, f"🪙 +{ge.REFERRAL_REWARD_MOB_DOLLARS} Mob Dollars - a friend you invited hit Street Rat!", "good")
+        ge.add_log(ref_state, f"💵 +{ge.REFERRAL_REWARD_MOB_DOLLARS} Mob Dollars - a friend you invited hit Street Rat!", "good")
         db.execute('UPDATE player_state SET state_json = ? WHERE user_id = ?', (json.dumps(ref_state), ref_id))
         db.commit()
     db.close()
@@ -784,7 +784,7 @@ def signup():
         if valid_referrer_id:
             state["referredBy"] = valid_referrer_id
             state["mobDollars"] += ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS
-            ge.add_log(state, f"🪙 +{ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS} Mob Dollars welcome bonus for joining via a referral link!", "good")
+            ge.add_log(state, f"💵 +{ge.REFERRAL_WELCOME_BONUS_MOB_DOLLARS} Mob Dollars welcome bonus for joining via a referral link!", "good")
         ge.apply_catchup(state)
         ge.apply_new_player_catchup(state, world)
         save_state(user_id, state)
