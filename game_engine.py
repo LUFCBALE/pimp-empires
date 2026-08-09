@@ -43,6 +43,7 @@ MARKET_HISTORY_CAP = 24
 
 BRIBE_DURATION_MS = 5 * 60 * 1000
 BRIBE_COOLDOWN_MS = 60 * 60 * 1000
+BRIBE_COST_PER_HOE = 15
 
 LAY_LOW_DURATION_MS = 15 * 60 * 1000
 LAY_LOW_COOLDOWN_MS = 8 * 60 * 60 * 1000
@@ -382,6 +383,7 @@ def default_state(pimp_name="Big Boss"):
         "statsTurnsWorked": 0,
         "lastAttackedBy": None,
         "counterfeitEarnings": 0,
+        "counterfeitStock": 0,
         "factories": {"medical": 0, "gun": 0, "car": 0, "drug": 0, "explosive": 0, "counterfeit": 0, "gym": 0, "warehouse": 0},
         "carFactoryRatio": 1.0,
         "gunFactoryRatio": 0.0,
@@ -2148,7 +2150,7 @@ def bribe_cops(state):
         raise GameError("Already bribed")
     if now < state["bribeCooldownUntil"]:
         raise GameError("Bribe on cooldown")
-    cost = jround(state["hoes"] * 15)
+    cost = jround(state["hoes"] * BRIBE_COST_PER_HOE)
     if state["cash"] < cost:
         raise GameError("Not enough cash")
     state["cash"] -= cost
@@ -2401,6 +2403,8 @@ def sell_all_cocaine(state):
 COCAINE_OVERSEAS_SUCCESS_CHANCE = 0.72  # 28% bust chance at customs
 COCAINE_OVERSEAS_PREMIUM = 1.35
 
+FAKE_MONEY_OVERSEAS_SUCCESS_CHANCE = 0.50  # 50% bust chance
+FAKE_MONEY_OVERSEAS_PREMIUM = 1.9
 
 def sell_cocaine_overseas(state):
     """High risk / high reward: ship the whole cocaine stash overseas. 72%
@@ -2422,6 +2426,43 @@ def sell_cocaine_overseas(state):
         return {"success": True, "qty": qty, "price": jround(overseas_price), "payout": payout}
     else:
         add_log(state, f"Customs busted your overseas shipment of {qty} cocaine. Total loss — got nothing.", "bad")
+        return {"success": False, "qty": qty, "payout": 0}
+
+
+def wash_fake_money(state):
+    qty = state.get("fakeMoney", 0)
+    if qty < 1:
+        raise GameError("No fake money to wash")
+    
+    payout = qty
+    state["fakeMoney"] = 0
+    state["cash"] += payout
+    state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + payout
+    state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + payout
+    
+    add_log(state, f"Washed £{qty} of fake money locally for a clean £{payout}.", "good")
+    add_xp(state, payout * SELL_XP_PER_POUND)
+    return {"success": True, "qty": qty, "payout": payout}
+
+
+def wash_fake_money_overseas(state):
+    qty = state.get("fakeMoney", 0)
+    if qty < 1:
+        raise GameError("No fake money to wash")
+    
+    state["fakeMoney"] = 0
+    
+    if random.random() < FAKE_MONEY_OVERSEAS_SUCCESS_CHANCE:
+        payout = jround(qty * FAKE_MONEY_OVERSEAS_PREMIUM)
+        state["cash"] += payout
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + payout
+        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + payout
+        
+        add_log(state, f"Laundered £{qty} of fake money through offshore accounts! Cleared £{payout}.", "good")
+        add_xp(state, payout * SELL_XP_PER_POUND)
+        return {"success": True, "qty": qty, "payout": payout}
+    else:
+        add_log(state, f"The FBI seized your offshore transfer of £{qty} in fake money. Total loss.", "bad")
         return {"success": False, "qty": qty, "payout": 0}
 
 
@@ -2503,9 +2544,7 @@ def run_factories(state, ticks):
     if bombs > 0:
         state["bombs"] += bombs
     if counterfeit_cash > 0:
-        state["cash"] += counterfeit_cash
-        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + counterfeit_cash
-        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + counterfeit_cash
+        state["fakeMoney"] = state.get("fakeMoney", 0) + counterfeit_cash
     if gym_thugs > 0:
         state["thugs"] = state.get("thugs", 0) + gym_thugs
 
@@ -3413,6 +3452,8 @@ def apply_catchup(state):
         state["theJob"] = None
     if "theJobCooldownUntil" not in state:
         state["theJobCooldownUntil"] = 0
+    if "counterfeitStock" not in state:
+        state["counterfeitStock"] = 0
     state.pop("hoeRoster", None)
     state.pop("nextHoeId", None)
     # Bank feature removed - fold any balance still sitting in it back into

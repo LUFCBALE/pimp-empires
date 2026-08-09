@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Admin Dashboard // THE HUSTLE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0c10; --card: #14161c; --card-border: #1f2229;
+    --text: #e2e8f0; --text-dim: #94a3b8; --text-dark: #64748b;
+    --accent: #3b82f6; --accent-hover: #2563eb;
+    --red: #ef4444; --red-dim: rgba(239, 68, 68, 0.15);
+    --teal: #14b8a6; --gold: #f59e0b;
+  }
+  body {
+    margin: 0; padding: 0; font-family: 'Inter', sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+  .header { padding: 20px; background: var(--card); border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 1.5rem; color: var(--gold); }
+  .tabs { display: flex; border-bottom: 1px solid var(--card-border); background: var(--card); }
+  .tab { padding: 15px 20px; cursor: pointer; font-weight: 600; color: var(--text-dim); border-bottom: 2px solid transparent; transition: 0.2s; }
+  .tab.active { color: var(--text); border-bottom: 2px solid var(--gold); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+  .stat-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 8px; padding: 20px; text-align: center; }
+  .stat-card .label { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+  .stat-card .val { font-size: 2rem; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--gold); }
+  
+  .users-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+  .users-table th, .users-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--card-border); }
+  .users-table th { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; }
+  .users-table tr:hover { background: rgba(255,255,255,0.02); }
+  .users-table td { font-family: 'IBM Plex Mono', monospace; }
+  .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; font-family: 'Inter', sans-serif; }
+  .badge-red { background: var(--red-dim); color: var(--red); }
+  .badge-teal { background: rgba(20, 184, 166, 0.15); color: var(--teal); }
+  
+  .btn { background: var(--card-border); color: var(--text); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 600; transition: 0.2s; }
+  .btn:hover { background: #2d313b; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { background: #dc2626; }
+  .btn-gold { background: var(--gold); color: #000; }
+  .btn-gold:hover { background: #d97706; }
+  
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+  input, textarea { width: 100%; background: var(--bg); border: 1px solid var(--card-border); color: var(--text); padding: 10px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; box-sizing: border-box; }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  
+  .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+  .modal { background: var(--card); border: 1px solid var(--card-border); padding: 20px; border-radius: 8px; width: 400px; max-width: 90%; }
+  .modal.hidden, .modal-backdrop.hidden { display: none; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--teal); color: #000; padding: 12px 20px; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 9999; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>THE HUSTLE // ADMIN</h1>
+  <a href="/" style="color:var(--text-dim); text-decoration:none; font-size:0.9rem;">&larr; Back to Game</a>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-target="panel-stats">Overview</div>
+  <div class="tab" data-target="panel-users">Players</div>
+  <div class="tab" data-target="panel-settings">Game Settings</div>
+  <div class="tab" data-target="panel-announce">Announcement</div>
+</div>
+
+<div class="container">
+  
+  <!-- STATS -->
+  <div id="panel-stats" class="panel active">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Total Registered Users</div>
+        <div class="val" id="stat-total-users">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Online Right Now</div>
+        <div class="val" id="stat-online-users">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Circulating Cash</div>
+        <div class="val" id="stat-total-cash">£0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Global GDP (Earnings)</div>
+        <div class="val" id="stat-total-earnings">£0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div id="panel-users" class="panel">
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size:1.2rem;">Player Database</h2>
+      <input type="text" id="user-search" placeholder="Search by name or email..." style="width:300px;">
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Rank</th>
+            <th>Cash</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- SETTINGS -->
+  <div id="panel-settings" class="panel">
+    <h2 style="font-size:1.2rem; margin-bottom: 20px;">Economy Constants</h2>
+    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom: 20px;">Warning: Saving these settings will rewrite the `game_engine.py` file and restart the server instantly. Players may experience a brief reconnect.</p>
+    
+    <div style="background:var(--card); padding:20px; border-radius:8px; border:1px solid var(--card-border); max-width: 600px;">
+      <div class="form-group">
+        <label>Turn Regen Amount</label>
+        <input type="number" id="set-regen-amount">
+      </div>
+      <div class="form-group">
+        <label>Turn Regen Time (ms)</label>
+        <input type="number" id="set-regen-ms">
+        <div style="font-size:0.75rem; color:var(--text-dark); margin-top:4px;">1,200,000 = 20 mins</div>
+      </div>
+      <div class="form-group">
+        <label>Starting Cash (£)</label>
+        <input type="number" id="set-start-cash">
+      </div>
+      <div class="form-group">
+        <label>Starting Turns</label>
+        <input type="number" id="set-start-turns">
+      </div>
+      <div class="form-group">
+        <label>Max Turns Base</label>
+        <input type="number" id="set-max-turns">
+      </div>
+      <button class="btn btn-gold" id="btn-save-settings" style="width:100%; padding:10px; margin-top:10px;">Save Constants</button>
+    </div>
+  </div>
+  
+  <!-- ANNOUNCEMENT -->
+  <div id="panel-announce" class="panel">
+    <h2 style="font-size:1.2rem; margin-bottom: 20px;">Global Announcement</h2>
+    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom: 20px;">Send a system message to all players. It will pop up immediately for online players, and trigger a push notification for offline players.</p>
+    
+    <div style="background:var(--card); padding:20px; border-radius:8px; border:1px solid var(--card-border); max-width: 600px;">
+      <div class="form-group">
+        <label>Message Content</label>
+        <textarea id="announce-text" rows="4" placeholder="Enter your message here..."></textarea>
+      </div>
+      <button class="btn btn-red" id="btn-announce" style="width:100%; padding:10px; margin-top:10px;">Broadcast to Everyone</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- CREDIT MODAL -->
+<div id="credit-modal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="font-size:1.1rem; color:var(--gold);">Credit Account: <span id="credit-target-name"></span></h3>
+      <button class="btn" onclick="closeModal('credit-modal')">X</button>
+    </div>
+    <div class="form-group">
+      <label>Add Cash (£)</label>
+      <input type="number" id="credit-cash" value="0">
+    </div>
+    <div class="form-group">
+      <label>Add Turns</label>
+      <input type="number" id="credit-turns" value="0">
+    </div>
+    <div class="form-group">
+      <label>Add Respect</label>
+      <input type="number" id="credit-respect" value="0">
+    </div>
+    <button class="btn btn-gold" id="btn-submit-credit" style="width:100%; padding:10px;">Submit Credit</button>
+  </div>
+</div>
+
+<!-- STATE JSON MODAL -->
+<div id="state-modal" class="modal-backdrop hidden">
+  <div class="modal" style="width:800px;">
+    <div class="modal-header">
+      <h3 style="font-size:1.1rem; color:var(--teal);">Raw State: <span id="state-target-name"></span></h3>
+      <button class="btn" onclick="closeModal('state-modal')">X</button>
+    </div>
+    <textarea id="state-json-view" rows="20" readonly style="font-size:0.8rem; background:#000;"></textarea>
+  </div>
+</div>
+
+<div id="toast" class="toast">Action successful!</div>
+
+<script>
+  let allUsers = [];
+  let currentCreditUserId = null;
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function fmtMoney(num) {
+    return '£' + (num||0).toLocaleString('en-GB');
+  }
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+    });
+  });
+
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+  // API calls
+  async function fetchStats() {
+    const res = await fetch('/api/admin/stats');
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('stat-total-users').textContent = data.totalUsers.toLocaleString('en-GB');
+    document.getElementById('stat-online-users').textContent = data.onlineUsers.toLocaleString('en-GB');
+    document.getElementById('stat-total-cash').textContent = fmtMoney(data.totalCash);
+    document.getElementById('stat-total-earnings').textContent = fmtMoney(data.totalEarnings);
+  }
+
+  async function fetchUsers() {
+    const res = await fetch('/api/admin/users');
+    if (!res.ok) return;
+    const data = await res.json();
+    allUsers = data.users;
+    renderUsers();
+  }
+
+  function renderUsers() {
+    const tbody = document.getElementById('users-tbody');
+    const q = document.getElementById('user-search').value.toLowerCase();
+    
+    tbody.innerHTML = '';
+    const filtered = allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    
+    filtered.forEach(u => {
+      const tr = document.createElement('tr');
+      
+      let statusHtml = '';
+      if (u.isAdmin) statusHtml += '<span class="badge badge-teal" style="margin-right:5px;">Admin</span>';
+      if (u.isBanned) statusHtml += '<span class="badge badge-red">Banned</span>';
+      
+      tr.innerHTML = `
+        <td>#${u.id}</td>
+        <td><strong>${u.name}</strong></td>
+        <td>${u.email}</td>
+        <td>${u.rank}</td>
+        <td style="color:var(--gold);">${fmtMoney(u.cash)}</td>
+        <td>${statusHtml || '-'}</td>
+        <td>
+          <button class="btn" onclick="viewState(${u.id})">JSON</button>
+          <button class="btn" onclick="openCredit(${u.id}, '${u.name}')">Credit</button>
+          <button class="btn ${u.isBanned ? '' : 'btn-red'}" onclick="toggleBan(${u.id})">${u.isBanned ? 'Unban' : 'Ban'}</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('user-search').addEventListener('input', renderUsers);
+
+  window.viewState = function(id) {
+    const u = allUsers.find(x => x.id === id);
+    document.getElementById('state-target-name').textContent = u.name;
+    document.getElementById('state-json-view').value = JSON.stringify(u.state, null, 2);
+    openModal('state-modal');
+  };
+
+  window.openCredit = function(id, name) {
+    currentCreditUserId = id;
+    document.getElementById('credit-target-name').textContent = name;
+    document.getElementById('credit-cash').value = '0';
+    document.getElementById('credit-turns').value = '0';
+    document.getElementById('credit-respect').value = '0';
+    openModal('credit-modal');
+  };
+
+  window.toggleBan = async function(id) {
+    if(!confirm("Are you sure you want to change this user's ban status?")) return;
+    const res = await fetch(`/api/admin/users/${id}/ban`, { method: 'POST' });
+    if(res.ok) {
+      showToast("Ban status updated.");
+      fetchUsers();
+    }
+  };
+
+  document.getElementById('btn-submit-credit').addEventListener('click', async () => {
+    if(!currentCreditUserId) return;
+    const payload = {
+      cash: parseInt(document.getElementById('credit-cash').value) || 0,
+      turns: parseInt(document.getElementById('credit-turns').value) || 0,
+      respect: parseInt(document.getElementById('credit-respect').value) || 0,
+    };
+    const res = await fetch(`/api/admin/users/${currentCreditUserId}/credit`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(res.ok) {
+      showToast("Account credited successfully.");
+      closeModal('credit-modal');
+      fetchUsers();
+    }
+  });
+
+  // Settings
+  async function fetchSettings() {
+    const res = await fetch('/api/admin/settings');
+    if(!res.ok) return;
+    const data = await res.json();
+    document.getElementById('set-regen-amount').value = data.settings.TURN_REGEN_AMOUNT || '';
+    document.getElementById('set-regen-ms').value = data.settings.TURN_REGEN_MS || '';
+    document.getElementById('set-start-cash').value = data.settings.STARTING_CASH || '';
+    document.getElementById('set-start-turns').value = data.settings.STARTING_TURNS || '';
+    document.getElementById('set-max-turns').value = data.settings.MAX_TURNS_BASE || '';
+  }
+
+  document.getElementById('btn-save-settings').addEventListener('click', async () => {
+    const payload = {
+      TURN_REGEN_AMOUNT: document.getElementById('set-regen-amount').value,
+      TURN_REGEN_MS: document.getElementById('set-regen-ms').value,
+      STARTING_CASH: document.getElementById('set-start-cash').value,
+      STARTING_TURNS: document.getElementById('set-start-turns').value,
+      MAX_TURNS_BASE: document.getElementById('set-max-turns').value,
+    };
+    if(!confirm("This will overwrite game_engine.py constants and restart the server immediately. Proceed?")) return;
+    
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(res.ok) {
+      showToast("Constants saved. Server is restarting...");
+    }
+  });
+
+  // Announce
+  document.getElementById('btn-announce').addEventListener('click', async () => {
+    const msg = document.getElementById('announce-text').value;
+    if(!msg) return;
+    const res = await fetch('/api/admin/announce', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    if(res.ok) {
+      showToast("Announcement broadcasted globally!");
+      document.getElementById('announce-text').value = '';
+    }
+  });
+
+  // Init
+  fetchStats();
+  fetchUsers();
+  fetchSettings();
+</script>
+</body>
+</html>
