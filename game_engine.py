@@ -224,18 +224,22 @@ WORK_LOCATION_HOE_RECRUIT_BASE_PER_10_TURNS = {
 HOE_WAGE_PCT = 0.10
 
 HEIST_JOBS = {
-    "shop": {"minThugs": 200, "turnCost": 10, "minCash": 25000, "maxCash": 75000,
+    "shop": {"name": "Corner Shop", "emoji": "🏪", "heatMsg": ["Light", "Light", "Moderate"],
+             "minThugs": 200, "turnCost": 10, "minCash": 25000, "maxCash": 75000,
              "successChance": 0.60, "casualtyPct": (0.05, 0.15), "failCasualtyPct": (0.15, 0.35),
              "netWorthPct": {"min": 0.00005, "max": 0.00015}},
-    "jewellery": {"minThugs": 1000, "turnCost": 50, "minCash": 150000, "maxCash": 400000,
+    "jewellery": {"name": "Jewellery Store", "emoji": "💎", "heatMsg": ["Moderate", "High", "High"],
+                  "minThugs": 1000, "turnCost": 50, "minCash": 150000, "maxCash": 400000,
                   "successChance": 0.42, "casualtyPct": (0.10, 0.25), "failCasualtyPct": (0.30, 0.55),
                   "netWorthPct": {"min": 0.0002, "max": 0.0006}},
-    "bank": {"minThugs": 5000, "turnCost": 150, "minCash": 750000, "maxCash": 2500000,
+    "bank": {"name": "National Bank", "emoji": "🏦", "heatMsg": ["EXTREME", "EXTREME", "EXTREME"],
+             "minThugs": 5000, "turnCost": 150, "minCash": 750000, "maxCash": 2500000,
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
              "netWorthPct": {"min": 0.0008, "max": 0.0025}},
 }
 HEIST_JOB_COOLDOWN_MS = 6 * 3600 * 1000
 CASINO_JOB = {
+    "name": "Casino", "emoji": "🎰", "heatMsg": ["EXTREME", "EXTREME", "EXTREME"],
     "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 5000000, "maxCash": 15000000,
     "successChance": 0.35, "casualtyPct": (0.15, 0.30), "failCasualtyPct": (0.50, 0.90),
     "cooldownHours": 24,
