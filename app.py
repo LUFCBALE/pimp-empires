@@ -1801,6 +1801,32 @@ def api_admin_settings_get():
             
     return jsonify({'settings': settings})
 
+@app.route('/api/vote/callback', methods=['GET'])
+def api_vote_callback():
+    user_id_str = request.args.get('userid')
+    if not user_id_str:
+        return jsonify({'error': 'Missing userid'}), 400
+    try:
+        user_id = int(user_id_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid userid'}), 400
+
+    db = get_db()
+    row = db.execute('SELECT id, pimp_name FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not row:
+        db.close()
+        return jsonify({'error': 'User not found'}), 404
+        
+    pimp_name = row['pimp_name']
+    db.close()
+
+    state = load_state(user_id, pimp_name)
+    state["mobDollars"] = state.get("mobDollars", 0) + 15
+    ge.add_log(state, "You received 15 Mob Dollars for voting! Thanks for the support.", "good")
+    save_state(user_id, state)
+    
+    return jsonify({'success': True}), 200
+
 @app.route('/api/admin/settings', methods=['POST'])
 @require_admin
 def api_admin_settings_post():

@@ -2638,6 +2638,11 @@
       </div>
       <button class="cta gold" id="pushToggleBtn" style="flex-shrink:0;">Enable</button>
     </div>
+    <h3>🗳️ Vote For Us</h3>
+    <div style="margin-bottom:20px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
+      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Support the game! Vote for us on BrowserGameStop.com and get <b>15 🪙 Mob Dollars</b> every 24 hours.</div>
+      <a href="#" id="voteLink" target="_blank" class="cta gold" style="display:inline-block; text-decoration:none; text-align:center;">Vote Now</a>
+    </div>
     <h3>🪙 Invite Friends</h3>
     <div style="margin-bottom:20px; padding:12px; background:var(--bg-2); border-radius:6px; border:1px solid var(--panel-line);">
       <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">Share your link. You get <b>50 🪙 Mob Dollars</b> once a friend you invite reaches Street Rat (rank 2) — they get <b>10 🪙</b> instantly just for signing up with it.</div>
@@ -5858,6 +5863,8 @@
     updatePushToggleBtn();
     const refInput = document.getElementById('referralLinkInput');
     if(refInput && currentUser) refInput.value = `${window.location.origin}/?ref=${currentUser.id}`;
+    const voteLink = document.getElementById('voteLink');
+    if(voteLink && currentUser) voteLink.href = `https://browsergamestop.com/games/thehustle?userid=${currentUser.id}`;
     const bioInput = document.getElementById('bioInput');
     if(bioInput && document.activeElement !== bioInput){
       bioInput.value = state.bio || '';
