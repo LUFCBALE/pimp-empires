@@ -1595,6 +1595,8 @@
           <span class="divider">|</span>
           <button id="referFriendBtn" class="micro-link">👥 Invite</button>
           <span class="divider">|</span>
+          <a id="voteTopLink" class="micro-link" href="#" target="_blank" rel="noopener noreferrer">🗳️ Vote</a>
+          <span class="divider">|</span>
           <a id="discordLink" class="micro-link" href="https://discord.gg/pF7VsAk2a" target="_blank" rel="noopener noreferrer">💬 Discord</a>
         </div>
       </div>
@@ -2928,6 +2930,8 @@
       authDisplay.onclick = openOwnProfile;
       authToggleBtn.textContent = '🔑 Sign Out';
       authToggleBtn.onclick = signOut;
+      const voteTopLink = document.getElementById('voteTopLink');
+      if(voteTopLink) voteTopLink.href = `https://browsergamestop.com/vote/thehustle?userid=${currentUser.id}`;
       connectLiveSocket();
     } else {
       // Show homepage, hide game
@@ -5864,7 +5868,7 @@
     const refInput = document.getElementById('referralLinkInput');
     if(refInput && currentUser) refInput.value = `${window.location.origin}/?ref=${currentUser.id}`;
     const voteLink = document.getElementById('voteLink');
-    if(voteLink && currentUser) voteLink.href = `https://browsergamestop.com/games/thehustle?userid=${currentUser.id}`;
+    if(voteLink && currentUser) voteLink.href = `https://browsergamestop.com/vote/thehustle?userid=${currentUser.id}`;
     const bioInput = document.getElementById('bioInput');
     if(bioInput && document.activeElement !== bioInput){
       bioInput.value = state.bio || '';
