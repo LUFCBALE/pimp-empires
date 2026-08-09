@@ -2383,6 +2383,8 @@ def sell_all_cocaine(state):
 COCAINE_OVERSEAS_SUCCESS_CHANCE = 0.72  # 28% bust chance at customs
 COCAINE_OVERSEAS_PREMIUM = 1.35
 
+FAKE_MONEY_OVERSEAS_SUCCESS_CHANCE = 0.50  # 50% bust chance
+FAKE_MONEY_OVERSEAS_PREMIUM = 1.9
 
 def sell_cocaine_overseas(state):
     """High risk / high reward: ship the whole cocaine stash overseas. 72%
@@ -2404,6 +2406,43 @@ def sell_cocaine_overseas(state):
         return {"success": True, "qty": qty, "price": jround(overseas_price), "payout": payout}
     else:
         add_log(state, f"Customs busted your overseas shipment of {qty} cocaine. Total loss — got nothing.", "bad")
+        return {"success": False, "qty": qty, "payout": 0}
+
+
+def wash_fake_money(state):
+    qty = state.get("fakeMoney", 0)
+    if qty < 1:
+        raise GameError("No fake money to wash")
+    
+    payout = qty
+    state["fakeMoney"] = 0
+    state["cash"] += payout
+    state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + payout
+    state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + payout
+    
+    add_log(state, f"Washed £{qty} of fake money locally for a clean £{payout}.", "good")
+    add_xp(state, payout * SELL_XP_PER_POUND)
+    return {"success": True, "qty": qty, "payout": payout}
+
+
+def wash_fake_money_overseas(state):
+    qty = state.get("fakeMoney", 0)
+    if qty < 1:
+        raise GameError("No fake money to wash")
+    
+    state["fakeMoney"] = 0
+    
+    if random.random() < FAKE_MONEY_OVERSEAS_SUCCESS_CHANCE:
+        payout = jround(qty * FAKE_MONEY_OVERSEAS_PREMIUM)
+        state["cash"] += payout
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + payout
+        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + payout
+        
+        add_log(state, f"Laundered £{qty} of fake money through offshore accounts! Cleared £{payout}.", "good")
+        add_xp(state, payout * SELL_XP_PER_POUND)
+        return {"success": True, "qty": qty, "payout": payout}
+    else:
+        add_log(state, f"The FBI seized your offshore transfer of £{qty} in fake money. Total loss.", "bad")
         return {"success": False, "qty": qty, "payout": 0}
 
 
@@ -2485,46 +2524,9 @@ def run_factories(state, ticks):
     if bombs > 0:
         state["bombs"] += bombs
     if counterfeit_cash > 0:
-        state["counterfeitStock"] = state.get("counterfeitStock", 0) + counterfeit_cash
+        state["fakeMoney"] = state.get("fakeMoney", 0) + counterfeit_cash
     if gym_thugs > 0:
         state["thugs"] = state.get("thugs", 0) + gym_thugs
-
-
-# Counterfeit factories no longer pay straight to cash - the printed money
-# piles up as a "dirty" stockpile (counterfeitStock) that has to be actively
-# collected or washed from the Production page. Collecting is a guaranteed
-# 1:1 conversion; washing risks the whole stash for a bigger payout.
-COUNTERFEIT_WASH_SUCCESS_CHANCE = 0.83
-COUNTERFEIT_WASH_MULTIPLIER = 1.5
-
-
-def collect_counterfeit_cash(state):
-    amount = state.get("counterfeitStock", 0)
-    if amount <= 0:
-        raise GameError("No counterfeit cash to collect")
-    state["counterfeitStock"] = 0
-    state["cash"] += amount
-    state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + amount
-    state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + amount
-    add_log(state, f"Collected £{amount:,} in counterfeit cash - still dirty, but it spends.", "good")
-    return {"collected": amount}
-
-
-def wash_counterfeit_cash(state):
-    amount = state.get("counterfeitStock", 0)
-    if amount <= 0:
-        raise GameError("No counterfeit cash to wash")
-    state["counterfeitStock"] = 0
-    success = random.random() < COUNTERFEIT_WASH_SUCCESS_CHANCE
-    if success:
-        payout = jround(amount * COUNTERFEIT_WASH_MULTIPLIER)
-        state["cash"] += payout
-        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + payout
-        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + payout
-        add_log(state, f"Washed £{amount:,} dirty into £{payout:,} clean.", "good")
-        return {"success": True, "washed": amount, "payout": payout}
-    add_log(state, f"The wash got busted - £{amount:,} in counterfeit cash seized.", "bad")
-    return {"success": False, "washed": amount, "payout": 0}
 
 
 # ---------------------------------------------------------------------------
