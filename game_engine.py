@@ -237,7 +237,7 @@ HEIST_JOBS = {
              "successChance": 0.28, "casualtyPct": (0.20, 0.40), "failCasualtyPct": (0.45, 0.80),
              "netWorthPct": {"min": 0.0008, "max": 0.0025}},
 }
-HEIST_JOB_COOLDOWN_MS = 6 * 3600 * 1000
+HEIST_JOB_COOLDOWN_MS = 1 * 3600 * 1000
 CASINO_JOB = {
     "name": "Casino", "emoji": "🎰", "heatMsg": ["EXTREME", "EXTREME", "EXTREME"],
     "thugsPerMember": 10000, "turnsPerMember": 100, "minCash": 5000000, "maxCash": 15000000,
