@@ -122,15 +122,15 @@ BLACKMARKET_ITEMS = [
 BLACKMARKET_BY_KEY = {i["key"]: i for i in BLACKMARKET_ITEMS}
 
 DOPE_DEALER_DRUGS = [
-    {"id": "weed", "baseBuyPrice": 12, "baseSellPrice": 20},
-    {"id": "xanax", "baseBuyPrice": 20, "baseSellPrice": 32},
-    {"id": "lsd", "baseBuyPrice": 35, "baseSellPrice": 55},
-    {"id": "ecstasy", "baseBuyPrice": 50, "baseSellPrice": 80},
-    {"id": "mdma", "baseBuyPrice": 60, "baseSellPrice": 95},
-    {"id": "coke", "baseBuyPrice": 110, "baseSellPrice": 170},
-    {"id": "ketamine", "baseBuyPrice": 120, "baseSellPrice": 185},
-    {"id": "meth", "baseBuyPrice": 160, "baseSellPrice": 245},
-    {"id": "heroin", "baseBuyPrice": 220, "baseSellPrice": 340},
+    {"id": "weed", "name": "Weed", "icon": "🌿", "baseBuyPrice": 22, "baseSellPrice": 20},
+    {"id": "xanax", "name": "Xanax", "icon": "💊", "baseBuyPrice": 35, "baseSellPrice": 32},
+    {"id": "lsd", "name": "LSD", "icon": "🌈", "baseBuyPrice": 60, "baseSellPrice": 55},
+    {"id": "ecstasy", "name": "Ecstasy", "icon": "🍬", "baseBuyPrice": 90, "baseSellPrice": 80},
+    {"id": "mdma", "name": "MDMA", "icon": "⚡", "baseBuyPrice": 105, "baseSellPrice": 95},
+    {"id": "coke", "name": "Cocaine", "icon": "❄️", "baseBuyPrice": 190, "baseSellPrice": 170},
+    {"id": "ketamine", "name": "Ketamine", "icon": "🐴", "baseBuyPrice": 205, "baseSellPrice": 185},
+    {"id": "meth", "name": "Meth", "icon": "🧊", "baseBuyPrice": 270, "baseSellPrice": 245},
+    {"id": "heroin", "name": "Heroin", "icon": "💉", "baseBuyPrice": 380, "baseSellPrice": 340},
 ]
 DOPE_DEALER_BY_ID = {d["id"]: d for d in DOPE_DEALER_DRUGS}
 
@@ -427,9 +427,16 @@ def default_state(pimp_name="Big Boss"):
         "lastRealMoneyPurchase": 0,
         "showWorkResults": False,
         "showTutorial": True,
-        "messages": [],
+        "messages": [
+            {
+                "id": f"msg_{now}",
+                "from": "Old Skool",
+                "msg": "Welcome to the streets, Boss. Your first goal is to make some cash and build your crew. Go to the Redlight District and Work the Block. Once you get some cash, buy meds for your hoes and a gun for any thugs you find. Good luck.",
+                "t": now,
+                "read": False
+            }
+        ],
         "log": [],
-        "pimpNameLocked": True,
     }
     return state
 
@@ -724,6 +731,53 @@ def check_milestone_achievements(state):
         award_achievement(state, "millionaire")
     if nw >= 100_000_000:
         award_achievement(state, "tycoon")
+
+
+def check_narrative_missions(state):
+    """Triggers progressive narrative messages from 'Old Skool' based on milestones."""
+    completed = state.setdefault("missions_completed", [])
+    now = now_ms()
+    
+    # Mission 2: Rank 2
+    if "mission_2" not in completed:
+        rank = rank_info(state.get("xp", 0))
+        if rank["level"] >= 2 or state.get("cash", 0) >= 5000:
+            completed.append("mission_2")
+            state["cash"] = state.get("cash", 0) + 2000
+            msg = "You're making noise, but hustling on the block only gets you so far. The real money and XP is in passive income. Save up and buy your first Factory in Real Estate."
+            state.setdefault("messages", []).append({"id": f"msg_{now}_m2", "from": "Old Skool", "msg": msg, "t": now, "read": False})
+            add_log(state, "Old Skool sent you £2,000 to help you get started.", "good")
+
+    # Mission 3: Factory
+    if "mission_3" not in completed:
+        if sum(state.get("factories", {}).values()) > 0:
+            completed.append("mission_3")
+            state["medsStock"] = state.get("medsStock", 0) + 1
+            if "guns" not in state:
+                state["guns"] = {}
+            state["guns"]["pistol9mm"] = state["guns"].get("pistol9mm", 0) + 1
+            state["gunsOwned"] = state.get("gunsOwned", 0) + 1
+            msg = "Good. That factory will print cash and goods while you sleep, which means massive XP when you sell them to Dealers. Now you need heavy muscle. Recruit at least 10 thugs and buy them 10 guns. You'll need them for what's next."
+            state.setdefault("messages", []).append({"id": f"msg_{now}_m3", "from": "Old Skool", "msg": msg, "t": now, "read": False})
+            add_log(state, "Old Skool sent you a 9mm Pistol and a Med kit.", "good")
+
+    # Mission 4: Muscle
+    if "mission_4" not in completed:
+        if state.get("thugs", 0) >= 10 and sum(state.get("guns", {}).values()) >= 10:
+            completed.append("mission_4")
+            state["turns"] = min(state.get("maxTurns", 3600), state.get("turns", 0) + 200)
+            msg = "Time to pull a job. You have the muscle. Go to 'The Job' and pull the Corner Shop Heist. Careful, your thugs might not make it back, but the XP payout scales massively with the cash you steal."
+            state.setdefault("messages", []).append({"id": f"msg_{now}_m4", "from": "Old Skool", "msg": msg, "t": now, "read": False})
+            add_log(state, "Old Skool tipped you off. +200 Turns.", "good")
+            
+    # Mission 5: First Job
+    if "mission_5" not in completed:
+        if state.get("statsJobsSucceeded", 0) > 0:
+            completed.append("mission_5")
+            state["mobDollars"] = state.get("mobDollars", 0) + 10
+            msg = "You've got blood on your hands now. The competition is watching. Keep building your Net Worth by buying cars and factories, and don't be afraid to hit the global feed and attack a rival. Welcome to the top."
+            state.setdefault("messages", []).append({"id": f"msg_{now}_m5", "from": "Old Skool", "msg": msg, "t": now, "read": False})
+            add_log(state, "Old Skool respects your hustle. +10 🪙 Mob Dollars.", "good")
 
 
 # ---------------------------------------------------------------------------
@@ -2548,7 +2602,11 @@ def run_factories(state, ticks):
     if bombs > 0:
         state["bombs"] += bombs
     if counterfeit_cash > 0:
-        state["fakeMoney"] = state.get("fakeMoney", 0) + counterfeit_cash
+        half_cash = jround(counterfeit_cash / 2)
+        state["fakeMoney"] = state.get("fakeMoney", 0) + half_cash
+        state["cash"] = state.get("cash", 0) + (counterfeit_cash - half_cash)
+        state["lifetimeEarnings"] = state.get("lifetimeEarnings", 0) + (counterfeit_cash - half_cash)
+        state["counterfeitEarnings"] = state.get("counterfeitEarnings", 0) + (counterfeit_cash - half_cash)
     if gym_thugs > 0:
         state["thugs"] = state.get("thugs", 0) + gym_thugs
 
@@ -2854,6 +2912,19 @@ def save_crew_name(state, name):
         raise GameError("Crew name required")
     if name in GANG_NAMES:
         raise GameError(f'"{name}" is already a street crew — pick a different name')
+        
+    old_name = state.get("gang", "")
+    if old_name == name:
+        return
+        
+    if old_name:
+        if state.get("mobDollars", 0) < 10:
+            raise GameError("You need 10 Mob Dollars to change your crew's name")
+        state["mobDollars"] -= 10
+        add_log(state, f"Changed crew name to {name} for 10 \U0001fa99 Mob Dollars.", "good")
+    else:
+        add_log(state, f"Created a new crew: {name}.", "good")
+
     state["gang"] = name
 
 
@@ -3303,11 +3374,21 @@ def send_crew_chat_message(leader_state, sender_user_id, sender_name, text):
 # ---------------------------------------------------------------------------
 
 def save_pimp_name(state, name):
-    if state.get("pimpNameLocked"):
-        raise GameError("Pimp name is locked and cannot be changed")
     name = (name or "").strip()
     if not name:
         raise GameError("Name required")
+    if len(name) < 3 or len(name) > 20:
+        raise GameError("Name must be 3-20 characters")
+        
+    old_name = state.get("name", "")
+    if old_name == name:
+        return
+        
+    if state.get("mobDollars", 0) < 10:
+        raise GameError("You need 10 Mob Dollars to change your name")
+    
+    state["mobDollars"] -= 10
+    add_log(state, f"Changed name to {name} for 10 \U0001fa99 Mob Dollars.", "good")
     state["name"] = name
 
 
@@ -3474,6 +3555,7 @@ def apply_catchup(state):
     check_daily_bonus(state, now)
     recalc_morale(state)
     check_milestone_achievements(state)
+    check_narrative_missions(state)
     check_rank_rewards(state)
     return state
 
