@@ -4050,7 +4050,7 @@
 
   async function bombFactory(targetId, type){
     try{
-      const data = await apiCall('/api/attack/bomb', 'POST', {targetId, type});
+      const data = await apiCall('/api/bomb', {targetId, type});
       showExplosionAnimation();
       playBombSound();
       showBombResultModal(data.result);

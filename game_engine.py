@@ -110,14 +110,14 @@ DEALER_DAILY_CAP = 100
 DEALER_RESALE_COOLDOWN_MS = 10 * 60 * 1000
 
 BLACKMARKET_ITEMS = [
-    {"key": "pistol9mm", "name": "9mm Pistols", "price": 240, "gun": "pistol9mm"},
-    {"key": "shotgun12gauge", "name": "12 Gauge Shotguns", "price": 1050, "gun": "shotgun12gauge"},
-    {"key": "ak47", "name": "AK-47s", "price": 1800, "gun": "ak47"},
-    {"key": "meds", "name": "Safety Kits", "price": 15, "stock": "medsStock"},
-    {"key": "thugs", "name": "Thugs", "price": 100, "stock": "thugs"},
-    {"key": "cars", "name": "Cadillacs", "price": 9600, "stock": "cadillacs"},
-    {"key": "m249", "name": "M249s", "price": 8000, "gun": "m249", "sellOnly": True},
-    {"key": "trucks", "name": "Armored Trucks", "price": 18000, "stock": "armoredTrucks", "sellOnly": True},
+    {"key": "pistol9mm", "name": "9mm Pistols", "price": 240, "gun": "pistol9mm", "stockKey": "guns.pistol9mm", "img": "9 mill.jpg"},
+    {"key": "shotgun12gauge", "name": "12 Gauge Shotguns", "price": 1050, "gun": "shotgun12gauge", "stockKey": "guns.shotgun12gauge", "img": "shotgun.jpg"},
+    {"key": "ak47", "name": "AK-47s", "price": 1800, "gun": "ak47", "stockKey": "guns.ak47", "img": "Ak47.jpg"},
+    {"key": "meds", "name": "Safety Kits", "price": 15, "stock": "medsStock", "stockKey": "medsStock", "img": "meds.jpg"},
+    {"key": "thugs", "name": "Thugs", "price": 100, "stock": "thugs", "stockKey": "thugs", "img": "thugs.jpg"},
+    {"key": "cars", "name": "Cadillacs", "price": 9600, "stock": "cadillacs", "stockKey": "cadillacs", "img": "cadalac.jpg"},
+    {"key": "m249", "name": "M249s", "price": 8000, "gun": "m249", "sellOnly": True, "stockKey": "guns.m249", "img": "m249.jpg"},
+    {"key": "trucks", "name": "Armored Trucks", "price": 18000, "stock": "armoredTrucks", "sellOnly": True, "stockKey": "armoredTrucks", "img": "armoued truck.jpg"},
 ]
 BLACKMARKET_BY_KEY = {i["key"]: i for i in BLACKMARKET_ITEMS}
 
