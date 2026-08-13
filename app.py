@@ -1532,7 +1532,33 @@ def api_travel():
 @login_required
 def api_settings_pimpname():
     data = request.get_json() or {}
-    return handle_action(ge.save_pimp_name, data.get('name', ''))
+    new_name = data.get('name', '').strip()
+    
+    user = get_current_user()
+    state = load_state(user['id'], user['pimp_name'])
+    world = load_world()
+    
+    try:
+        old_name = state.get('name')
+        if old_name != new_name:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute('SELECT id FROM users WHERE pimp_name = ?', (new_name,))
+            if cursor.fetchone():
+                db.close()
+                return jsonify({'error': 'That name is already taken'}), 409
+            db.close()
+
+            ge.save_pimp_name(state, new_name)
+            
+            db = get_db()
+            db.execute('UPDATE users SET pimp_name = ?, updated_at = ? WHERE id = ?', (new_name, ge.now_ms(), user['id']))
+            db.commit()
+            db.close()
+    except ge.GameError as e:
+        return jsonify({'error': str(e)}), 400
+        
+    return action_response(user['id'], state, world)
 
 
 @app.route('/api/settings/bio', methods=['POST'])
