@@ -2988,6 +2988,7 @@
     liveSocket.on('crewChat', () => { syncState(); });
     liveSocket.on('globalChat', () => { syncState(); });
     liveSocket.on('theJobUpdate', () => { syncState(); });
+    liveSocket.on('voted', () => { showToast('🪙 +15 Mob Dollars for voting! Thanks for your support.'); syncState(); });
   }
   function disconnectLiveSocket(){
     if(liveSocket){ liveSocket.disconnect(); liveSocket = null; }

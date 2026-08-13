@@ -1907,6 +1907,8 @@ def api_vote_callback():
     ge.add_log(state, "You received 15 Mob Dollars for voting! Thanks for the support.", "good")
     save_state(user_id, state)
     
+    notify_user(user_id, 'voted', {})
+    
     return "OK", 200
 
 @app.route('/api/admin/settings', methods=['POST'])
