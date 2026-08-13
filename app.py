@@ -1871,9 +1871,20 @@ def api_admin_settings_get():
 
 @app.route('/api/vote/callback', methods=['GET', 'POST'])
 def api_vote_callback():
+    print(f"Vote callback received: method={request.method}, args={request.args}, form={request.form}, data={request.get_data()}")
+    
     user_id_str = request.values.get('userid') or request.values.get('user_id')
-    if not user_id_str and request.is_json:
-        user_id_str = request.json.get('userid') or request.json.get('user_id')
+    
+    if not user_id_str:
+        # Some voting sites send POST data as JSON but forget Content-Type
+        if request.is_json:
+            user_id_str = request.json.get('userid') or request.json.get('user_id')
+        else:
+            try:
+                data = json.loads(request.get_data(as_text=True))
+                user_id_str = data.get('userid') or data.get('user_id')
+            except Exception:
+                pass
 
     if not user_id_str:
         return "Missing userid", 400
